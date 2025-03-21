@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import laptopImg from '../../assets/login/laptop.png';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 
@@ -7,11 +8,38 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log({ username, password, rememberMe });
+    setErrorMessage('');
+  
+    console.log('Dữ liệu gửi đi:', { username, password }); 
+  
+    try {
+      const response = await fetch('http://localhost:5000/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+  
+      const data = await response.json();
+      console.log('Phản hồi từ backend:', data);
+  
+      if (response.ok) {
+        navigate('/dashboard');
+      } else {
+        setErrorMessage(data.message || 'Đăng nhập không thành công');
+        console.log('Đăng nhập không thành công:', data.message);
+      }
+    } catch (error) {
+      console.error('Lỗi kết nối:', error);
+    }
   };
+  
 
   return (
     <div className="min-h-screen w-full bg-[#EBEFFF] flex relative">
@@ -27,7 +55,12 @@ const Login = () => {
       <div className="flex flex-col items-center justify-center w-full lg:w-1/2 px-4 lg:pl-[10%]">
         {/* Tiêu đề */}
         <h2 className="text-center font-bold text-[16px] leading-[19px] text-[#1A1A1A] mb-5">Chào bạn!</h2>
-
+        {/* Thông báo lỗi */}
+        {errorMessage && (
+          <div className="mb-4 w-full max-w-[367px] bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-md">
+            {errorMessage}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="flex flex-col items-center w-full max-w-[367px]">
           {/* Tên đăng nhập */}
           <div className="w-full mb-4">

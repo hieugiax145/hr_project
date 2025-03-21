@@ -1,10 +1,11 @@
 import React from 'react';
-import { Input, Badge, Dropdown, Space } from 'antd';
+import { Input, Badge, Dropdown, Space, message } from 'antd';
 import { SearchOutlined, BellOutlined, MessageOutlined, UserOutlined, DownOutlined } from '@ant-design/icons';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const Topbar = () => {
   const location = useLocation();
+  const navigate = useNavigate(); 
 
   // Map routes to page titles
   const getPageTitle = (pathname) => {
@@ -17,6 +18,12 @@ const Topbar = () => {
       '/notifications': 'Thông báo ứng viên mới',
     };
     return routes[pathname] || 'Trang chủ';
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    message.success('Đăng xuất thành công!'); 
+    navigate('/login'); 
   };
 
   const userMenuItems = [
@@ -32,6 +39,7 @@ const Topbar = () => {
       key: 'logout',
       label: 'Đăng xuất',
       danger: true,
+      onClick: handleLogout,
     },
   ];
 
@@ -92,4 +100,4 @@ const Topbar = () => {
   );
 };
 
-export default Topbar; 
+export default Topbar;
