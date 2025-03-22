@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Layout, Menu } from 'antd';
 import {
   HomeOutlined,
@@ -16,7 +16,6 @@ const { Sider } = Layout;
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [selectedKey, setSelectedKey] = useState(location.pathname);
 
   const menuItems = [
     {
@@ -25,7 +24,7 @@ const Sidebar = () => {
       label: 'Trang chủ',
     },
     {
-      key: '/recruitment-requests',
+      key: '/hr/recruitment-requests',
       icon: <FileSearchOutlined />,
       label: 'Yêu cầu tuyển dụng',
     },
@@ -52,7 +51,6 @@ const Sidebar = () => {
   ];
 
   const handleMenuClick = (item) => {
-    setSelectedKey(item.key);
     navigate(item.key);
   };
 
@@ -78,7 +76,7 @@ const Sidebar = () => {
           </div>
           <Menu
             mode="inline"
-            selectedKeys={[selectedKey]}
+            selectedKeys={[location.pathname]}
             onClick={handleMenuClick}
             items={menuItems}
             style={{
