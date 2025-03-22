@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import registerImg from '../../assets/login/register.png';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
+import axios from 'axios';
 
 const Register = () => {
   const [fullName, setFullName] = useState('');
@@ -10,10 +11,36 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log({ fullName, username, emailPhone, password, confirmPassword });
+    setError('');
+    setSuccess('');
+
+    if (password !== confirmPassword) {
+      setError('Mật khẩu không khớp!');
+      return;
+    }
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/users/register', {
+        username,
+        email: emailPhone,
+        password,
+        role: 'applicant' 
+      });
+
+      setSuccess(response.data.message);
+      setFullName('');
+      setUsername('');
+      setEmailPhone('');
+      setPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Đăng ký thất bại. Vui lòng thử lại!');
+    }
   };
 
   return (
@@ -31,6 +58,9 @@ const Register = () => {
           {/* Tiêu đề */}
           <h2 className="text-center font-bold text-2xl text-[#1A1A1A] mb-8">Đăng ký tài khoản!</h2>
 
+          {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+          {success && <p className="text-green-500 text-center mb-4">{success}</p>}
+
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Họ và tên */}
             <div>
@@ -41,6 +71,7 @@ const Register = () => {
                 onChange={(e) => setFullName(e.target.value)}
                 className="w-full h-[40px] border border-[#656ED3] rounded-[25px] px-4 focus:outline-none bg-transparent"
                 placeholder="Nhập họ và tên"
+                required
               />
             </div>
 
@@ -53,6 +84,7 @@ const Register = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full h-[40px] border border-[#656ED3] rounded-[25px] px-4 focus:outline-none bg-transparent"
                 placeholder="Nhập tên đăng nhập"
+                required
               />
             </div>
 
@@ -65,6 +97,7 @@ const Register = () => {
                 onChange={(e) => setEmailPhone(e.target.value)}
                 className="w-full h-[40px] border border-[#656ED3] rounded-[25px] px-4 focus:outline-none bg-transparent"
                 placeholder="Nhập email hoặc số điện thoại"
+                required
               />
             </div>
 
@@ -73,11 +106,12 @@ const Register = () => {
               <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Mật khẩu mới:</label>
               <div className="relative">
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full h-[40px] border border-[#656ED3] rounded-[25px] px-4 pr-10 focus:outline-none bg-transparent"
                   placeholder="Nhập mật khẩu mới"
+                  required
                 />
                 <button
                   type="button"
@@ -94,11 +128,12 @@ const Register = () => {
               <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Xác nhận mật khẩu mới:</label>
               <div className="relative">
                 <input
-                  type={showConfirmPassword ? "text" : "password"}
+                  type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="w-full h-[40px] border border-[#656ED3] rounded-[25px] px-4 pr-10 focus:outline-none bg-transparent"
                   placeholder="Xác nhận mật khẩu mới"
+                  required
                 />
                 <button
                   type="button"
@@ -124,4 +159,4 @@ const Register = () => {
   );
 };
 
-export default Register; 
+export default Register;

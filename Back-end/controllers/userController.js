@@ -1,6 +1,5 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 
@@ -23,7 +22,7 @@ const forgotPassword = async (req, res) => {
     // Tạo token reset
     const resetToken = crypto.randomBytes(20).toString('hex');
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 giờ
+    user.resetPasswordExpires = Date.now() + 3600000; 
 
     await user.save();
 
@@ -79,16 +78,17 @@ const registerUser = async (req, res) => {
   }
 };
 
+// Đăng nhập
 const loginUser = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    if (user.password !== password) return res.status(400).json({ message: 'Invalid credentials' });
-    res.status(200).json({ message: 'Login successful' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  const { username , password } = req.body;
+  const user = await User.findOne({ username });
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+
+  // Gửi phản hồi thành công
+  res.status(200).json({ message: 'Login successful' });
 };
 
 // Xem thông tin người dùng
@@ -137,5 +137,38 @@ const uploadAvatar = async (req, res) => {
   }
 };
 
+const createAdminAccount = async () => {
+  const adminExists = await User.findOne({ username: 'HRAccount' });
+  if (!adminExists) {
+    const adminUser = new User({
+      username: 'HRAccount',
+      email: 'HRAccount@gmail.com',
+      password: await bcrypt.hash('HRAccount123', 10),
+      role: 'admin'
+    });
+    await adminUser.save();
+    console.log('Admin account created');
+  }
+};
+
+createAdminAccount();
+
+const addTestUser = async () => {
+  const userExists = await User.findOne({ email: 'khang080803@gmail.com' });
+  if (!userExists) {
+    const testUser = new User({
+      username: 'khang080803',
+      email: 'khang080803@gmail.com',
+      password: await bcrypt.hash('TestPassword123', 10), 
+      role: 'admin'
+    });
+    await testUser.save();
+    console.log('Test user created');
+  } else {
+    console.log('Test user already exists');
+  }
+};
+
+addTestUser();
 
 module.exports = { registerUser, loginUser, forgotPassword, resetPassword, getUserProfile, updateUserProfile, uploadAvatar };
