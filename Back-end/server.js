@@ -66,7 +66,7 @@ const reviewRoutes = require('./routes/reviewRoutes');
 
 app.use('/api/users', userRoutes);
 app.use('/api/jobs', jobRoutes);
-app.use('/api', applicationRoutes);
+app.use('/api/applications', applicationRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/notifications', notificationRoutes);

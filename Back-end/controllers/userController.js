@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 
@@ -69,26 +70,84 @@ const resetPassword = async (req, res) => {
 
 const registerUser = async (req, res) => {
   try {
-    const { username, email, password, role } = req.body;
-    const newUser = new User({ username, email, password, role });
+    const { username, email, password, role, department, fullName } = req.body;
+
+    // Kiểm tra xem username hoặc email đã tồn tại chưa
+    const existingUser = await User.findOne({
+      $or: [{ username }, { email }]
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        error: existingUser.username === username 
+          ? 'Tên đăng nhập đã tồn tại'
+          : 'Email đã được sử dụng'
+      });
+    }
+
+    // Mã hóa mật khẩu
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Tạo user mới với mật khẩu đã mã hóa
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword,
+      role,
+      department,
+      fullName
+    });
+
     await newUser.save();
-    res.status(201).json({ message: 'User registered successfully' });
+    res.status(201).json({ message: 'Đăng ký tài khoản thành công' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Registration error:', err);
+    res.status(500).json({ error: 'Đăng ký thất bại. Vui lòng thử lại!' });
   }
 };
 
 // Đăng nhập
 const loginUser = async (req, res) => {
-  const { username , password } = req.body;
-  const user = await User.findOne({ username });
-  if (!user) return res.status(404).json({ message: 'User not found' });
+  try {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Tài khoản không tồn tại' });
+    }
 
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Mật khẩu không chính xác' });
+    }
 
-  // Gửi phản hồi thành công
-  res.status(200).json({ message: 'Login successful' });
+    // Tạo JWT token
+    const token = jwt.sign(
+      { 
+        id: user._id,
+        username: user.username,
+        role: user.role 
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    // Gửi phản hồi thành công với token và thông tin user
+    res.status(200).json({
+      message: 'Đăng nhập thành công',
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        department: user.department
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Lỗi server, vui lòng thử lại sau' });
+  }
 };
 
 // Xem thông tin người dùng

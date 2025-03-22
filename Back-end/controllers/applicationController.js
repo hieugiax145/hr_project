@@ -19,7 +19,7 @@ const createApplication = async (req, res) => {
       position,
       quantity,
       mainLocation,
-      otherLocations,
+      otherLocations = [],
       reason,
       budget,
       jobDescription,
@@ -28,27 +28,81 @@ const createApplication = async (req, res) => {
     } = req.body;
 
     // Kiểm tra các trường bắt buộc
-    if (!department || !position || !quantity || !mainLocation || !reason || !budget) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    const requiredFields = {
+      department: 'Phòng ban',
+      position: 'Vị trí',
+      quantity: 'Số lượng',
+      mainLocation: 'Nơi làm việc chính',
+      reason: 'Lý do tuyển dụng',
+      budget: 'Quỹ tuyển dụng',
+      jobDescription: 'Mô tả công việc',
+      requirements: 'Yêu cầu ứng viên',
+      benefits: 'Quyền lợi'
+    };
+
+    const missingFields = [];
+    for (const [field, label] of Object.entries(requiredFields)) {
+      if (!req.body[field]) {
+        missingFields.push(label);
+      }
     }
 
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        error: `Vui lòng điền đầy đủ thông tin: ${missingFields.join(', ')}`
+      });
+    }
+
+    // Validate quantity
+    if (quantity < 1) {
+      return res.status(400).json({
+        error: 'Số lượng tuyển dụng phải lớn hơn 0'
+      });
+    }
+
+    // Validate reason
+    const validReasons = ['Tuyển do thiếu nhân sự', 'Tuyển do mở rộng quy mô'];
+    if (!validReasons.includes(reason)) {
+      return res.status(400).json({
+        error: 'Lý do tuyển dụng không hợp lệ'
+      });
+    }
+
+    // Validate budget
+    const validBudgets = ['Đạt chuẩn', 'Vượt quỹ'];
+    if (!validBudgets.includes(budget)) {
+      return res.status(400).json({
+        error: 'Quỹ tuyển dụng không hợp lệ'
+      });
+    }
+
+    // Tạo application mới
     const application = new Application({
-      userId: req.user.id,
+      userId: req.user._id,
       department,
-      jobPositionId: position,
+      position,
       quantity,
-      workLocation: [mainLocation, ...otherLocations],
-      reasonForHiring: reason,
-      recruitmentBudget: budget,
+      mainLocation,
+      otherLocations,
+      reason,
+      budget,
       jobDescription,
       requirements,
-      benefits
+      benefits,
+      status: 'Chờ nộp'
     });
 
     await application.save();
-    res.status(201).json(application);
+
+    res.status(201).json({
+      message: 'Tạo yêu cầu tuyển dụng thành công',
+      data: application
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Create application error:', error);
+    res.status(500).json({ 
+      error: 'Có lỗi xảy ra khi tạo yêu cầu tuyển dụng. Vui lòng thử lại sau.' 
+    });
   }
 };
 
@@ -56,12 +110,37 @@ const createApplication = async (req, res) => {
 // ✅ Lấy danh sách đơn tuyển dụng của người dùng hiện tại
 const getApplications = async (req, res) => {
   try {
-    const applications = await Application.find({ createdBy: req.user.id })
-      .populate('createdBy', 'name email');
+    const applications = await Application.find()
+      .populate('userId', 'username')
+      .sort({ createdAt: -1 });
 
-    res.status(200).json(applications);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const formattedApplications = applications.map(app => {
+      const createdDate = new Date(app.createdAt);
+      return {
+        id: app._id,
+        requester: app.userId.username || 'N/A',
+        responsible: app.userId.username || 'N/A',
+        position: app.position,
+        quantity: app.quantity,
+        department: app.department,
+        date: `${createdDate.getHours().toString().padStart(2, '0')}:${createdDate.getMinutes().toString().padStart(2, '0')} - ${createdDate.getDate().toString().padStart(2, '0')}/${(createdDate.getMonth() + 1).toString().padStart(2, '0')}/${createdDate.getFullYear()}`,
+        status: app.status || 'Chờ nộp',
+        mainLocation: app.mainLocation,
+        otherLocations: app.otherLocations,
+        reason: app.reason,
+        budget: app.budget,
+        jobDescription: app.jobDescription,
+        requirements: app.requirements,
+        benefits: app.benefits
+      };
+    });
+
+    res.status(200).json(formattedApplications);
+  } catch (error) {
+    console.error('Get applications error:', error);
+    res.status(500).json({ 
+      error: 'Có lỗi xảy ra khi tải danh sách yêu cầu tuyển dụng' 
+    });
   }
 };
 

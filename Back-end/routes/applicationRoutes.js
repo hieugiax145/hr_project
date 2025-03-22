@@ -4,9 +4,10 @@ const { protect, authorize } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
-router.post('/applications', protect, authorize('applicant'), createApplication);
-router.get('/', protect, authorize('admin', 'recruiter'), getApplications);
-router.put('/:id', protect, authorize('admin', 'recruiter'), updateApplication);
-router.delete('/:id', protect, authorize('admin', 'recruiter'), deleteApplication);
+// Cho phép các role liên quan đến tuyển dụng tạo yêu cầu
+router.post('/', protect, authorize('department_head', 'business_director', 'ceo', 'recruitment', 'director'), createApplication);
+router.get('/', protect, authorize('department_head', 'business_director', 'ceo', 'recruitment', 'director'), getApplications);
+router.put('/:id', protect, authorize('department_head', 'business_director', 'ceo', 'recruitment', 'director'), updateApplication);
+router.delete('/:id', protect, authorize('ceo', 'director'), deleteApplication);
 
 module.exports = router;
