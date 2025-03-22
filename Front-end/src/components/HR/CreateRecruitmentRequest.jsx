@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Input, Modal } from 'antd';
+import { Input, Modal, message } from 'antd';
 import { CloudUploadOutlined } from '@ant-design/icons';
 import { IoCloseCircleOutline } from 'react-icons/io5';
 import { MdKeyboardArrowRight } from 'react-icons/md';
+import axios from 'axios';
 
 const CreateRecruitmentRequest = () => {
   const navigate = useNavigate();
@@ -43,6 +44,27 @@ const CreateRecruitmentRequest = () => {
     });
   };
 
+  const handleSubmit = async () => {
+    try {
+      await axios.post('/api/applications', {
+        department: 'Trưởng phòng',
+        position: 'Vị trí cần tuyển',
+        quantity: 1,
+        mainLocation: selectedMainLocation,
+        otherLocations: selectedLocations,
+        reason: 'Tuyển do thiếu nhân sự',
+        budget: 'Đạt chuẩn',
+        jobDescription: 'Mô tả công việc',
+        requirements: 'Yêu cầu ứng viên',
+        benefits: 'Quyền lợi'
+      });
+      message.success('Yêu cầu tuyển dụng đã được gửi thành công!');
+      navigate('/hr/recruitment-requests');
+    } catch (error) {
+      message.error('Có lỗi xảy ra khi gửi yêu cầu tuyển dụng.');
+    }
+  };
+
   return (
     <div className="h-full">
       <div className="max-w-[1200px] mx-auto bg-white rounded-lg p-6 mt-[80px]">
@@ -54,7 +76,7 @@ const CreateRecruitmentRequest = () => {
             <div className="flex gap-2">
               <button 
                 className="h-[36px] px-4 bg-[#7B61FF] text-white rounded-[6px] text-sm font-medium hover:bg-[#6B4EFF] flex items-center gap-2"
-                onClick={() => {}}
+                onClick={handleSubmit}
               >
                 <CloudUploadOutlined />
                 Gửi duyệt
