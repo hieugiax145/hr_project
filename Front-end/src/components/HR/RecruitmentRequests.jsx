@@ -25,7 +25,7 @@ const RecruitmentRequests = () => {
           return;
         }
 
-        const response = await axios.get('http://localhost:5000/api/applications', {
+        const response = await axios.get('http://localhost:8000/api/applications', {
           headers: {
             'Authorization': `Bearer ${token}`
           }

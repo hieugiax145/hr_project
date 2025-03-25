@@ -102,7 +102,7 @@ const Register = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/users/register', {
+      const response = await axios.post('http://localhost:8000/api/users/register', {
         fullName: formData.fullName,
         username: formData.username,
         email: formData.email,
