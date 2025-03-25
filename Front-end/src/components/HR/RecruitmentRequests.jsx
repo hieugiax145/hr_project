@@ -51,7 +51,7 @@ const RecruitmentRequests = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case "Đã nộp":
-        return "text-[#656ED3] bg-[#F4F1FE] border border-[#656ED3] rounded-[25px] px-2 py-0.5 text-xs inline-block";
+        return "text-[#7B61FF] bg-[#F4F1FE] border border-[#7B61FF] rounded-[25px] px-2 py-0.5 text-xs inline-block";
       case "Đang duyệt":
         return "text-[#FF9900] bg-[#FFF8F0] border border-[#FF9900] rounded-[25px] px-2 py-0.5 text-xs inline-block";
       case "Đã duyệt":
@@ -59,9 +59,9 @@ const RecruitmentRequests = () => {
       case "Từ chối":
         return "text-[#FF0000] bg-[#FFF0F0] border border-[#FF0000] rounded-[25px] px-2 py-0.5 text-xs inline-block";
       case "Chờ nộp":
-        return "text-[#656ED3] bg-[#F4F1FE] border border-[#656ED3] rounded-[25px] px-2 py-0.5 text-xs inline-block";
+        return "text-[#7B61FF] bg-[#F4F1FE] border border-[#7B61FF] rounded-[25px] px-2 py-0.5 text-xs inline-block";
       default:
-        return "text-black";
+        return "text-[#7B61FF] bg-[#F4F1FE] border border-[#7B61FF] rounded-[25px] px-2 py-0.5 text-xs inline-block";
     }
   };
 
@@ -179,7 +179,11 @@ const RecruitmentRequests = () => {
                 </thead>
                 <tbody>
                   {currentRequests.map((request) => (
-                    <tr key={request.id} className="border-b last:border-b-0 hover:bg-gray-50">
+                    <tr 
+                      key={request.id} 
+                      className="border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
+                      onClick={() => navigate(`/hr/recruitment-requests/${request.id}`)}
+                    >
                       <td className="p-4">
                         <input type="checkbox" className="rounded border-gray-300" />
                       </td>

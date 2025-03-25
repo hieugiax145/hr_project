@@ -76,6 +76,9 @@ const createApplication = async (req, res) => {
       });
     }
 
+    // Xác định trạng thái dựa trên quỹ tuyển dụng
+    const status = budget === 'Đạt chuẩn' ? 'Đã duyệt' : 'Đã nộp';
+
     // Tạo application mới
     const application = new Application({
       userId: req.user._id,
@@ -89,7 +92,7 @@ const createApplication = async (req, res) => {
       jobDescription,
       requirements,
       benefits,
-      status: 'Chờ nộp'
+      status: status
     });
 
     await application.save();
@@ -232,9 +235,35 @@ const deleteApplication = async (req, res) => {
   }
 };
 
+// ✅ Lấy chi tiết một phiếu tuyển dụng
+const getApplicationById = async (req, res) => {
+  try {
+    const application = await Application.findById(req.params.id)
+      .populate('userId', 'username');
+
+    if (!application) {
+      return res.status(404).json({ error: 'Không tìm thấy phiếu tuyển dụng' });
+    }
+
+    const createdDate = new Date(application.createdAt);
+    const formattedDate = `${createdDate.getHours().toString().padStart(2, '0')}:${createdDate.getMinutes().toString().padStart(2, '0')} - ${createdDate.getDate().toString().padStart(2, '0')}/${(createdDate.getMonth() + 1).toString().padStart(2, '0')}/${createdDate.getFullYear()}`;
+
+    res.status(200).json({
+      ...application.toObject(),
+      date: formattedDate
+    });
+  } catch (error) {
+    console.error('Get application detail error:', error);
+    res.status(500).json({ 
+      error: 'Có lỗi xảy ra khi tải thông tin chi tiết phiếu tuyển dụng' 
+    });
+  }
+};
+
 module.exports = {
   createApplication,
   getApplications,
   updateApplication,
-  deleteApplication
+  deleteApplication,
+  getApplicationById
 };

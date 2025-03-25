@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Input, Modal, message } from 'antd';
+import { Input, message } from 'antd';
 import { CloudUploadOutlined } from '@ant-design/icons';
 import { IoCloseCircleOutline } from 'react-icons/io5';
 import { MdKeyboardArrowRight } from 'react-icons/md';
@@ -8,8 +8,6 @@ import axios from 'axios';
 
 const CreateRecruitmentRequest = () => {
   const navigate = useNavigate();
-  const [selectedLocations, setSelectedLocations] = useState([]);
-  const [showLocationModal, setShowLocationModal] = useState(false);
   const [selectedMainLocation, setSelectedMainLocation] = useState('');
   const [formData, setFormData] = useState({
     department: '',
@@ -25,14 +23,7 @@ const CreateRecruitmentRequest = () => {
   const mainLocations = [
     { id: 'hochiminh', name: 'Hồ Chí Minh' },
     { id: 'hanoi', name: 'Hà Nội' },
-    { id: 'other', name: 'Khác' }
-  ];
-
-  const otherLocations = [
-    { id: 'headoffice', name: 'Head Office', bgColor: '#FEF3E7' },
-    { id: 'danang', name: 'Đà Nẵng', bgColor: '#E5F6F6' },
-    { id: 'ptit-hanoi', name: 'PTIT Hà Nội', bgColor: '#E5F6F6' },
-    { id: 'ptit-hcm', name: 'PTIT HCM', bgColor: '#FEE7EF' },
+    { id: 'danang', name: 'Đà Nẵng' }
   ];
 
   // Kiểm tra token ngay khi component mount
@@ -46,21 +37,6 @@ const CreateRecruitmentRequest = () => {
 
   const handleMainLocationChange = (locationId) => {
     setSelectedMainLocation(locationId);
-    if (locationId === 'other') {
-      setShowLocationModal(true);
-    } else {
-      setSelectedLocations([locationId]);
-    }
-  };
-
-  const handleOtherLocationChange = (locationId) => {
-    setSelectedLocations(prev => {
-      if (prev.includes(locationId)) {
-        return prev.filter(id => id !== locationId);
-      } else {
-        return [...prev, locationId];
-      }
-    });
   };
 
   const handleInputChange = (e) => {
@@ -95,18 +71,20 @@ const CreateRecruitmentRequest = () => {
         }
       });
 
+      // Xác định trạng thái dựa trên quỹ tuyển dụng
+      const status = formData.budget === 'Đạt chuẩn' ? 'Đã duyệt' : 'Đã nộp';
+
       const response = await api.post('/api/applications', {
         department: formData.department,
         position: formData.position,
         quantity: parseInt(formData.quantity),
         mainLocation: selectedMainLocation,
-        otherLocations: selectedLocations,
         reason: formData.reason,
         budget: formData.budget,
         jobDescription: formData.jobDescription,
         requirements: formData.requirements,
         benefits: formData.benefits,
-        status: 'Chờ nộp'
+        status: status
       });
 
       if (response.data) {
@@ -255,34 +233,6 @@ const CreateRecruitmentRequest = () => {
                   </div>
                 </div>
               </div>
-              <Modal
-                title="Chọn một tùy chọn"
-                open={showLocationModal}
-                onCancel={() => {
-                  setShowLocationModal(false);
-                  setSelectedMainLocation('');
-                }}
-                footer={null}
-                width={400}
-              >
-                <div className="flex flex-col gap-2 mt-4">
-                  {otherLocations.map((location) => (
-                    <label
-                      key={location.id}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer`}
-                      style={{ backgroundColor: location.bgColor }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedLocations.includes(location.id)}
-                        onChange={() => handleOtherLocationChange(location.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-[#8D75F5] focus:ring-[#8D75F5]"
-                      />
-                      <span className="text-sm">{location.name}</span>
-                    </label>
-                  ))}
-                </div>
-              </Modal>
               <div>
                 <label className="text-sm text-[#1A1A1A] inline-flex items-center w-[120px] whitespace-nowrap mr-4">
                   Lý do tuyển dụng

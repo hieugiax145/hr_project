@@ -7,6 +7,7 @@ import DashboardLayout from './components/Layout/DashboardLayout';
 import Dashboard from './components/HR/dashboard';
 import RecruitmentRequests from './components/HR/RecruitmentRequests';
 import CreateRecruitmentRequest from './components/HR/CreateRecruitmentRequest';
+import RecruitmentRequestDetail from './components/HR/RecruitmentRequestDetail';
 
 const App = () => {
   return (
@@ -35,6 +36,11 @@ const App = () => {
         <Route path="/hr/recruitment-requests/create" element={
           <DashboardLayout>
             <CreateRecruitmentRequest />
+          </DashboardLayout>
+        } />
+        <Route path="/hr/recruitment-requests/:id" element={
+          <DashboardLayout>
+            <RecruitmentRequestDetail />
           </DashboardLayout>
         } />
       </Routes>

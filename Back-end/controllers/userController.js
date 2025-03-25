@@ -197,37 +197,32 @@ const uploadAvatar = async (req, res) => {
 };
 
 const createAdminAccount = async () => {
-  const adminExists = await User.findOne({ username: 'HRAccount' });
-  if (!adminExists) {
-    const adminUser = new User({
-      username: 'HRAccount',
-      email: 'HRAccount@gmail.com',
-      password: await bcrypt.hash('HRAccount123', 10),
-      role: 'admin'
-    });
-    await adminUser.save();
-    console.log('Admin account created');
+  try {
+    const adminExists = await User.findOne({ username: 'admin' });
+    if (!adminExists) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash('123456', salt);
+
+      const adminUser = new User({
+        username: 'admin',
+        email: 'admin@example.com',
+        password: hashedPassword,
+        fullName: 'Administrator',
+        role: 'ceo',
+        department: undefined
+      });
+
+      await adminUser.save();
+      console.log('Tài khoản admin đã được tạo thành công');
+    } else {
+      console.log('Tài khoản admin đã tồn tại');
+    }
+  } catch (error) {
+    console.error('Lỗi khi tạo tài khoản admin:', error);
   }
 };
 
+// Gọi hàm để tạo tài khoản admin
 createAdminAccount();
 
-const addTestUser = async () => {
-  const userExists = await User.findOne({ email: 'khang080803@gmail.com' });
-  if (!userExists) {
-    const testUser = new User({
-      username: 'khang080803',
-      email: 'khang080803@gmail.com',
-      password: await bcrypt.hash('TestPassword123', 10), 
-      role: 'admin'
-    });
-    await testUser.save();
-    console.log('Test user created');
-  } else {
-    console.log('Test user already exists');
-  }
-};
-
-addTestUser();
-
-module.exports = { registerUser, loginUser, forgotPassword, resetPassword, getUserProfile, updateUserProfile, uploadAvatar };
+module.exports = { registerUser, loginUser, forgotPassword, resetPassword, getUserProfile, updateUserProfile, uploadAvatar, createAdminAccount };
