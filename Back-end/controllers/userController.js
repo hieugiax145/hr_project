@@ -225,22 +225,4 @@ const createAdminAccount = async () => {
 // Gọi hàm để tạo tài khoản admin
 createAdminAccount();
 
-const addTestUser = async () => {
-  const userExists = await User.findOne({ email: 'khang080803@gmail.com' });
-  if (!userExists) {
-    const testUser = new User({
-      username: 'khang080803',
-      email: 'khang080803@gmail.com',
-      password: await bcrypt.hash('TestPassword123', 10), 
-      role: 'admin'
-    });
-    await testUser.save();
-    console.log('Test user created');
-  } else {
-    console.log('Test user already exists');
-  }
-};
-
-addTestUser();
-
 module.exports = { registerUser, loginUser, forgotPassword, resetPassword, getUserProfile, updateUserProfile, uploadAvatar };
