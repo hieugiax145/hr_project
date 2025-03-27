@@ -51,17 +51,17 @@ const RecruitmentRequests = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case "Đã nộp":
-        return "text-[#7B61FF] bg-[#F4F1FE] border border-[#7B61FF] rounded-[25px] px-2 py-0.5 text-xs inline-block";
+        return "text-[#7B61FF] bg-[#F4F1FE] border border-[#7B61FF] rounded-[25px] px-33 py-0.5 text-xs inline-block min-w-[85px] text-center";
       case "Đang duyệt":
-        return "text-[#FF9900] bg-[#FFF8F0] border border-[#FF9900] rounded-[25px] px-2 py-0.5 text-xs inline-block";
+        return "text-[#FF9900] bg-[#FFF8F0] border border-[#FF9900] rounded-[25px] px-4 py-0.5 text-xs inline-block min-w-[85px] text-center";
       case "Đã duyệt":
-        return "text-[#00B300] bg-[#F0FFF0] border border-[#00B300] rounded-[25px] px-2 py-0.5 text-xs inline-block";
+        return "text-[#00B300] bg-[#F0FFF0] border border-[#00B300] rounded-[25px] px-4 py-0.5 text-xs inline-block min-w-[85px] text-center";
       case "Từ chối":
-        return "text-[#FF0000] bg-[#FFF0F0] border border-[#FF0000] rounded-[25px] px-2 py-0.5 text-xs inline-block";
+        return "text-[#FF0000] bg-[#FFF0F0] border border-[#FF0000] rounded-[25px] px-4 py-0.5 text-xs inline-block min-w-[85px] text-center";
       case "Chờ nộp":
-        return "text-[#7B61FF] bg-[#F4F1FE] border border-[#7B61FF] rounded-[25px] px-2 py-0.5 text-xs inline-block";
+        return "text-[#7B61FF] bg-[#F4F1FE] border border-[#7B61FF] rounded-[25px] px-4 py-0.5 text-xs inline-block min-w-[85px] text-center";
       default:
-        return "text-[#7B61FF] bg-[#F4F1FE] border border-[#7B61FF] rounded-[25px] px-2 py-0.5 text-xs inline-block";
+        return "text-[#7B61FF] bg-[#F4F1FE] border border-[#7B61FF] rounded-[25px] px-4 py-0.5 text-xs inline-block min-w-[85px] text-center";
     }
   };
 
@@ -178,7 +178,7 @@ const RecruitmentRequests = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {currentRequests.map((request) => (
+                  {currentRequests.map((request, index) => (
                     <tr 
                       key={request.id} 
                       className="border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
@@ -187,7 +187,7 @@ const RecruitmentRequests = () => {
                       <td className="p-4">
                         <input type="checkbox" className="rounded border-gray-300" />
                       </td>
-                      <td className="p-4 text-sm">{request.id}</td>
+                      <td className="p-4 text-sm">{startIndex + index + 1}</td>
                       <td className="p-4 text-sm">{request.requester}</td>
                       <td className="p-4 text-sm">{request.responsible}</td>
                       <td className="p-4 text-sm">{request.position}</td>

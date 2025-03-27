@@ -8,7 +8,8 @@ const ApplicationSchema = new mongoose.Schema({
   },
   department: { 
     type: String, 
-    required: true 
+    required: true,
+    enum: ['Kế toán', 'Marketing', 'IT', 'Nhân sự', 'Kinh doanh']
   },
   position: { 
     type: String, 

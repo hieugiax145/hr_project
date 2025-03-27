@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Input, message } from 'antd';
+import { Input, message, Select } from 'antd';
 import { CloudUploadOutlined } from '@ant-design/icons';
 import { IoCloseCircleOutline } from 'react-icons/io5';
 import { MdKeyboardArrowRight } from 'react-icons/md';
@@ -26,6 +26,14 @@ const CreateRecruitmentRequest = () => {
     { id: 'danang', name: 'Đà Nẵng' }
   ];
 
+  const departments = [
+    { value: 'Kế toán', label: 'Kế toán' },
+    { value: 'Marketing', label: 'Marketing' },
+    { value: 'IT', label: 'IT' },
+    { value: 'Nhân sự', label: 'Nhân sự' },
+    { value: 'Kinh doanh', label: 'Kinh doanh' }
+  ];
+
   // Kiểm tra token ngay khi component mount
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -39,8 +47,7 @@ const CreateRecruitmentRequest = () => {
     setSelectedMainLocation(locationId);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
+  const handleInputChange = (name, value) => {
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -169,12 +176,12 @@ const CreateRecruitmentRequest = () => {
                 <label className="text-sm text-[#1A1A1A] w-full md:w-[120px] mb-2 md:mb-0">
                   Phòng
                 </label>
-                <Input
-                  name="department"
+                <Select
                   value={formData.department}
-                  onChange={handleInputChange}
+                  onChange={(value) => handleInputChange('department', value)}
                   placeholder="Chọn bộ phận/phòng ban yêu cầu tuyển dụng"
-                  className="flex-1 border-0 border-b border-[#E0E0E0] rounded-none px-0 h-[36px] hover:border-b-[#7B61FF] focus:border-b-[#7B61FF]"
+                  className="flex-1"
+                  options={departments}
                 />
               </div>
               <div className="flex flex-col md:flex-row md:items-center">
@@ -184,7 +191,7 @@ const CreateRecruitmentRequest = () => {
                 <Input
                   name="position"
                   value={formData.position}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange('position', e.target.value)}
                   placeholder="Chọn vị trí cần tuyển dụng"
                   className="flex-1 border-0 border-b border-[#E0E0E0] rounded-none px-0 h-[36px] hover:border-b-[#7B61FF] focus:border-b-[#7B61FF]"
                 />
@@ -204,7 +211,7 @@ const CreateRecruitmentRequest = () => {
                   name="quantity"
                   type="number"
                   value={formData.quantity}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange('quantity', e.target.value)}
                   placeholder="Nhập thông tin số lượng cần tuyển"
                   className="w-full md:w-[300px] border-0 border-b border-[#E0E0E0] rounded-none px-0 h-[36px] hover:border-b-[#7B61FF] focus:border-b-[#7B61FF]"
                 />
@@ -245,7 +252,7 @@ const CreateRecruitmentRequest = () => {
                       name="reason"
                       value="Tuyển do thiếu nhân sự"
                       checked={formData.reason === "Tuyển do thiếu nhân sự"}
-                      onChange={handleInputChange}
+                      onChange={(e) => handleInputChange('reason', e.target.value)}
                       className="text-[#7B61FF]" 
                     />
                     <span className="text-sm">Tuyển do thiếu nhân sự</span>
@@ -256,7 +263,7 @@ const CreateRecruitmentRequest = () => {
                       name="reason"
                       value="Tuyển do mở rộng quy mô"
                       checked={formData.reason === "Tuyển do mở rộng quy mô"}
-                      onChange={handleInputChange}
+                      onChange={(e) => handleInputChange('reason', e.target.value)}
                       className="text-[#7B61FF]" 
                     />
                     <span className="text-sm">Tuyển do mở rộng quy mô</span>
@@ -274,7 +281,7 @@ const CreateRecruitmentRequest = () => {
                       name="budget"
                       value="Đạt chuẩn"
                       checked={formData.budget === "Đạt chuẩn"}
-                      onChange={handleInputChange}
+                      onChange={(e) => handleInputChange('budget', e.target.value)}
                       className="text-[#7B61FF]" 
                     />
                     <span className="text-sm">Đạt chuẩn</span>
@@ -285,7 +292,7 @@ const CreateRecruitmentRequest = () => {
                       name="budget"
                       value="Vượt quỹ"
                       checked={formData.budget === "Vượt quỹ"}
-                      onChange={handleInputChange}
+                      onChange={(e) => handleInputChange('budget', e.target.value)}
                       className="text-[#7B61FF]" 
                     />
                     <span className="text-sm">Vượt quỹ</span>
@@ -306,7 +313,7 @@ const CreateRecruitmentRequest = () => {
                 <textarea
                   name="jobDescription"
                   value={formData.jobDescription}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange('jobDescription', e.target.value)}
                   placeholder="Nhập nội dung mô tả"
                   rows={4}
                   className="w-full px-3 py-2 border border-[#E0E0E0] rounded-lg focus:outline-none focus:border-[#7B61FF] text-sm"
@@ -319,7 +326,7 @@ const CreateRecruitmentRequest = () => {
                 <textarea
                   name="requirements"
                   value={formData.requirements}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange('requirements', e.target.value)}
                   placeholder="Nhập nội dung yêu cầu"
                   rows={4}
                   className="w-full px-3 py-2 border border-[#E0E0E0] rounded-lg focus:outline-none focus:border-[#7B61FF] text-sm"
@@ -332,7 +339,7 @@ const CreateRecruitmentRequest = () => {
                 <textarea
                   name="benefits"
                   value={formData.benefits}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange('benefits', e.target.value)}
                   placeholder="Nhập nội dung quyền lợi"
                   rows={4}
                   className="w-full px-3 py-2 border border-[#E0E0E0] rounded-lg focus:outline-none focus:border-[#7B61FF] text-sm"

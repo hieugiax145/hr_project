@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Layout, Input, Select, Button, message } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Layout, Input, Select, Button, message, Modal } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft } from 'react-icons/fa';
+import { FaArrowLeft, FaSearch } from 'react-icons/fa';
+import axios from 'axios';
 
 const { Content } = Layout;
 const { TextArea } = Input;
@@ -9,6 +10,9 @@ const { TextArea } = Input;
 const CreatePosition = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [approvedPositions, setApprovedPositions] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isPositionModalVisible, setIsPositionModalVisible] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     department: '',
@@ -22,12 +26,55 @@ const CreatePosition = () => {
     benefits: ''
   });
 
+  useEffect(() => {
+    const fetchApprovedPositions = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/login');
+          return;
+        }
+
+        const response = await axios.get('http://localhost:8000/api/applications', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        // Lọc các yêu cầu đã được duyệt
+        const approved = response.data.filter(app => app.status === 'Đã duyệt');
+        setApprovedPositions(approved);
+      } catch (error) {
+        console.error('Error fetching approved positions:', error);
+        message.error('Có lỗi xảy ra khi tải danh sách vị trí');
+      }
+    };
+
+    fetchApprovedPositions();
+  }, [navigate]);
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
+
+  const handlePositionSelect = (position) => {
+    setFormData(prev => ({
+      ...prev,
+      title: position.position,
+      department: position.department,
+      description: position.jobDescription,
+      requirements: position.requirements,
+      benefits: position.benefits
+    }));
+    setIsPositionModalVisible(false);
+  };
+
+  const filteredPositions = approvedPositions.filter(position =>
+    `${position.position} - ${position.department}`.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleSubmit = async () => {
     try {
@@ -84,9 +131,10 @@ const CreatePosition = () => {
                   </label>
                   <Input
                     value={formData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    placeholder="Nhập vị trí tuyển dụng"
-                    className="w-full"
+                    onClick={() => setIsPositionModalVisible(true)}
+                    readOnly
+                    placeholder="Chọn vị trí tuyển dụng"
+                    className="w-full cursor-pointer"
                   />
                 </div>
 
@@ -94,17 +142,10 @@ const CreatePosition = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Phòng ban
                   </label>
-                  <Select
+                  <Input
                     value={formData.department}
-                    onChange={(value) => handleInputChange('department', value)}
-                    placeholder="Chọn phòng ban"
-                    className="w-full"
-                    options={[
-                      { value: 'it', label: 'Phòng IT' },
-                      { value: 'marketing', label: 'Phòng Marketing' },
-                      { value: 'hr', label: 'Phòng Nhân sự' },
-                      { value: 'sales', label: 'Phòng Kinh doanh' }
-                    ]}
+                    readOnly
+                    className="w-full bg-gray-50"
                   />
                 </div>
 
@@ -251,6 +292,49 @@ const CreatePosition = () => {
               </Button>
             </div>
           </div>
+
+          {/* Position Selection Modal */}
+          <Modal
+            title="Chọn vị trí tuyển dụng"
+            open={isPositionModalVisible}
+            onCancel={() => setIsPositionModalVisible(false)}
+            footer={null}
+            width={800}
+          >
+            <div className="mb-4">
+              <div className="relative">
+                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Input
+                  placeholder="Tìm kiếm vị trí..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <div className="max-h-[400px] overflow-y-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Vị trí tuyển dụng</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPositions.map((position, index) => (
+                    <tr
+                      key={index}
+                      className="border-b hover:bg-gray-50 cursor-pointer"
+                      onClick={() => handlePositionSelect(position)}
+                    >
+                      <td className="px-4 py-2 text-sm">
+                        {position.position} - {position.department}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Modal>
         </Content>
       </Layout>
     </Layout>

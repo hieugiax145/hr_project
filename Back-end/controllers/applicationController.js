@@ -68,6 +68,14 @@ const createApplication = async (req, res) => {
       });
     }
 
+    // Validate department
+    const validDepartments = ['Kế toán', 'Marketing', 'IT', 'Nhân sự', 'Kinh doanh'];
+    if (!validDepartments.includes(department)) {
+      return res.status(400).json({
+        error: 'Phòng ban không hợp lệ. Vui lòng chọn một trong các phòng: Kế toán, Marketing, IT, Nhân sự, Kinh doanh'
+      });
+    }
+
     // Validate budget
     const validBudgets = ['Đạt chuẩn', 'Vượt quỹ'];
     if (!validBudgets.includes(budget)) {
