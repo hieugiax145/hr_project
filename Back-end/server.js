@@ -54,6 +54,7 @@ const Application = require('./models/Application');
 const Interview = require('./models/Interview');
 const Offer = require('./models/Offer');
 const Notification = require('./models/Notification');
+const Position = require('./models/Position');
 
 // Routes
 const userRoutes = require('./routes/userRoutes');
@@ -63,6 +64,7 @@ const interviewRoutes = require('./routes/interviewRoutes');
 const offerRoutes = require('./routes/offerRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const positionRoutes = require('./routes/positionRoutes');
 
 app.use('/api/users', userRoutes);
 app.use('/api/jobs', jobRoutes);
@@ -71,6 +73,7 @@ app.use('/api/interviews', interviewRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/positions', positionRoutes);
 
 // Khởi động server
 const PORT = process.env.PORT || 8000;

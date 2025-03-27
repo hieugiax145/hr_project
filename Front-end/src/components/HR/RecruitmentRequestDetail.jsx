@@ -33,7 +33,7 @@ const RecruitmentRequestDetail = () => {
           return;
         }
 
-        const response = await axios.get(`http://localhost:5000/api/applications/${id}`, {
+        const response = await axios.get(`http://localhost:8000/api/applications/${id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -154,7 +154,7 @@ const RecruitmentRequestDetail = () => {
                 <div className="inline-block">
                   <div className="flex gap-4">
                     <span className="text-sm">{formData.mainLocation}</span>
-                    {formData.otherLocations.length > 0 && (
+                    {formData.otherLocations && formData.otherLocations.length > 0 && (
                       <span className="text-sm">, {formData.otherLocations.join(', ')}</span>
                     )}
                   </div>

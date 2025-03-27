@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, Input, Select, Button } from 'antd';
+import { Layout, Input, Select, Button, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 
@@ -8,6 +8,7 @@ const { TextArea } = Input;
 
 const CreatePosition = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     department: '',
@@ -30,11 +31,28 @@ const CreatePosition = () => {
 
   const handleSubmit = async () => {
     try {
-      // TODO: Implement API call to create position
-      console.log('Form data:', formData);
-      navigate('/positions');
+      setLoading(true);
+      const response = await fetch('http://localhost:8000/api/positions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        message.success('Tạo vị trí thành công!');
+        navigate('/positions');
+      } else {
+        message.error(data.error || 'Có lỗi xảy ra khi tạo vị trí');
+      }
     } catch (error) {
+      message.error('Có lỗi xảy ra khi tạo vị trí');
       console.error('Error creating position:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -100,11 +118,11 @@ const CreatePosition = () => {
                     placeholder="Chọn level"
                     className="w-full"
                     options={[
-                      { value: 'intern', label: 'Thực tập sinh' },
-                      { value: 'junior', label: 'Junior' },
-                      { value: 'middle', label: 'Middle' },
-                      { value: 'senior', label: 'Senior' },
-                      { value: 'leader', label: 'Leader' }
+                      { value: 'Thực tập sinh', label: 'Thực tập sinh' },
+                      { value: 'Junior', label: 'Junior' },
+                      { value: 'Middle', label: 'Middle' },
+                      { value: 'Senior', label: 'Senior' },
+                      { value: 'Leader', label: 'Leader' }
                     ]}
                   />
                 </div>
@@ -119,11 +137,11 @@ const CreatePosition = () => {
                     placeholder="Chọn kinh nghiệm"
                     className="w-full"
                     options={[
-                      { value: '0-1', label: 'Dưới 1 năm' },
-                      { value: '1-2', label: '1-2 năm' },
-                      { value: '2-3', label: '2-3 năm' },
-                      { value: '3-5', label: '3-5 năm' },
-                      { value: '5+', label: 'Trên 5 năm' }
+                      { value: 'Dưới 1 năm', label: 'Dưới 1 năm' },
+                      { value: '1-2 năm', label: '1-2 năm' },
+                      { value: '2-3 năm', label: '2-3 năm' },
+                      { value: '3-5 năm', label: '3-5 năm' },
+                      { value: 'Trên 5 năm', label: 'Trên 5 năm' }
                     ]}
                   />
                 </div>
@@ -219,6 +237,7 @@ const CreatePosition = () => {
               <Button
                 onClick={() => navigate('/positions')}
                 className="px-6 hover:bg-gray-100"
+                disabled={loading}
               >
                 Hủy
               </Button>
@@ -226,6 +245,7 @@ const CreatePosition = () => {
                 type="primary"
                 onClick={handleSubmit}
                 className="px-6 bg-[#DAF374] text-black border-none hover:bg-[#c5dd60]"
+                loading={loading}
               >
                 Tạo vị trí
               </Button>

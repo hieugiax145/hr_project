@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Layout, Input, Select, Pagination } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Layout, Input, Select, message } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { FaPlus } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
@@ -9,106 +9,45 @@ const { Content } = Layout;
 const Positions = () => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [positions, setPositions] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [modeFilter, setModeFilter] = useState('all');
   const itemsPerPage = 8;
 
-  const positions = [
-    {
-      id: 'YCTD-01',
-      title: 'Giáo Viên Data Analyst',
-      department: 'Phòng Đào Tạo',
-      level: 'Mid-level',
-      experience: '1-2 năm kinh nghiệm',
-      type: 'Full-time',
-      mode: 'On-site',
-      salary: '25 triệu',
-      applicants: '01',
-      status: 'Còn tuyển'
-    },
-    {
-      id: 'YCTD-02',
-      title: 'Chuyên viên tuyển dụng',
-      department: 'Cung ứng nguồn nhân lực',
-      level: 'Mid-level',
-      experience: '0-1 năm kinh nghiệm',
-      type: 'Full-time',
-      mode: 'On-site',
-      salary: '8 - 10 triệu',
-      applicants: '04',
-      status: 'Còn tuyển'
-    },
-    {
-      id: 'YCTD-03',
-      title: 'Marketing Executive',
-      department: 'Marketing',
-      level: 'Mid-level',
-      experience: '0-2 Years Experience',
-      type: 'Full-time',
-      mode: 'On-site',
-      salary: '8 - 10 triệu',
-      applicants: '04',
-      status: 'Nhập'
-    },
-    {
-      id: 'YCTD-04',
-      title: 'Kế Toán',
-      department: 'Kế toán',
-      level: 'Mid-level',
-      experience: '1-2 năm kinh nghiệm',
-      type: 'Full-time',
-      mode: 'On-site',
-      salary: '8 - 10 triệu',
-      applicants: '10',
-      status: 'Còn tuyển'
-    },
-    {
-      id: 'YCTD-05',
-      title: 'Giáo Viên Tiếng Nhật',
-      department: 'Phòng Đào Tạo',
-      level: 'Senior-level',
-      experience: '2-3 năm kinh nghiệm',
-      type: 'Full-time',
-      mode: 'On-site',
-      salary: '15 - 20 triệu',
-      applicants: '03',
-      status: 'Còn tuyển'
-    },
-    {
-      id: 'YCTD-06',
-      title: 'Nhân Viên IT Support',
-      department: 'IT',
-      level: 'Junior-level',
-      experience: '0-1 năm kinh nghiệm',
-      type: 'Full-time',
-      mode: 'On-site',
-      salary: '7 - 9 triệu',
-      applicants: '06',
-      status: 'Nhập'
-    },
-    {
-      id: 'YCTD-07',
-      title: 'Chuyên Viên Content',
-      department: 'Marketing',
-      level: 'Mid-level',
-      experience: '1-2 năm kinh nghiệm',
-      type: 'Full-time',
-      mode: 'Remote',
-      salary: '10 - 12 triệu',
-      applicants: '08',
-      status: 'Còn tuyển'
-    },
-    {
-      id: 'YCTD-08',
-      title: 'Trưởng Phòng Kinh Doanh',
-      department: 'Kinh Doanh',
-      level: 'Senior-level',
-      experience: '5+ năm kinh nghiệm',
-      type: 'Full-time',
-      mode: 'On-site',
-      salary: '30 - 35 triệu',
-      applicants: '02',
-      status: 'Còn tuyển'
+  useEffect(() => {
+    fetchPositions();
+  }, [currentPage, searchQuery, typeFilter, modeFilter]);
+
+  const fetchPositions = async () => {
+    try {
+      setLoading(true);
+      const queryParams = new URLSearchParams({
+        search: searchQuery,
+        type: typeFilter,
+        mode: modeFilter,
+        page: currentPage,
+        limit: itemsPerPage
+      });
+
+      const response = await fetch(`http://localhost:8000/api/positions?${queryParams}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setPositions(data.data);
+        setTotalPages(data.pagination.pages);
+      } else {
+        message.error(data.error || 'Có lỗi xảy ra khi tải dữ liệu');
+      }
+    } catch (error) {
+      message.error('Có lỗi xảy ra khi tải dữ liệu');
+      console.error('Error fetching positions:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const getStatusStyle = (status) => {
     switch (status) {
@@ -123,11 +62,6 @@ const Positions = () => {
     }
   };
 
-  // Tính toán các vị trí hiển thị cho trang hiện tại
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentPositions = positions.slice(startIndex, endIndex);
-
   return (
     <Layout style={{ minHeight: '100vh', background: '#F5F5F5' }}>
       <Layout style={{ marginLeft: 282 }}>
@@ -140,27 +74,31 @@ const Positions = () => {
                   placeholder="Tìm vị trí tuyển dụng"
                   prefix={<SearchOutlined className="text-gray-400" />}
                   className="w-full h-10 pl-10 pr-4 rounded-lg border border-gray-200"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
               <Select
-                defaultValue="all"
+                value={typeFilter}
+                onChange={setTypeFilter}
                 style={{ width: 120 }}
                 options={[
                   { value: 'all', label: 'Tất cả' },
-                  { value: 'full-time', label: 'Full-time' },
-                  { value: 'part-time', label: 'Part-time' },
-                  { value: 'contract', label: 'Contract' }
+                  { value: 'Full-time', label: 'Full-time' },
+                  { value: 'Part-time', label: 'Part-time' },
+                  { value: 'Contract', label: 'Contract' }
                 ]}
                 className="h-10"
               />
               <Select
-                defaultValue="all"
+                value={modeFilter}
+                onChange={setModeFilter}
                 style={{ width: 120 }}
                 options={[
                   { value: 'all', label: 'Tất cả' },
-                  { value: 'on-site', label: 'On-site' },
-                  { value: 'remote', label: 'Remote' },
-                  { value: 'hybrid', label: 'Hybrid' }
+                  { value: 'On-site', label: 'On-site' },
+                  { value: 'Remote', label: 'Remote' },
+                  { value: 'Hybrid', label: 'Hybrid' }
                 ]}
                 className="h-10"
               />
@@ -176,9 +114,9 @@ const Positions = () => {
 
           {/* Job Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 overflow-y-auto pb-6">
-            {currentPositions.map((position, index) => (
+            {positions.map((position) => (
               <div
-                key={index}
+                key={position._id}
                 className="bg-white rounded-lg p-4 border border-gray-200 hover:border-[#7B61FF] transition-colors cursor-pointer"
               >
                 <div className="flex justify-between items-start mb-3">
@@ -222,7 +160,7 @@ const Positions = () => {
           {/* Pagination */}
           <div className="flex justify-between items-center mt-4 px-2 bg-white p-4 rounded-lg">
             <div className="text-sm text-gray-600">
-              Hiển thị {currentPositions.length} trên {positions.length} vị trí
+              Hiển thị {positions.length} vị trí
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -232,7 +170,7 @@ const Positions = () => {
               >
                 ←
               </button>
-              {Array.from({ length: Math.ceil(positions.length / itemsPerPage) }, (_, i) => i + 1).map(page => (
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
@@ -246,8 +184,8 @@ const Positions = () => {
                 </button>
               ))}
               <button
-                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(positions.length / itemsPerPage), prev + 1))}
-                disabled={currentPage === Math.ceil(positions.length / itemsPerPage)}
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
                 className="px-3 py-1 rounded border border-black bg-white text-black hover:bg-gray-50 disabled:opacity-50"
               >
                 →
