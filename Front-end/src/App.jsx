@@ -10,6 +10,8 @@ import CreateRecruitmentRequest from './components/HR/CreateRecruitmentRequest';
 import RecruitmentRequestDetail from './components/HR/RecruitmentRequestDetail';
 import Positions from './components/HR/Positions';
 import CreatePosition from './components/HR/CreatePosition';
+import EditPosition from './components/HR/EditPosition';
+import JobsCandidates from './components/HR/JobsCandidates';
 
 const App = () => {
   return (
@@ -53,6 +55,16 @@ const App = () => {
         <Route path="/positions/create" element={
           <DashboardLayout>
             <CreatePosition />
+          </DashboardLayout>
+        } />
+        <Route path="/positions/edit/:id" element={
+          <DashboardLayout>
+            <EditPosition />
+          </DashboardLayout>
+        } />
+        <Route path="/positions/:id/candidates" element={
+          <DashboardLayout>
+            <JobsCandidates />
           </DashboardLayout>
         } />
       </Routes>

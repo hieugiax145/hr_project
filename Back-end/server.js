@@ -65,7 +65,9 @@ const offerRoutes = require('./routes/offerRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const positionRoutes = require('./routes/positionRoutes');
+const candidateRoutes = require('./routes/candidateRoutes');
 
+// API Routes
 app.use('/api/users', userRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
@@ -74,6 +76,7 @@ app.use('/api/offers', offerRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/positions', positionRoutes);
+app.use('/api/candidates', candidateRoutes);
 
 // Khởi động server
 const PORT = process.env.PORT || 8000;

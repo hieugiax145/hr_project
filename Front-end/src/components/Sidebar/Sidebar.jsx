@@ -54,6 +54,29 @@ const Sidebar = () => {
     navigate(item.key);
   };
 
+  // Hàm kiểm tra xem path hiện tại có phải là route con của menu item không
+  const isActiveRoute = (menuKey) => {
+    const currentPath = location.pathname;
+    
+    // Nếu là route chính
+    if (currentPath === menuKey) return true;
+    
+    // Kiểm tra các route con
+    if (menuKey === '/hr/recruitment-requests') {
+      return currentPath.startsWith('/hr/recruitment-requests');
+    }
+    if (menuKey === '/positions') {
+      return currentPath.startsWith('/positions');
+    }
+    
+    return false;
+  };
+
+  // Lọc các menu item đang active
+  const selectedKeys = menuItems
+    .filter(item => isActiveRoute(item.key))
+    .map(item => item.key);
+
   return (
     <div className="m-4">
       <Sider
@@ -76,7 +99,7 @@ const Sidebar = () => {
           </div>
           <Menu
             mode="inline"
-            selectedKeys={[location.pathname]}
+            selectedKeys={selectedKeys}
             onClick={handleMenuClick}
             items={menuItems}
             style={{
