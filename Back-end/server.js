@@ -76,7 +76,7 @@ app.use('/api/offers', offerRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/positions', positionRoutes);
-app.use('/api/candidates', candidateRoutes);
+app.use('/api', candidateRoutes);
 
 // Khởi động server
 const PORT = process.env.PORT || 8000;

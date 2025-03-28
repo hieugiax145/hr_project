@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Input, Select, Button, Dropdown, Menu, Badge, message, Modal, Form } from 'antd';
-import { SearchOutlined, MoreOutlined, PlusOutlined } from '@ant-design/icons';
+import { Layout, Input, Select, Button, Dropdown, Menu, Badge, message, Modal, Form, Upload } from 'antd';
+import { SearchOutlined, MoreOutlined, PlusOutlined, InboxOutlined } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import Sidebar from '../Sidebar/Sidebar';
 import Topbar from '../Topbar/Topbar';
 
 const { Content } = Layout;
 const { TextArea } = Input;
+const API_BASE_URL = 'http://localhost:8000/api';
 
 const JobsCandidates = () => {
   const { id } = useParams();
@@ -15,89 +17,302 @@ const JobsCandidates = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
-  const [isStageModalVisible, setIsStageModalVisible] = useState(false);
+  const [candidates, setCandidates] = useState([]);
+  const [stages, setStages] = useState([]);
   const [form] = Form.useForm();
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [editingCandidate, setEditingCandidate] = useState(null);
+  const [editForm] = Form.useForm();
 
+  // Fetch position và candidates
   useEffect(() => {
-    const fetchPosition = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:8000/api/positions/${id}`);
-        const data = await response.json();
-        if (response.ok) {
-          setPosition(data.data);
-        } else {
-          message.error('Không thể tải thông tin vị trí');
-          navigate('/positions');
+        const token = localStorage.getItem('token');
+        if (!token) {
+          message.error('Vui lòng đăng nhập lại');
+          navigate('/login');
+          return;
+        }
+
+        const headers = {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        };
+
+        // Fetch position
+        const positionResponse = await axios.get(`${API_BASE_URL}/positions/${id}`, { headers });
+        if (positionResponse.status === 200) {
+          setPosition(positionResponse.data.position);
+        }
+
+        // Fetch candidates
+        const candidatesResponse = await axios.get(`${API_BASE_URL}/positions/${id}/candidates`, { headers });
+        if (candidatesResponse.status === 200) {
+          const candidatesData = candidatesResponse.data.candidates || [];
+          setCandidates(candidatesData);
+
+          // Tính toán số lượng ứng viên cho mỗi stage
+          const stageCounts = {};
+          candidatesData.forEach(candidate => {
+            stageCounts[candidate.stage] = (stageCounts[candidate.stage] || 0) + 1;
+          });
+
+          // Cập nhật stages với số lượng thực tế
+          const updatedStages = [
+            { title: 'Tiếp nhận hồ sơ', key: 'new', count: stageCounts['new'] || 0 },
+            { title: 'Hồ sơ đề xuất', key: 'reviewing', count: stageCounts['reviewing'] || 0 },
+            { title: 'Phỏng vấn lần 1', key: 'interview1', count: stageCounts['interview1'] || 0 },
+            { title: 'Phỏng vấn lần 2', key: 'interview2', count: stageCounts['interview2'] || 0 },
+            { title: 'Offer', key: 'offer', count: stageCounts['offer'] || 0 },
+            { title: 'Tuyển', key: 'hired', count: stageCounts['hired'] || 0 },
+            { title: 'Từ chối', key: 'rejected', count: stageCounts['rejected'] || 0 }
+          ];
+          setStages(updatedStages);
         }
       } catch (error) {
-        message.error('Có lỗi xảy ra khi tải thông tin vị trí');
-        navigate('/positions');
+        console.error('Error fetching data:', error);
+        if (error.response?.status === 401) {
+          message.error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại');
+          navigate('/login');
+        } else {
+          message.error('Có lỗi xảy ra khi tải dữ liệu');
+          navigate('/positions');
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPosition();
+    fetchData();
   }, [id, navigate]);
-
-  // Các trạng thái của ứng viên
-  const stages = [
-    { title: 'Tiếp nhận hồ sơ', count: 7 },
-    { title: 'Hồ sơ đề xuất', count: 8 },
-    { title: 'Phỏng vấn lần 1', count: 7 },
-    { title: 'Phỏng vấn lần 2', count: 7 },
-    { title: 'Offer', count: 7 },
-    { title: 'Tuyển', count: 4 },
-    { title: 'Từ chối', count: 4 }
-  ];
-
-  // Mock data cho ứng viên
-  const candidates = [
-    {
-      id: 1,
-      name: 'Nguyễn Thu Phương',
-      email: 'ntphuong@gmail.com.vn',
-      phone: '0399999333',
-      date: '30/03/2024'
-    },
-    {
-      id: 2,
-      name: 'Nguyễn Thu Trang',
-      email: 'nttrang@gmail.com.vn',
-      phone: '0399999333',
-      date: '30/03/2024'
-    }
-  ];
 
   const handleAddCandidate = async (values) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/positions/${id}/candidates`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(values)
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('Vui lòng đăng nhập lại');
+        navigate('/login');
+        return;
+      }
+
+      // Kiểm tra xem có file CV được chọn không
+      if (!values.cv || !values.cv.fileList || values.cv.fileList.length === 0) {
+        message.error('Vui lòng upload CV');
+        return;
+      }
+
+      // Tạo FormData để gửi file
+      const formData = new FormData();
+      formData.append('name', values.name);
+      formData.append('email', values.email);
+      formData.append('phone', values.phone);
+      formData.append('source', values.source);
+      if (values.source === 'Khác') {
+        formData.append('customSource', values.customSource);
+      }
+
+      // Lấy file từ fileList
+      const file = values.cv.fileList[0].originFileObj;
+      formData.append('cv', file);
+
+      if (values.notes) {
+        formData.append('notes', values.notes);
+      }
+
+      // Log FormData để debug
+      console.log('File info:', {
+        name: file.name,
+        type: file.type,
+        size: file.size
       });
 
-      const data = await response.json();
+      // Log all form data
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}:`, value);
+      }
 
-      if (response.ok) {
+      const response = await axios.post(
+        `${API_BASE_URL}/positions/${id}/candidates`,
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      if (response.status === 201) {
         message.success('Thêm ứng viên thành công');
         setIsAddModalVisible(false);
         form.resetFields();
+        
         // Refresh candidates list
-      } else {
-        message.error(data.error || 'Có lỗi xảy ra khi thêm ứng viên');
+        const candidatesResponse = await axios.get(`${API_BASE_URL}/positions/${id}/candidates`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (candidatesResponse.status === 200) {
+          setCandidates(candidatesResponse.data.candidates || []);
+        }
       }
     } catch (error) {
-      message.error('Có lỗi xảy ra khi thêm ứng viên');
+      console.error('Error adding candidate:', error);
+      if (error.response?.status === 401) {
+        message.error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại');
+        navigate('/login');
+      } else {
+        const errorMessage = error.response?.data?.message || 'Có lỗi xảy ra khi thêm ứng viên';
+        console.error('Error details:', error.response?.data);
+        message.error(errorMessage);
+      }
+    }
+  };
+
+  const handleUpdateCandidateStatus = async (candidateId, newStage) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('Vui lòng đăng nhập lại');
+        return;
+      }
+
+      const response = await axios.patch(
+        `${API_BASE_URL}/candidates/${candidateId}/status`,
+        { stage: newStage },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.status === 200) {
+        message.success('Cập nhật trạng thái thành công');
+        // Refresh candidates list
+        const candidatesResponse = await axios.get(`${API_BASE_URL}/positions/${id}/candidates`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (candidatesResponse.status === 200) {
+          setCandidates(candidatesResponse.data.candidates || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating candidate status:', error);
+      message.error('Có lỗi xảy ra khi cập nhật trạng thái');
+    }
+  };
+
+  const handleDeleteCandidate = async (candidateId) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('Vui lòng đăng nhập lại');
+        return;
+      }
+
+      const response = await axios.delete(`${API_BASE_URL}/candidates/${candidateId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.status === 200) {
+        message.success('Xóa ứng viên thành công');
+        // Refresh candidates list
+        const candidatesResponse = await axios.get(`${API_BASE_URL}/positions/${id}/candidates`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (candidatesResponse.status === 200) {
+          setCandidates(candidatesResponse.data.candidates || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting candidate:', error);
+      message.error('Có lỗi xảy ra khi xóa ứng viên');
     }
   };
 
   const handleMoreClick = (e) => {
     e.stopPropagation();
   };
+
+  const handleEditCandidate = (candidate) => {
+    setEditingCandidate(candidate);
+    editForm.setFieldsValue({
+      name: candidate.name,
+      email: candidate.email,
+      phone: candidate.phone,
+      source: candidate.source,
+      customSource: candidate.customSource,
+      notes: candidate.notes
+    });
+    setIsEditModalVisible(true);
+  };
+
+  const handleUpdateCandidate = async (values) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('Vui lòng đăng nhập lại');
+        return;
+      }
+
+      const response = await axios.patch(
+        `${API_BASE_URL}/candidates/${editingCandidate._id}`,
+        values,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.status === 200) {
+        message.success('Cập nhật thông tin ứng viên thành công');
+        setIsEditModalVisible(false);
+        editForm.resetFields();
+        
+        // Refresh candidates list
+        const candidatesResponse = await axios.get(`${API_BASE_URL}/positions/${id}/candidates`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (candidatesResponse.status === 200) {
+          setCandidates(candidatesResponse.data.candidates || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating candidate:', error);
+      message.error('Có lỗi xảy ra khi cập nhật thông tin ứng viên');
+    }
+  };
+
+  // Filter candidates by search term
+  const filteredCandidates = candidates.filter(candidate => 
+    candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    candidate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    candidate.phone.includes(searchTerm)
+  );
 
   if (loading) {
     return (
@@ -147,9 +362,9 @@ const JobsCandidates = () => {
 
           {/* Kanban Board */}
           <div className="flex gap-4 overflow-x-auto pb-4" style={{ minHeight: 'calc(100vh - 200px)' }}>
-            {stages.map((stage, index) => (
+            {stages.map((stage) => (
               <div
-                key={index}
+                key={stage.key}
                 className="flex-none w-[300px] bg-[#F8F9FB] rounded-lg p-4"
               >
                 {/* Stage Header */}
@@ -165,65 +380,78 @@ const JobsCandidates = () => {
                       }} 
                     />
                   </div>
-                  <Button 
-                    type="text" 
-                    icon={<MoreOutlined />} 
-                    className="hover:bg-gray-100"
-                    onClick={() => setIsStageModalVisible(true)}
-                  />
                 </div>
 
                 {/* Candidates List */}
                 <div className="space-y-3">
-                  {candidates.map((candidate) => (
-                    <div
-                      key={candidate.id}
-                      className="bg-white rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h4 className="font-medium text-sm">{candidate.name}</h4>
-                          <div className="text-xs text-gray-500 space-y-1">
-                            <div className="flex items-center gap-1">
-                              <span>📧</span>
-                              <span>{candidate.email}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span>📱</span>
-                              <span>{candidate.phone}</span>
+                  {filteredCandidates
+                    .filter(candidate => candidate.stage === stage.key)
+                    .map((candidate) => (
+                      <div
+                        key={candidate._id}
+                        className="bg-white rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h4 className="font-medium text-sm">{candidate.name}</h4>
+                            <div className="text-xs text-gray-500 space-y-1">
+                              <div className="flex items-center gap-1">
+                                <span>📧</span>
+                                <span>{candidate.email}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span>📱</span>
+                                <span>{candidate.phone}</span>
+                              </div>
+                              {candidate.cv && (
+                                <div className="flex items-center gap-1">
+                                  <span>📄</span>
+                                  <a href={candidate.cv} target="_blank" rel="noopener noreferrer" className="text-[#7B61FF] hover:underline">
+                                    Xem CV
+                                  </a>
+                                </div>
+                              )}
                             </div>
                           </div>
+                          <Dropdown
+                            trigger={['click']}
+                            menu={{
+                              items: [
+                                {
+                                  key: '1',
+                                  label: 'Chỉnh sửa',
+                                  onClick: () => handleEditCandidate(candidate)
+                                },
+                                {
+                                  key: '2',
+                                  label: 'Xóa',
+                                  danger: true,
+                                  onClick: () => handleDeleteCandidate(candidate._id)
+                                },
+                                ...stages
+                                  .filter(s => s.key !== stage.key)
+                                  .map(s => ({
+                                    key: `move-${s.key}`,
+                                    label: `Chuyển đến ${s.title}`,
+                                    onClick: () => handleUpdateCandidateStatus(candidate._id, s.key)
+                                  }))
+                              ],
+                            }}
+                            placement="bottomRight"
+                          >
+                            <Button
+                              type="text"
+                              icon={<MoreOutlined />}
+                              className="hover:bg-gray-100"
+                              onClick={handleMoreClick}
+                            />
+                          </Dropdown>
                         </div>
-                        <Dropdown
-                          trigger={['click']}
-                          menu={{
-                            items: [
-                              {
-                                key: '1',
-                                label: 'Chỉnh sửa',
-                              },
-                              {
-                                key: '2',
-                                label: 'Xóa',
-                                danger: true,
-                              },
-                            ],
-                          }}
-                          placement="bottomRight"
-                        >
-                          <Button
-                            type="text"
-                            icon={<MoreOutlined />}
-                            className="hover:bg-gray-100"
-                            onClick={handleMoreClick}
-                          />
-                        </Dropdown>
+                        <div className="text-xs text-gray-500 mt-2">
+                          <span>📅 {new Date(candidate.createdAt).toLocaleDateString('vi-VN')}</span>
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500 mt-2">
-                        <span>📅 {candidate.date}</span>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             ))}
@@ -245,7 +473,7 @@ const JobsCandidates = () => {
             >
               <Form.Item
                 name="name"
-                label="Họ và tên"
+                label="Tên ứng viên"
                 rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
               >
                 <Input placeholder="Nhập họ và tên" />
@@ -271,11 +499,72 @@ const JobsCandidates = () => {
               </Form.Item>
 
               <Form.Item
-                name="cv"
-                label="CV"
-                rules={[{ required: true, message: 'Vui lòng nhập link CV' }]}
+                name="source"
+                label="Nguồn"
+                rules={[{ required: true, message: 'Vui lòng chọn nguồn' }]}
               >
-                <Input placeholder="Nhập link CV" />
+                <Select placeholder="Chọn nguồn CV">
+                  <Select.Option value="Facebook">Facebook</Select.Option>
+                  <Select.Option value="Email">Email</Select.Option>
+                  <Select.Option value="JobsGo">JobsGo</Select.Option>
+                  <Select.Option value="Khác">Khác</Select.Option>
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) => prevValues.source !== currentValues.source}
+              >
+                {({ getFieldValue }) => 
+                  getFieldValue('source') === 'Khác' ? (
+                    <Form.Item
+                      name="customSource"
+                      label="Nguồn khác"
+                      rules={[{ required: true, message: 'Vui lòng nhập nguồn' }]}
+                    >
+                      <Input placeholder="Nhập nguồn" />
+                    </Form.Item>
+                  ) : null
+                }
+              </Form.Item>
+
+              <Form.Item
+                name="cv"
+                label="CV ứng viên"
+                valuePropName="file"
+                getValueFromEvent={(e) => ({
+                  fileList: Array.isArray(e) ? e : e && e.fileList,
+                })}
+                rules={[{ required: true, message: 'Vui lòng upload CV' }]}
+              >
+                <Upload.Dragger
+                  name="cv"
+                  accept=".pdf"
+                  maxCount={1}
+                  beforeUpload={(file) => {
+                    const isPDF = file.type === 'application/pdf';
+                    if (!isPDF) {
+                      message.error('Chỉ chấp nhận file PDF');
+                    }
+                    const isLt5M = file.size / 1024 / 1024 < 5;
+                    if (!isLt5M) {
+                      message.error('File phải nhỏ hơn 5MB');
+                    }
+                    return false;
+                  }}
+                  onChange={(info) => {
+                    console.log('Upload onChange:', info.file);
+                    if (info.file.status === 'removed') {
+                      form.setFieldValue('cv', undefined);
+                    }
+                  }}
+                >
+                  <p className="ant-upload-drag-icon">
+                    <InboxOutlined />
+                  </p>
+                  <p className="ant-upload-text">Click hoặc kéo thả file PDF vào đây</p>
+                  <p className="ant-upload-hint">Chỉ chấp nhận file PDF, tối đa 5MB</p>
+                </Upload.Dragger>
               </Form.Item>
 
               <Form.Item
@@ -296,32 +585,90 @@ const JobsCandidates = () => {
             </Form>
           </Modal>
 
-          {/* Add Stage Modal */}
+          {/* Edit Candidate Modal */}
           <Modal
-            title="Thêm giai đoạn"
-            open={isStageModalVisible}
-            onCancel={() => setIsStageModalVisible(false)}
+            title="Chỉnh sửa thông tin ứng viên"
+            open={isEditModalVisible}
+            onCancel={() => setIsEditModalVisible(false)}
             footer={null}
             width={500}
           >
             <Form
+              form={editForm}
               layout="vertical"
+              onFinish={handleUpdateCandidate}
               className="mt-4"
             >
               <Form.Item
-                name="stageName"
-                label="Tên giai đoạn"
-                rules={[{ required: true, message: 'Vui lòng nhập tên giai đoạn' }]}
+                name="name"
+                label="Tên ứng viên"
+                rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
               >
-                <Input placeholder="Nhập tên giai đoạn" />
+                <Input placeholder="Nhập họ và tên" />
+              </Form.Item>
+
+              <Form.Item
+                name="email"
+                label="Email"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập email' },
+                  { type: 'email', message: 'Email không hợp lệ' }
+                ]}
+              >
+                <Input placeholder="Nhập địa chỉ email" />
+              </Form.Item>
+
+              <Form.Item
+                name="phone"
+                label="Số điện thoại"
+                rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }]}
+              >
+                <Input placeholder="Nhập số điện thoại" />
+              </Form.Item>
+
+              <Form.Item
+                name="source"
+                label="Nguồn ứng viên"
+                rules={[{ required: true, message: 'Vui lòng chọn nguồn ứng viên' }]}
+              >
+                <Select placeholder="Chọn nguồn ứng viên">
+                  <Select.Option value="Facebook">Facebook</Select.Option>
+                  <Select.Option value="Email">Email</Select.Option>
+                  <Select.Option value="JobsGo">JobsGo</Select.Option>
+                  <Select.Option value="Khác">Khác</Select.Option>
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) => prevValues.source !== currentValues.source}
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue('source') === 'Khác' ? (
+                    <Form.Item
+                      name="customSource"
+                      label="Nguồn khác"
+                      rules={[{ required: true, message: 'Vui lòng nhập nguồn khác' }]}
+                    >
+                      <Input placeholder="Nhập nguồn khác" />
+                    </Form.Item>
+                  ) : null
+                }
+              </Form.Item>
+
+              <Form.Item
+                name="notes"
+                label="Ghi chú"
+              >
+                <TextArea placeholder="Nhập ghi chú" rows={4} />
               </Form.Item>
 
               <div className="flex justify-end gap-2">
-                <Button onClick={() => setIsStageModalVisible(false)}>
+                <Button onClick={() => setIsEditModalVisible(false)}>
                   Hủy
                 </Button>
                 <Button type="primary" htmlType="submit" className="bg-[#7B61FF] text-white">
-                  Thêm
+                  Cập nhật
                 </Button>
               </div>
             </Form>

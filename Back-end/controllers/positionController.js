@@ -7,12 +7,12 @@ exports.createPosition = async (req, res) => {
     await position.save();
     res.status(201).json({
       success: true,
-      data: position
+      position
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      error: error.message
+      message: error.message
     });
   }
 };
@@ -56,18 +56,13 @@ exports.getPositions = async (req, res) => {
     const total = await Position.countDocuments(query);
 
     res.status(200).json({
-      success: true,
-      data: positions,
-      pagination: {
-        total,
-        page: parseInt(page),
-        pages: Math.ceil(total / limit)
-      }
+      positions,
+      total
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      error: error.message
+      message: error.message
     });
   }
 };
@@ -79,17 +74,17 @@ exports.getPosition = async (req, res) => {
     if (!position) {
       return res.status(404).json({
         success: false,
-        error: 'Không tìm thấy vị trí'
+        message: 'Không tìm thấy vị trí'
       });
     }
     res.status(200).json({
       success: true,
-      data: position
+      position
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      error: error.message
+      message: error.message
     });
   }
 };
@@ -105,17 +100,17 @@ exports.updatePosition = async (req, res) => {
     if (!position) {
       return res.status(404).json({
         success: false,
-        error: 'Không tìm thấy vị trí'
+        message: 'Không tìm thấy vị trí'
       });
     }
     res.status(200).json({
       success: true,
-      data: position
+      position
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      error: error.message
+      message: error.message
     });
   }
 };
@@ -127,17 +122,17 @@ exports.deletePosition = async (req, res) => {
     if (!position) {
       return res.status(404).json({
         success: false,
-        error: 'Không tìm thấy vị trí'
+        message: 'Không tìm thấy vị trí'
       });
     }
     res.status(200).json({
       success: true,
-      data: {}
+      message: 'Xóa vị trí thành công'
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      error: error.message
+      message: error.message
     });
   }
 }; 

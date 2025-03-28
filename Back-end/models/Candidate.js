@@ -18,14 +18,21 @@ const candidateSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  status: {
+  stage: {
     type: String,
-    enum: ['Tiếp nhận hồ sơ', 'Hồ sơ đề xuất', 'Phỏng vấn lần 1', 'Phỏng vấn lần 2', 'Offer', 'Tuyển', 'Từ chối'],
-    default: 'Tiếp nhận hồ sơ'
+    enum: ['new', 'reviewing', 'interview1', 'interview2', 'offer', 'hired', 'rejected'],
+    default: 'new'
   },
-  appliedDate: {
-    type: Date,
-    default: Date.now
+  source: {
+    type: String,
+    enum: ['Facebook', 'Email', 'JobsGo', 'Khác'],
+    required: true
+  },
+  customSource: {
+    type: String,
+    required: function() {
+      return this.source === 'Khác';
+    }
   },
   cv: {
     type: String,

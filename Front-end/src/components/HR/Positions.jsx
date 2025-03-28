@@ -262,10 +262,31 @@ const Positions = () => {
                         <div className="text-[#7B61FF] font-medium">đ {position.salary}</div>
                         <div 
                           className="text-sm text-gray-500 cursor-pointer hover:text-[#7B61FF] applicants-count"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            navigate(`/positions/${position._id}/candidates`);
+                            try {
+                              const token = localStorage.getItem('token');
+                              if (!token) {
+                                message.error('Vui lòng đăng nhập lại');
+                                return;
+                              }
+                              // Kiểm tra position tồn tại trước khi chuyển trang
+                              const response = await axios.get(`${API_BASE_URL}/positions/${position._id}`, {
+                                headers: {
+                                  'Authorization': `Bearer ${token}`
+                                }
+                              });
+                              if (response.status === 200) {
+                                navigate(`/positions/${position._id}/candidates`);
+                              }
+                            } catch (error) {
+                              if (error.response?.status === 401) {
+                                message.error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại');
+                              } else {
+                                message.error('Có lỗi xảy ra. Vui lòng thử lại sau');
+                              }
+                            }
                           }}
                         >
                           {position.applicants} ứng viên
