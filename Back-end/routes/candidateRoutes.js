@@ -19,4 +19,10 @@ router.patch('/candidates/:candidateId', protect, candidateController.updateCand
 // Xóa ứng viên
 router.delete('/candidates/:candidateId', protect, candidateController.deleteCandidate);
 
+// Lấy tất cả ứng viên
+router.get('/candidates', protect, candidateController.getAllCandidates);
+
+// Lấy chi tiết ứng viên
+router.get('/candidates/:candidateId', protect, candidateController.getCandidateById);
+
 module.exports = router; 

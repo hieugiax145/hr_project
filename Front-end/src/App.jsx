@@ -12,6 +12,8 @@ import Positions from './components/HR/Positions';
 import CreatePosition from './components/HR/CreatePosition';
 import EditPosition from './components/HR/EditPosition';
 import JobsCandidates from './components/HR/JobsCandidates';
+import Candidates from './components/HR/Candidates';
+import CandidateDetail from './components/HR/CandidateDetail';
 
 const App = () => {
   return (
@@ -65,6 +67,16 @@ const App = () => {
         <Route path="/positions/:id/candidates" element={
           <DashboardLayout>
             <JobsCandidates />
+          </DashboardLayout>
+        } />
+        <Route path="/candidates" element={
+          <DashboardLayout>
+            <Candidates />
+          </DashboardLayout>
+        } />
+        <Route path="/candidates/:id" element={
+          <DashboardLayout>
+            <CandidateDetail />
           </DashboardLayout>
         } />
       </Routes>
