@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from 'antd';
-import { FaPlus, FaFilter, FaTrash } from 'react-icons/fa';
+import { FaFilter } from 'react-icons/fa';
 import { IoSettingsSharp } from 'react-icons/io5';
 import { IoIosArrowBack, IoIosArrowForward } from 'react-icons/io';
 import { useNavigate } from 'react-router-dom';
@@ -8,14 +8,13 @@ import axios from 'axios';
 
 const { Content } = Layout;
 
-const RecruitmentRequests = () => {
+const CEORecruitmentRequests = () => {
   const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const [selectedRequests, setSelectedRequests] = useState([]);
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -32,15 +31,21 @@ const RecruitmentRequests = () => {
           }
         });
 
-        setRequests(response.data);
+        console.log('Raw API Response:', response.data);
+
+        const filteredData = response.data.filter(item => 
+          item.status === 'Đã nộp' || item.status === 'Đang duyệt'
+        );
+
+        setRequests(filteredData);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching requests:', error);
+        const errorMessage = error.response?.data?.message || 'Có lỗi xảy ra khi tải dữ liệu';
+        setError(errorMessage);
         if (error.response?.status === 401) {
           localStorage.removeItem('token');
           navigate('/login');
-        } else {
-          setError('Có lỗi xảy ra khi tải dữ liệu');
         }
         setLoading(false);
       }
@@ -55,84 +60,10 @@ const RecruitmentRequests = () => {
         return "text-[#7B61FF] bg-[#F4F1FE] border border-[#7B61FF] rounded-[25px] px-33 py-0.5 text-xs inline-block min-w-[85px] text-center";
       case "Đang duyệt":
         return "text-[#FF9900] bg-[#FFF8F0] border border-[#FF9900] rounded-[25px] px-4 py-0.5 text-xs inline-block min-w-[85px] text-center";
-      case "Đã duyệt":
-        return "text-[#00B300] bg-[#F0FFF0] border border-[#00B300] rounded-[25px] px-4 py-0.5 text-xs inline-block min-w-[85px] text-center";
-      case "Từ chối":
-        return "text-[#FF0000] bg-[#FFF0F0] border border-[#FF0000] rounded-[25px] px-4 py-0.5 text-xs inline-block min-w-[85px] text-center";
-      case "Chờ nộp":
-        return "text-[#7B61FF] bg-[#F4F1FE] border border-[#7B61FF] rounded-[25px] px-4 py-0.5 text-xs inline-block min-w-[85px] text-center";
       default:
         return "text-[#7B61FF] bg-[#F4F1FE] border border-[#7B61FF] rounded-[25px] px-4 py-0.5 text-xs inline-block min-w-[85px] text-center";
     }
   };
-
-  const handleCheckboxChange = (requestId) => {
-    setSelectedRequests(prev => {
-      if (prev.includes(requestId)) {
-        return prev.filter(id => id !== requestId);
-      } else {
-        return [...prev, requestId];
-      }
-    });
-  };
-
-  const handleDelete = async () => {
-    if (selectedRequests.length === 0) {
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      await Promise.all(
-        selectedRequests.map(requestId =>
-          axios.delete(`http://localhost:8000/api/applications/${requestId}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          })
-        )
-      );
-
-      setRequests(prev => prev.filter(request => !selectedRequests.includes(request._id)));
-      setSelectedRequests([]);
-    } catch (error) {
-      console.error('Error deleting requests:', error);
-      setError('Có lỗi xảy ra khi xóa yêu cầu');
-    }
-  };
-
-  if (loading) {
-    return (
-      <Layout style={{ minHeight: '100vh', background: '#F5F5F5' }}>
-        <Layout style={{ marginLeft: 282 }}>
-          <Content style={{ margin: '80px 16px 24px' }}>
-            <div className="flex justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#656ED3]"></div>
-            </div>
-          </Content>
-        </Layout>
-      </Layout>
-    );
-  }
-
-  if (error) {
-    return (
-      <Layout style={{ minHeight: '100vh', background: '#F5F5F5' }}>
-        <Layout style={{ marginLeft: 282 }}>
-          <Content style={{ margin: '80px 16px 24px' }}>
-            <div className="flex justify-center items-center h-full">
-              <div className="text-red-500">{error}</div>
-            </div>
-          </Content>
-        </Layout>
-      </Layout>
-    );
-  }
 
   // Tính toán số trang
   const totalPages = Math.ceil(requests.length / itemsPerPage);
@@ -140,7 +71,6 @@ const RecruitmentRequests = () => {
   const endIndex = startIndex + itemsPerPage;
   const currentRequests = requests.slice(startIndex, endIndex);
 
-  // Tạo mảng số trang
   const getPageNumbers = () => {
     const pageNumbers = [];
     if (totalPages <= 7) {
@@ -173,6 +103,64 @@ const RecruitmentRequests = () => {
     return pageNumbers;
   };
 
+  const handleRequestClick = async (request) => {
+    try {
+      console.log('Full request object:', request);
+      
+      const token = localStorage.getItem('token');
+      const userString = localStorage.getItem('user');
+      const user = JSON.parse(userString);
+
+      if (!token || !user) {
+        navigate('/login');
+        return;
+      }
+
+      // Nếu trạng thái là "Đã nộp", cập nhật thành "Đang duyệt" và lưu người phụ trách
+      if (request.status === 'Đã nộp') {
+        const response = await axios.patch(
+          `http://localhost:8000/api/applications/${request._id}/review`,
+          { 
+            status: 'Đang duyệt',
+            responsible: user.id // ID của người dùng hiện tại
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (response.status === 200) {
+          // Cập nhật state với dữ liệu mới từ response
+          setRequests(prevRequests => 
+            prevRequests.map(r => 
+              r._id === request._id 
+                ? {
+                    ...r,
+                    status: 'Đang duyệt',
+                    responsible: {
+                      _id: user.id,
+                      username: user.username,
+                      fullName: user.fullName
+                    }
+                  }
+                : r
+            )
+          );
+        }
+      }
+
+      // Chuyển đến trang chi tiết
+      navigate(`/hr/ceo-recruitment-requests/${request._id}`);
+    } catch (error) {
+      console.error('Error details:', error.response?.data);
+      setError(error.response?.data?.message || 'Có lỗi xảy ra khi cập nhật trạng thái yêu cầu');
+    }
+  };
+
+  // Thêm hàm format date
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'N/A';
@@ -180,35 +168,48 @@ const RecruitmentRequests = () => {
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')} - ${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
   };
 
+  if (loading) {
+    return (
+      <Layout style={{ minHeight: '100vh', background: '#F5F5F5' }}>
+        <Layout style={{ marginLeft: 282 }}>
+          <Content style={{ margin: '80px 16px 24px' }}>
+            <div className="flex justify-center items-center h-full">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#656ED3]"></div>
+            </div>
+          </Content>
+        </Layout>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout style={{ minHeight: '100vh', background: '#F5F5F5' }}>
+        <Layout style={{ marginLeft: 282 }}>
+          <Content style={{ margin: '80px 16px 24px' }}>
+            <div className="flex justify-center items-center h-full">
+              <div className="text-red-500">{error}</div>
+            </div>
+          </Content>
+        </Layout>
+      </Layout>
+    );
+  }
+
   return (
     <Layout style={{ minHeight: '100vh', background: '#F5F5F5' }}>
       <Layout style={{ marginLeft: 282 }}>
         <Content style={{ margin: '80px 16px 24px', minHeight: 280, maxHeight: 'calc(100vh - 104px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          {/* Header Actions - Outside of white container */}
+          {/* Header Actions */}
           <div className="mb-4">
             <div className="flex justify-between items-center">
+              <h1 className="text-[20px] font-medium text-[#1A1A1A]">
+                Danh sách yêu cầu tuyển dụng cần phê duyệt
+              </h1>
               <div className="flex gap-2">
-                <button className="flex items-center gap-2 bg-[#8D75F5] text-white px-4 py-2 rounded hover:bg-[#7152F3]" onClick={() => navigate('create')}>
-                  <FaPlus size={16} />
-                  <span>Mới</span>
-                </button>
-              </div>
-              <div className="flex gap-2">
-                <button 
-                  className={`flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-[10px] ${
-                    selectedRequests.length > 0 
-                      ? 'hover:bg-red-500 hover:text-white hover:border-red-500' 
-                      : 'opacity-50 cursor-not-allowed'
-                  }`}
-                  onClick={handleDelete}
-                  disabled={selectedRequests.length === 0}
-                >
-                  <FaTrash size={14} />
-                  <span>Xóa</span>
-                </button>
                 <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-[10px] hover:border-[#8D75F5] hover:text-[#8D75F5]">
-                  <FaFilter size={14} />
-                  <span>Bộ lọc</span>
+                  <IoSettingsSharp size={16} />
+                  <span>Thực hiện</span>
                 </button>
               </div>
             </div>
@@ -220,20 +221,6 @@ const RecruitmentRequests = () => {
               <table className="w-full">
                 <thead>
                   <tr className="bg-[#F9FAFB]">
-                    <th className="w-12 p-4 sticky top-0 bg-[#F9FAFB]">
-                      <input 
-                        type="checkbox" 
-                        className="rounded border-gray-300"
-                        checked={selectedRequests.length === currentRequests.length}
-                        onChange={() => {
-                          if (selectedRequests.length === currentRequests.length) {
-                            setSelectedRequests([]);
-                          } else {
-                            setSelectedRequests(currentRequests.map(r => r._id));
-                          }
-                        }}
-                      />
-                    </th>
                     <th className="p-4 text-left text-sm font-medium text-gray-600 sticky top-0 bg-[#F9FAFB]">ID phiếu</th>
                     <th className="p-4 text-left text-sm font-medium text-gray-600 sticky top-0 bg-[#F9FAFB]">Nhân sự lập phiếu</th>
                     <th className="p-4 text-left text-sm font-medium text-gray-600 sticky top-0 bg-[#F9FAFB]">Nhân sự phụ trách</th>
@@ -247,23 +234,13 @@ const RecruitmentRequests = () => {
                 <tbody>
                   {currentRequests.map((request, index) => (
                     <tr 
-                      key={request._id} 
+                      key={request._id}
                       className="border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
-                      onClick={() => navigate(`/hr/recruitment-requests/${request._id}`)}
+                      onClick={() => handleRequestClick(request)}
                     >
-                      <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                        <input 
-                          type="checkbox" 
-                          className="rounded border-gray-300"
-                          checked={selectedRequests.includes(request._id)}
-                          onChange={() => handleCheckboxChange(request._id)}
-                        />
-                      </td>
-                      <td className="p-4 text-sm" onClick={(e) => e.stopPropagation()}>
-                        {startIndex + index + 1}
-                      </td>
+                      <td className="p-4 text-sm">{startIndex + index + 1}</td>
                       <td className="p-4 text-sm">
-                        {request.userId?.fullName || request.requester?.fullName || 'N/A'}
+                        {request.requester?.fullName || request.userId?.fullName || 'N/A'}
                       </td>
                       <td className="p-4 text-sm">
                         {request.responsible?.fullName || 'Chưa có người phụ trách'}
@@ -271,9 +248,7 @@ const RecruitmentRequests = () => {
                       <td className="p-4 text-sm">{request.position}</td>
                       <td className="p-4 text-sm">{request.quantity}</td>
                       <td className="p-4 text-sm">{request.department}</td>
-                      <td className="p-4 text-sm">
-                        {request.createdAt ? formatDate(request.createdAt) : 'N/A'}
-                      </td>
+                      <td className="p-4 text-sm">{formatDate(request.createdAt)}</td>
                       <td className="p-4">
                         <span className={getStatusColor(request.status)}>{request.status}</span>
                       </td>
@@ -328,4 +303,4 @@ const RecruitmentRequests = () => {
   );
 };
 
-export default RecruitmentRequests;
+export default CEORecruitmentRequests;

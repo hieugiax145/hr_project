@@ -6,6 +6,7 @@ import ResetPassword from './components/Login/ResetPassword';
 import DashboardLayout from './components/Layout/DashboardLayout';
 import Dashboard from './components/HR/dashboard';
 import RecruitmentRequests from './components/HR/RecruitmentRequests';
+import CEORecruitmentRequests from './components/HR/CEORecruitmentRequests';
 import CreateRecruitmentRequest from './components/HR/CreateRecruitmentRequest';
 import RecruitmentRequestDetail from './components/HR/RecruitmentRequestDetail';
 import Positions from './components/HR/Positions';
@@ -14,6 +15,7 @@ import EditPosition from './components/HR/EditPosition';
 import JobsCandidates from './components/HR/JobsCandidates';
 import Candidates from './components/HR/Candidates';
 import CandidateDetail from './components/HR/CandidateDetail';
+import CEORecruitmentRequestDetail from './components/HR/CEORecruitmentRequestDetail';
 
 const App = () => {
   return (
@@ -37,6 +39,11 @@ const App = () => {
         <Route path="/hr/recruitment-requests" element={
           <DashboardLayout>
             <RecruitmentRequests />
+          </DashboardLayout>
+        } />
+        <Route path="/hr/ceo-recruitment-requests" element={
+          <DashboardLayout>
+            <CEORecruitmentRequests />
           </DashboardLayout>
         } />
         <Route path="/hr/recruitment-requests/create" element={
@@ -77,6 +84,11 @@ const App = () => {
         <Route path="/candidates/:id" element={
           <DashboardLayout>
             <CandidateDetail />
+          </DashboardLayout>
+        } />
+        <Route path="/hr/ceo-recruitment-requests/:id" element={
+          <DashboardLayout>
+            <CEORecruitmentRequestDetail />
           </DashboardLayout>
         } />
       </Routes>

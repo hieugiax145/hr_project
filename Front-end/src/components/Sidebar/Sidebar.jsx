@@ -16,6 +16,11 @@ const { Sider } = Layout;
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Lấy thông tin user từ localStorage
+  const userString = localStorage.getItem('user');
+  const user = userString ? JSON.parse(userString) : null;
+  const userRole = user?.role;
 
   const menuItems = [
     {
@@ -24,7 +29,7 @@ const Sidebar = () => {
       label: 'Trang chủ',
     },
     {
-      key: '/hr/recruitment-requests',
+      key: userRole === 'ceo' ? '/hr/ceo-recruitment-requests' : '/hr/recruitment-requests',
       icon: <FileSearchOutlined />,
       label: 'Yêu cầu tuyển dụng',
     },
@@ -54,17 +59,18 @@ const Sidebar = () => {
     navigate(item.key);
   };
 
-  // Hàm kiểm tra xem path hiện tại có phải là route con của menu item không
+  // Hàm kiểm tra route active
   const isActiveRoute = (menuKey) => {
     const currentPath = location.pathname;
     
-    // Nếu là route chính
     if (currentPath === menuKey) return true;
     
-    // Kiểm tra các route con
-    if (menuKey === '/hr/recruitment-requests') {
-      return currentPath.startsWith('/hr/recruitment-requests');
+    // Xử lý đặc biệt cho route yêu cầu tuyển dụng
+    if (menuKey === '/hr/recruitment-requests' || menuKey === '/hr/ceo-recruitment-requests') {
+      return currentPath.startsWith('/hr/recruitment-requests') || 
+             currentPath === '/hr/ceo-recruitment-requests';
     }
+    
     if (menuKey === '/positions') {
       return currentPath.startsWith('/positions');
     }
@@ -72,7 +78,6 @@ const Sidebar = () => {
     return false;
   };
 
-  // Lọc các menu item đang active
   const selectedKeys = menuItems
     .filter(item => isActiveRoute(item.key))
     .map(item => item.key);

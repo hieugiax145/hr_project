@@ -15,8 +15,6 @@ const Login = () => {
     e.preventDefault();
     setErrorMessage('');
   
-    console.log('Dữ liệu gửi đi:', { username, password }); 
-  
     try {
       const response = await fetch('http://localhost:8000/api/users/login', {
         method: 'POST',
@@ -27,21 +25,16 @@ const Login = () => {
       });
   
       const data = await response.json();
-      console.log('Phản hồi từ backend:', data);
   
       if (response.ok) {
-        // Lưu token vào localStorage
-        if (data.token) {
-          localStorage.setItem('token', data.token);
-        }
-        // Lưu thông tin user nếu có
-        if (data.user) {
-          localStorage.setItem('user', JSON.stringify(data.user));
-        }
+        // Lưu token và thông tin user
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        // Tất cả role đều về dashboard
         navigate('/dashboard');
       } else {
         setErrorMessage(data.message || 'Đăng nhập không thành công');
-        console.log('Đăng nhập không thành công:', data.message);
       }
     } catch (error) {
       console.error('Lỗi kết nối:', error);
