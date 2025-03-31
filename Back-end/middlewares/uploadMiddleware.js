@@ -89,16 +89,15 @@ const handleUpload = async (req, res, next) => {
         // Upload lên Cloudinary với cấu hình cho PDF
         console.log('Attempting to upload to Cloudinary...');
         const result = await cloudinary.uploader.upload(req.file.path, {
-          resource_type: 'auto',
+          resource_type: 'raw',
           folder: 'cvs',
           public_id: `cv-${Date.now()}`,
           overwrite: true,
           use_filename: false,
           unique_filename: true,
-          format: 'pdf',
           type: 'upload',
           access_mode: 'public',
-          content_disposition: 'attachment'
+          access_type: 'anonymous'
         });
         
         console.log('Cloudinary upload successful:', {
@@ -118,8 +117,9 @@ const handleUpload = async (req, res, next) => {
           }
         });
         
-        // Gán URL từ Cloudinary vào req.file
+        // Gán URL và public_id từ Cloudinary vào req.file
         req.file.cloudinaryUrl = result.secure_url;
+        req.file.cloudinaryPublicId = result.public_id;
         
         next();
       } catch (cloudinaryError) {

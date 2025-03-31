@@ -40,7 +40,7 @@ const CandidateDetail = () => {
         setCandidate(response.data.candidate);
         if (response.data.candidate.cv) {
           // Tạo URL với token
-          const pdfUrlWithToken = `${response.data.candidate.cv}?token=${token}`;
+          const pdfUrlWithToken = `${response.data.candidate.cv.url}?token=${token}`;
           setPdfUrl(pdfUrlWithToken);
         }
       }
@@ -118,7 +118,7 @@ const CandidateDetail = () => {
   const handleDownloadCV = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(candidate.cv, {
+      const response = await axios.get(candidate.cv.url, {
         headers: {
           'Authorization': `Bearer ${token}`
         },

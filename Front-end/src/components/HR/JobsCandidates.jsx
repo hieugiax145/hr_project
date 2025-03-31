@@ -365,7 +365,7 @@ const JobsCandidates = () => {
             {stages.map((stage) => (
               <div
                 key={stage.key}
-                className="flex-none w-[300px] bg-[#F8F9FB] rounded-lg p-4"
+                className="flex-none w-[300px] bg-[#D5CCFF] rounded-2xl p-4"
               >
                 {/* Stage Header */}
                 <div className="flex justify-between items-center mb-4">
@@ -375,7 +375,7 @@ const JobsCandidates = () => {
                       count={stage.count} 
                       style={{ 
                         backgroundColor: '#F4F1FE',
-                        color: '#7B61FF',
+                        color: '#FFFFF',
                         border: 'none'
                       }} 
                     />
@@ -389,7 +389,7 @@ const JobsCandidates = () => {
                     .map((candidate) => (
                       <div
                         key={candidate._id}
-                        className="bg-white rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                        className="bg-[#F4F2FF] rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                       >
                         <div className="flex justify-between items-start mb-2">
                           <div>
@@ -406,7 +406,7 @@ const JobsCandidates = () => {
                               {candidate.cv && (
                                 <div className="flex items-center gap-1">
                                   <span>📄</span>
-                                  <a href={candidate.cv} target="_blank" rel="noopener noreferrer" className="text-[#7B61FF] hover:underline">
+                                  <a href={candidate.cv.url} target="_blank" rel="noopener noreferrer" className="text-[#7B61FF] hover:underline">
                                     Xem CV
                                   </a>
                                 </div>

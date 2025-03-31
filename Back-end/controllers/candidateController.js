@@ -1,5 +1,6 @@
 const Candidate = require('../models/Candidate');
 const Position = require('../models/Position');
+const cloudinary = require('cloudinary');
 
 // Lấy danh sách ứng viên theo vị trí
 exports.getCandidatesByPosition = async (req, res) => {
@@ -66,7 +67,10 @@ exports.createCandidate = async (req, res) => {
       notes: candidateData.notes,
       positionId,
       stage: 'new',
-      cv: req.file.cloudinaryUrl // Sử dụng URL từ Cloudinary
+      cv: {
+        url: req.file.cloudinaryUrl,
+        public_id: req.file.cloudinaryPublicId
+      }
     });
 
     console.log('Candidate to save:', candidate);
@@ -143,6 +147,11 @@ exports.deleteCandidate = async (req, res) => {
     const candidate = await Candidate.findById(candidateId);
     if (!candidate) {
       return res.status(404).json({ message: 'Không tìm thấy ứng viên' });
+    }
+
+    // Xóa file trên Cloudinary
+    if (candidate.cv.public_id) {
+      await cloudinary.uploader.destroy(candidate.cv.public_id);
     }
 
     // Cập nhật số lượng ứng viên của vị trí

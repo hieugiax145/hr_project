@@ -28,7 +28,7 @@ const forgotPassword = async (req, res) => {
     await user.save();
 
     // Gửi email đặt lại mật khẩu
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
 
     const mailOptions = {
       to: user.email,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Input, Select, message, Dropdown, Modal } from 'antd';
-import { SearchOutlined, MoreOutlined } from '@ant-design/icons';
+import { SearchOutlined, MoreOutlined, UserOutlined, BarChartOutlined, RiseOutlined } from '@ant-design/icons';
 import { FaPlus } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -143,6 +143,11 @@ const Positions = () => {
     handlePositionClick(position);
   };
 
+  const shortenId = (id) => {
+    if (!id) return '';
+    return id.substring(0, 6);
+  };
+
   return (
     <Layout style={{ minHeight: '100vh', background: '#F5F5F5' }}>
       <Layout style={{ marginLeft: 282 }}>
@@ -194,101 +199,153 @@ const Positions = () => {
           </div>
 
           <div className="flex gap-6 overflow-hidden">
-          {/* Job Cards Grid */}
             {loading ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7B61FF]"></div>
               </div>
             ) : (
               <div className={`flex-1 overflow-y-auto pb-6 ${selectedPosition ? 'pr-4' : ''}`}>
-                {/* Positions List */}
-                <div className={`${selectedPosition ? 'space-y-4' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'}`}>
-            {positions.map((position) => (
-              <div
-                key={position._id}
-                      className={`bg-white rounded-lg p-4 border transition-colors cursor-pointer relative ${
-                        selectedPosition?._id === position._id 
-                          ? 'border-[#7B61FF]' 
-                          : 'border-gray-200 hover:border-[#7B61FF]'
+                <div className={`${
+                  selectedPosition 
+                    ? 'space-y-4' 
+                    : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
+                }`}>
+                  {positions.map((position) => (
+                    <div
+                      key={position._id}
+                      className={`bg-white rounded-[10px] p-4 border transition-colors cursor-pointer relative ${
+                        selectedPosition ? 'border-[#7B61FF]' : 'border-gray-200 hover:border-gray-300'
                       }`}
                       onClick={(e) => handleCardClick(e, position)}
                     >
-                      <div className="absolute top-2 right-4">
-                        <button className={`px-3 py-1.5 rounded-full text-xs ${getStatusStyle(position.status)}`}>
+                      {/* Status Badge */}
+                      <div className="absolute top-2 right-2">
+                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusStyle(position.status)}`}>
                           {position.status}
-                        </button>
+                        </span>
                       </div>
 
-                      <div className="flex items-start gap-3 mt-6">
-                        <div className="w-10 h-10 bg-[#F4F1FE] text-[#7B61FF] rounded-lg flex items-center justify-center text-lg font-medium">
-                          {position.title.charAt(0)}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <h3 className="font-medium text-[#1A1A1A] text-base">{position.title}</h3>
+                      {selectedPosition ? (
+                        // Layout khi có position được chọn - áp dụng cho tất cả card
+                        <>
+                          {/* Avatar and Info */}
+                          <div className="flex items-start gap-3 mb-4">
+                            <div className="w-10 h-10 bg-[#F4F1FE] rounded-lg flex items-center justify-center">
+                              <span className="text-[#7B61FF] text-lg font-medium">
+                                {position.title.charAt(0)}
+                              </span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-xs text-gray-500 mb-1">
+                                ID YCTD: {shortenId(position._id)}
+                              </div>
+                              <h3 className="text-base font-medium text-gray-900 mb-1">
+                                {position.title}
+                              </h3>
+                              <p className="text-sm text-gray-500">
+                                {position.department}
+                              </p>
+                            </div>
                             <Dropdown
                               menu={getDropdownItems(position)}
                               trigger={['click']}
                               placement="bottomRight"
                             >
                               <button 
-                                className="text-base text-gray-500 hover:text-gray-700 bg-[#F4F1FE] w-8 h-8 rounded-lg flex items-center justify-center action-button"
+                                className="text-gray-400 hover:text-gray-600 p-1 bg-white"
                                 onClick={(e) => e.stopPropagation()} 
                               >
-                                ⋮
+                                <MoreOutlined />
                               </button>
                             </Dropdown>
                           </div>
-                          <p className="text-sm text-gray-500">{position.department}</p>
-                        </div>
-                      </div>
 
-                      <div className="flex flex-wrap gap-2 ml-[52px] mt-3">
-                        <span className="px-3 py-1 bg-gray-50 rounded-full text-xs text-gray-600">
-                          {position.level}
-                        </span>
-                        <span className="px-3 py-1 bg-gray-50 rounded-full text-xs text-gray-600">
-                          {position.experience}
-                        </span>
-                        <span className="px-3 py-1 bg-gray-50 rounded-full text-xs text-gray-600">
+                          {/* Tags Row */}
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            <div className="flex items-center gap-2 px-2 py-1 bg-gray-50 rounded-full">
+                              <BarChartOutlined className="text-gray-400" />
+                              <span className="text-xs text-gray-600">{position.level}</span>
+                            </div>
+                            <div className="flex items-center gap-2 px-2 py-1 bg-gray-50 rounded-full">
+                              <RiseOutlined className="text-gray-400" />
+                              <span className="text-xs text-gray-600">{position.experience}</span>
+                            </div>
+                            <span className="px-2 py-1 bg-gray-50 rounded-full text-xs text-gray-600">
+                              {position.type}
+                            </span>
+                            <span className="px-2 py-1 bg-gray-50 rounded-full text-xs text-gray-600">
+                              {position.mode}
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        // Layout mặc định khi không có position nào được chọn
+                        <>
+                          {/* ID */}
+                          <div className="text-xs text-gray-500 mb-2">
+                            ID YCTD: {shortenId(position._id)}
+                          </div>
+
+                          {/* Title and Department */}
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <h3 className="text-base font-medium text-gray-900 mb-1">
+                                {position.title}
+                              </h3>
+                              <p className="text-sm text-gray-500">
+                                {position.department}
+                              </p>
+                            </div>
+                            <Dropdown
+                              menu={getDropdownItems(position)}
+                              trigger={['click']}
+                              placement="bottomRight"
+                            >
+                              <button 
+                                className="text-gray-400 hover:text-gray-600 p-1 bg-white"
+                                onClick={(e) => e.stopPropagation()} 
+                              >
+                                <MoreOutlined />
+                              </button>
+                            </Dropdown>
+                          </div>
+
+                          {/* Level and Experience */}
+                          <div className="flex flex-col gap-2 mb-4">
+                            <div className="flex items-center gap-2">
+                              <BarChartOutlined className="text-gray-400" />
+                              <span className="text-sm text-gray-600">{position.level}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <RiseOutlined className="text-gray-400" />
+                              <span className="text-sm text-gray-600">{position.experience}</span>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Type and Mode */}
+                      <div className="flex gap-2 mb-4">
+                        <span className="px-2 py-1 bg-gray-50 rounded-full text-xs text-gray-600">
                           {position.type}
                         </span>
-                        <span className="px-3 py-1 bg-gray-50 rounded-full text-xs text-gray-600">
+                        <span className="px-2 py-1 bg-gray-50 rounded-full text-xs text-gray-600">
                           {position.mode}
                         </span>
                       </div>
 
-                      <div className="flex justify-between items-center mt-3 ml-[52px]">
+                      {/* Salary and Applicants */}
+                      <div className="flex flex-col gap-2">
                         <div className="text-[#7B61FF] font-medium">đ {position.salary}</div>
                         <div 
-                          className="text-sm text-gray-500 cursor-pointer hover:text-[#7B61FF] applicants-count"
-                          onClick={async (e) => {
+                          className="text-sm text-gray-500 cursor-pointer hover:text-[#7B61FF] applicants-count flex items-center gap-1"
+                          onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            try {
-                              const token = localStorage.getItem('token');
-                              if (!token) {
-                                message.error('Vui lòng đăng nhập lại');
-                                return;
-                              }
-                              // Kiểm tra position tồn tại trước khi chuyển trang
-                              const response = await axios.get(`${API_BASE_URL}/positions/${position._id}`, {
-                                headers: {
-                                  'Authorization': `Bearer ${token}`
-                                }
-                              });
-                              if (response.status === 200) {
-                                navigate(`/positions/${position._id}/candidates`);
-                              }
-                            } catch (error) {
-                              if (error.response?.status === 401) {
-                                message.error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại');
-                              } else {
-                                message.error('Có lỗi xảy ra. Vui lòng thử lại sau');
-                              }
-                            }
+                            navigate(`/positions/${position._id}/candidates`);
                           }}
                         >
+                          <UserOutlined className="text-gray-400" />
                           {position.applicants} ứng viên
                         </div>
                       </div>
@@ -348,7 +405,7 @@ const Positions = () => {
                   <div>
                     <h3 className="font-medium mb-2">Quyền lợi</h3>
                     <div className="text-sm whitespace-pre-line">{selectedPosition.benefits}</div>
-                </div>
+                  </div>
                 </div>
               </div>
             )}
