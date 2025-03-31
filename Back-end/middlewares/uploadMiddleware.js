@@ -1,7 +1,7 @@
 const multer = require('multer');
+const path = require('path');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
@@ -15,45 +15,40 @@ if (!fs.existsSync(tempDir)) {
   fs.mkdirSync(tempDir);
 }
 
-// Kiểm tra cấu hình Cloudinary
-const cloudinaryConfig = cloudinary.config();
-console.log('Cloudinary configuration:', {
-  cloud_name: cloudinaryConfig.cloud_name,
-  api_key: cloudinaryConfig.api_key,
-  url: process.env.CLOUDINARY_URL
+// Cấu hình Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Cấu hình local storage tạm thời
-const localStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, tempDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+// Cấu hình storage cho Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'cv',
+    resource_type: 'auto',
+    format: 'pdf',
+    use_filename: true,
+    unique_filename: true,
+    type: 'upload',
+    access_mode: 'public',
+    transformation: [
+      { flags: 'attachment' }
+    ]
   }
 });
 
-// Filter chỉ cho phép file PDF
-const fileFilter = (req, file, cb) => {
-  console.log('Processing file:', {
-    fieldname: file.fieldname,
-    originalname: file.originalname,
-    mimetype: file.mimetype,
-    size: file.size
-  });
-
-  if (file.mimetype === 'application/pdf') {
-    cb(null, true);
-  } else {
-    cb(new Error('Chỉ chấp nhận file PDF'), false);
-  }
-};
-
-// Tạo multer instance với cấu hình local storage
+// Cấu hình multer
 const upload = multer({
-  storage: localStorage,
-  fileFilter: fileFilter,
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Chỉ chấp nhận file PDF'), false);
+    }
+  },
   limits: {
     fileSize: 5 * 1024 * 1024 // Giới hạn 5MB
   }

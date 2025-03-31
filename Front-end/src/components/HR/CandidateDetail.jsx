@@ -39,9 +39,8 @@ const CandidateDetail = () => {
       if (response.status === 200) {
         setCandidate(response.data.candidate);
         if (response.data.candidate.cv) {
-          // Tạo URL với token
-          const pdfUrlWithToken = `${response.data.candidate.cv}?token=${token}`;
-          setPdfUrl(pdfUrlWithToken);
+          // Lấy URL trực tiếp từ Cloudinary
+          setPdfUrl(response.data.candidate.cv);
         }
       }
     } catch (error) {
@@ -117,22 +116,18 @@ const CandidateDetail = () => {
 
   const handleDownloadCV = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(candidate.cv, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        responseType: 'blob'
-      });
+      if (!candidate.cv) {
+        message.error('Không tìm thấy file CV');
+        return;
+      }
       
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      // Tạo link tải trực tiếp từ Cloudinary
       const link = document.createElement('a');
-      link.href = url;
+      link.href = candidate.cv;
       link.setAttribute('download', `CV-${candidate.name}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error downloading CV:', error);
       message.error('Có lỗi xảy ra khi tải CV');
@@ -148,11 +143,16 @@ const CandidateDetail = () => {
   }
 
   return (
-    <div style={{ padding: '24px 24px 24px 324px', minHeight: '100vh', background: '#f5f5f5' }}>
+    <div style={{ 
+      padding: '24px 24px 24px 324px', 
+      minHeight: '100vh', 
+      background: '#f5f5f5',
+      marginTop: '64px'
+    }}>
       <div style={{ 
         display: 'flex', 
         gap: '16px',
-        height: 'calc(100vh - 48px)',
+        height: 'calc(100vh - 112px)',
         overflow: 'hidden'
       }}>
         {/* Left sidebar */}
@@ -163,7 +163,8 @@ const CandidateDetail = () => {
           padding: '24px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '16px'
+          gap: '16px',
+          overflow: 'auto'
         }}>
           <div style={{ textAlign: 'center' }}>
             <Avatar 
@@ -246,15 +247,20 @@ const CandidateDetail = () => {
               </Button>
             </div>
           </div>
-          <div style={{ flex: 1, overflow: 'auto' }}>
+          <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
             {pdfUrl && (
-              <object
-                data={pdfUrl}
-                type="application/pdf"
-                style={{ width: '100%', height: '100%' }}
-              >
-                <p>Không thể hiển thị PDF. <a href={pdfUrl} target="_blank" rel="noopener noreferrer">Mở trong tab mới</a></p>
-              </object>
+              <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <iframe
+                  src={`${pdfUrl}#toolbar=0`}
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    border: 'none',
+                    backgroundColor: '#f5f5f5'
+                  }}
+                  title="CV Viewer"
+                />
+              </div>
             )}
           </div>
         </div>

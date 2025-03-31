@@ -16,6 +16,7 @@ import JobsCandidates from './components/HR/JobsCandidates';
 import Candidates from './components/HR/Candidates';
 import CandidateDetail from './components/HR/CandidateDetail';
 import CEORecruitmentRequestDetail from './components/HR/CEORecruitmentRequestDetail';
+import Calendar from './components/Calendar/Calendar';
 
 const App = () => {
   return (
@@ -32,6 +33,13 @@ const App = () => {
         <Route path="/dashboard" element={
           <DashboardLayout>
             <Dashboard />
+          </DashboardLayout>
+        } />
+
+        {/* Calendar route */}
+        <Route path="/calendar" element={
+          <DashboardLayout>
+            <Calendar />
           </DashboardLayout>
         } />
 

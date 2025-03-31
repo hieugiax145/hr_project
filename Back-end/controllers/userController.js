@@ -6,63 +6,88 @@ const crypto = require('crypto');
 
 // Cấu hình Nodemailer
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD
   }
 });
 
-// Quên mật khẩu
+// Tạo mã xác nhận ngẫu nhiên 6 số
+const generateVerificationCode = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+// Quên mật khẩu - Gửi mã xác nhận
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) return res.status(404).json({ message: 'Không tìm thấy tài khoản' });
 
-    // Tạo token reset
-    const resetToken = crypto.randomBytes(20).toString('hex');
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000; 
+    // Tạo mã xác nhận 6 số
+    const verificationCode = generateVerificationCode();
+    user.resetPasswordToken = verificationCode;
+    user.resetPasswordExpires = Date.now() + 300000; // Mã hết hạn sau 5 phút
 
     await user.save();
 
-    // Gửi email đặt lại mật khẩu
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-
+    // Gửi email chứa mã xác nhận
     const mailOptions = {
+      from: `"JHR System" <${process.env.EMAIL_USER}>`,
       to: user.email,
-      from: process.env.EMAIL_USER,
-      subject: 'Password Reset Request',
-      text: `You requested a password reset. Please click on the following link to reset your password: ${resetUrl}`
+      subject: 'Mã xác nhận đặt lại mật khẩu',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Yêu cầu đặt lại mật khẩu</h2>
+          <p>Xin chào ${user.fullName || user.username},</p>
+          <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản của mình.</p>
+          <p>Mã xác nhận của bạn là: <strong style="color: #656ED3; font-size: 24px;">${verificationCode}</strong></p>
+          <p>Mã này sẽ hết hạn sau 5 phút.</p>
+          <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+          <p>Trân trọng,<br>Đội ngũ JHR</p>
+        </div>
+      `
     };
 
     await transporter.sendMail(mailOptions);
 
-    res.status(200).json({ message: 'Email sent successfully' });
+    res.status(200).json({ 
+      message: 'Đã gửi mã xác nhận đến email của bạn'
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error sending email:', err);
+    res.status(500).json({ error: 'Không thể gửi email. Vui lòng thử lại sau!' });
   }
 };
 
-// Đặt lại mật khẩu
+// Xác nhận mã và đặt lại mật khẩu
 const resetPassword = async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
+    const { email, verificationCode, newPassword } = req.body;
+    
     const user = await User.findOne({
-      resetPasswordToken: token,
+      email,
+      resetPasswordToken: verificationCode,
       resetPasswordExpires: { $gt: Date.now() }
     });
 
-    if (!user) return res.status(400).json({ message: 'Invalid or expired token' });
+    if (!user) {
+      return res.status(400).json({ 
+        message: 'Mã xác nhận không hợp lệ hoặc đã hết hạn' 
+      });
+    }
 
+    // Cập nhật mật khẩu mới
     user.password = await bcrypt.hash(newPassword, 10);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
 
     await user.save();
 
-    res.status(200).json({ message: 'Password reset successful' });
+    res.status(200).json({ message: 'Đặt lại mật khẩu thành công' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

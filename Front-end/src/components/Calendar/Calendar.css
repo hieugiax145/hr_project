@@ -1,0 +1,70 @@
+.calendar-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.calendar-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background-color: #e2e8f0;
+}
+
+.calendar-day {
+  background: white;
+  min-height: 120px;
+  padding: 0.5rem;
+}
+
+.calendar-day-header {
+  text-align: right;
+  font-size: 0.875rem;
+  color: #4a5568;
+  margin-bottom: 0.5rem;
+}
+
+.interview-card {
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.interview-card.pending {
+  background-color: #E7E9F8;
+  color: #656ED3;
+}
+
+.interview-card.confirmed {
+  background-color: #E8F5E9;
+  color: #4CAF50;
+}
+
+.view-selector button {
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  transition: all 0.2s;
+}
+
+.view-selector button.active {
+  background-color: #E7E9F8;
+  color: #656ED3;
+}
+
+.create-button {
+  background-color: #656ED3;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  transition: all 0.2s;
+}
+
+.create-button:hover {
+  background-color: #4c59c3;
+} 
