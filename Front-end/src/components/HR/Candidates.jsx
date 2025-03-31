@@ -164,52 +164,56 @@ const Candidates = () => {
   ];
 
   return (
-    <div style={{ padding: '24px 24px 24px 324px', minHeight: '100vh' }}>
-      <div style={{ 
-        background: '#fff',
-        padding: '24px',
-        borderRadius: '8px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-      }}>
-        <div style={{ 
-          marginBottom: '16px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div>
-            <h1 style={{ 
-              margin: 0,
-              fontSize: '24px',
-              fontWeight: 600
+    <Layout style={{ minHeight: '100vh', background: '#F5F5F5' }}>
+      <Layout style={{ marginLeft: 282 }}>
+        <Content style={{ margin: '80px 16px 24px', minHeight: 280 }}>
+          <div style={{ 
+            background: '#fff',
+            padding: '24px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ 
+              marginBottom: '16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
             }}>
-              Danh sách ứng viên
-            </h1>
+              <div>
+                <h1 style={{ 
+                  margin: 0,
+                  fontSize: '24px',
+                  fontWeight: 600
+                }}>
+                  Danh sách ứng viên
+                </h1>
+              </div>
+              <Input
+                placeholder="Tìm kiếm theo tên, vị trí, email..."
+                prefix={<SearchOutlined />}
+                onChange={(e) => setSearchText(e.target.value)}
+                style={{ width: 300 }}
+              />
+            </div>
+            <Table
+              columns={columns}
+              dataSource={candidates}
+              rowKey="_id"
+              loading={loading}
+              pagination={{
+                total: candidates.length,
+                pageSize: 10,
+                showTotal: (total) => `Tổng số ${total} ứng viên`,
+              }}
+              onRow={(record) => ({
+                onClick: () => navigate(`/candidates/${record._id}`),
+                style: { cursor: 'pointer' }
+              })}
+            />
           </div>
-          <Input
-            placeholder="Tìm kiếm theo tên, vị trí, email..."
-            prefix={<SearchOutlined />}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 300 }}
-          />
-        </div>
-        <Table
-          columns={columns}
-          dataSource={candidates}
-          rowKey="_id"
-          loading={loading}
-          pagination={{
-            total: candidates.length,
-            pageSize: 10,
-            showTotal: (total) => `Tổng số ${total} ứng viên`,
-          }}
-          onRow={(record) => ({
-            onClick: () => navigate(`/candidates/${record._id}`),
-            style: { cursor: 'pointer' }
-          })}
-        />
-      </div>
-    </div>
+        </Content>
+      </Layout>
+    </Layout>
   );
 };
 

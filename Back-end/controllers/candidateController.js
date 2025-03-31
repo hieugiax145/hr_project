@@ -265,7 +265,7 @@ exports.getCandidateById = async (req, res) => {
     const candidate = await Candidate.findById(candidateId)
       .populate({
         path: 'positionId',
-        select: 'title type mode'
+        select: 'title type mode level experience salary department'
       });
 
     if (!candidate) {
@@ -281,6 +281,10 @@ exports.getCandidateById = async (req, res) => {
       position: candidate.positionId ? candidate.positionId.title : 'N/A',
       type: candidate.positionId ? candidate.positionId.type : 'N/A',
       mode: candidate.positionId ? candidate.positionId.mode : 'N/A',
+      level: candidate.positionId ? candidate.positionId.level : 'N/A',
+      experience: candidate.positionId ? candidate.positionId.experience : 'N/A',
+      salary: candidate.positionId ? candidate.positionId.salary : 'N/A',
+      department: candidate.positionId ? candidate.positionId.department : 'N/A',
       stage: candidate.stage,
       source: candidate.source,
       customSource: candidate.customSource,
