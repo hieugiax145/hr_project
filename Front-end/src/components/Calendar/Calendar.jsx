@@ -67,14 +67,43 @@ const Calendar = () => {
             {format(currentDate, 'MMMM yyyy', { locale: vi })}
           </h2>
           <div className="flex space-x-2">
-            <button className={`px-4 py-1 rounded-full ${selectedView === 'Ngày' ? 'bg-gray-200' : ''}`}>
+            <button 
+              className={`px-4 py-1 rounded-full ${selectedView === 'Ngày' ? 'bg-gray-200' : ''}`}
+              onClick={() => setSelectedView('Ngày')}
+            >
               Ngày
             </button>
-            <button className={`px-4 py-1 rounded-full ${selectedView === 'Tuần' ? 'bg-gray-200' : ''}`}>
+            <button 
+              className={`px-4 py-1 rounded-full ${selectedView === 'Tuần' ? 'bg-gray-200' : ''}`}
+              onClick={() => setSelectedView('Tuần')}
+            >
               Tuần
             </button>
-            <button className={`px-4 py-1 rounded-full ${selectedView === 'Tháng' ? 'bg-[#E7E9F8]' : ''}`}>
+            <button 
+              className={`px-4 py-1 rounded-full ${selectedView === 'Tháng' ? 'bg-[#E7E9F8]' : ''}`}
+              onClick={() => setSelectedView('Tháng')}
+            >
               Tháng
+            </button>
+          </div>
+          <div className="flex space-x-2">
+            <button 
+              onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))}
+              className="px-3 py-1 rounded hover:bg-gray-100"
+            >
+              ‹
+            </button>
+            <button
+              onClick={() => setCurrentDate(new Date())}
+              className="px-3 py-1 rounded hover:bg-gray-100"
+            >
+              Hôm nay
+            </button>
+            <button 
+              onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))}
+              className="px-3 py-1 rounded hover:bg-gray-100"
+            >
+              ›
             </button>
           </div>
         </div>
@@ -102,8 +131,8 @@ const Calendar = () => {
   };
 
   const renderInterviewCard = (interview) => {
-    const bgColor = interview.type === 'offline' ? 'bg-[#E7E9F8]' : 'bg-[#EBFBEE]';
-    const textColor = interview.type === 'offline' ? 'text-[#656ED3]' : 'text-[#1F9254]';
+    const bgColor = interview.type === 'offline' ? 'bg-blue-100' : 'bg-green-100';
+    const textColor = interview.type === 'offline' ? 'text-blue-600' : 'text-green-600';
     return (
       <div
         key={interview.id}

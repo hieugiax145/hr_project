@@ -252,4 +252,23 @@ const createAdminAccount = async () => {
 // Gọi hàm để tạo tài khoản admin
 createAdminAccount();
 
-module.exports = { registerUser, loginUser, forgotPassword, resetPassword, getUserProfile, updateUserProfile, uploadAvatar };
+// Lấy danh sách tất cả người dùng
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select('-password');
+    res.status(200).json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = {
+  registerUser,
+  loginUser,
+  forgotPassword,
+  resetPassword,
+  getUserProfile,
+  updateUserProfile,
+  uploadAvatar,
+  getAllUsers
+};

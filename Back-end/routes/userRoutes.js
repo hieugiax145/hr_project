@@ -9,7 +9,8 @@ const {
   resetPassword,
   getUserProfile,
   updateUserProfile,
-  uploadAvatar
+  uploadAvatar,
+  getAllUsers
 } = require('../controllers/userController');
 
 // Auth routes
@@ -22,5 +23,8 @@ router.post('/reset-password', resetPassword);
 router.get('/profile', protect, getUserProfile);
 router.put('/profile', protect, updateUserProfile);
 router.put('/avatar', protect, upload.single('avatar'), uploadAvatar);
+
+// Users routes
+router.get('/all', protect, getAllUsers);
 
 module.exports = router;
