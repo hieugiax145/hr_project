@@ -42,7 +42,18 @@ const EditPosition = () => {
 
   const fetchPosition = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/positions/${id}`);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('Vui lòng đăng nhập lại');
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch(`http://localhost:8000/api/positions/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       const data = await response.json();
       if (response.ok) {
         setFormData(data.data);
@@ -105,10 +116,18 @@ const EditPosition = () => {
   const handleSubmit = async () => {
     try {
       setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('Vui lòng đăng nhập lại');
+        navigate('/login');
+        return;
+      }
+
       const response = await fetch(`http://localhost:8000/api/positions/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(formData)
       });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout, Button, Tag, message, Modal, Form, Input, Select, Avatar } from 'antd';
 import { ArrowLeftOutlined, EditOutlined, UserOutlined, MessageOutlined, DownloadOutlined } from '@ant-design/icons';
@@ -17,11 +17,7 @@ const CandidateDetail = () => {
   const [pdfUrl, setPdfUrl] = useState(null);
   const [form] = Form.useForm();
 
-  useEffect(() => {
-    fetchCandidateDetail();
-  }, [id]);
-
-  const fetchCandidateDetail = async () => {
+  const fetchCandidateDetail = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -50,7 +46,11 @@ const CandidateDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, navigate]);
+
+  useEffect(() => {
+    fetchCandidateDetail();
+  }, [fetchCandidateDetail]);
 
   const getStatusColor = (stage) => {
     const colors = {

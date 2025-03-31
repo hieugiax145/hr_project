@@ -17,6 +17,7 @@ import Candidates from './components/HR/Candidates';
 import CandidateDetail from './components/HR/CandidateDetail';
 import CEORecruitmentRequestDetail from './components/HR/CEORecruitmentRequestDetail';
 import Calendar from './components/Calendar/Calendar';
+import Notifications from './components/Notifications/Notifications';
 
 const App = () => {
   return (
@@ -40,6 +41,13 @@ const App = () => {
         <Route path="/calendar" element={
           <DashboardLayout>
             <Calendar />
+          </DashboardLayout>
+        } />
+
+        {/* Notifications route */}
+        <Route path="/notifications" element={
+          <DashboardLayout>
+            <Notifications />
           </DashboardLayout>
         } />
 

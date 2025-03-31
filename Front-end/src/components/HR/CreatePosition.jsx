@@ -79,10 +79,18 @@ const CreatePosition = () => {
   const handleSubmit = async () => {
     try {
       setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('Vui lòng đăng nhập lại');
+        navigate('/login');
+        return;
+      }
+
       const response = await fetch('http://localhost:8000/api/positions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(formData)
       });
@@ -158,6 +166,7 @@ const CreatePosition = () => {
                     onChange={(value) => handleInputChange('level', value)}
                     placeholder="Chọn level"
                     className="w-full"
+                    variant="outlined"
                     options={[
                       { value: 'Thực tập sinh', label: 'Thực tập sinh' },
                       { value: 'Junior', label: 'Junior' },
@@ -177,6 +186,7 @@ const CreatePosition = () => {
                     onChange={(value) => handleInputChange('experience', value)}
                     placeholder="Chọn kinh nghiệm"
                     className="w-full"
+                    variant="outlined"
                     options={[
                       { value: 'Dưới 1 năm', label: 'Dưới 1 năm' },
                       { value: '1-2 năm', label: '1-2 năm' },
@@ -196,6 +206,7 @@ const CreatePosition = () => {
                       value={formData.type}
                       onChange={(value) => handleInputChange('type', value)}
                       className="w-1/2"
+                      variant="outlined"
                       options={[
                         { value: 'Full-time', label: 'Full-time' },
                         { value: 'Part-time', label: 'Part-time' },
