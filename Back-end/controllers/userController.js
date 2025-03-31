@@ -34,7 +34,9 @@ const forgotPassword = async (req, res) => {
 
     await user.save();
 
-    // Gửi email chứa mã xác nhận
+    // Gửi email đặt lại mật khẩu
+    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+
     const mailOptions = {
       from: `"JHR System" <${process.env.EMAIL_USER}>`,
       to: user.email,

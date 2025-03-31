@@ -1,174 +1,133 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import mailImg from '../../assets/ForgotPassword/mail.png';
+import registerImg from '../../assets/login/register.png';
+import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import axios from 'axios';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [message, setMessage] = useState(null);
-  const [error, setError] = useState(null);
-  const [showResetForm, setShowResetForm] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [formData, setFormData] = useState({
+    email: '',
+  });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const validateForm = () => {
+    const errors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!formData.email.trim()) {
+      errors.email = 'Vui lòng nhập email';
+    } else if (!emailRegex.test(formData.email)) {
+      errors.email = 'Email không hợp lệ';
+    }
+
+    return errors;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    try {
-      const res = await axios.post('http://localhost:8000/api/users/forgot-password', {
-        email,
-      });
-
-      setMessage(res.data.message);
-      setShowResetForm(true);
-      setError(null);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Có lỗi xảy ra. Vui lòng thử lại!');
-      setMessage(null);
-    }
-  };
-
-  const handleResetPassword = async (e) => {
-    e.preventDefault();
+    setError('');
+    setSuccess('');
     
-    if (newPassword !== confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp');
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setError(Object.values(errors)[0]);
       return;
     }
 
+    setLoading(true);
     try {
-      const res = await axios.post('http://localhost:8000/api/users/reset-password', {
-        email,
-        verificationCode,
-        newPassword
+      const response = await axios.post('http://localhost:8000/api/users/forgot-password', {
+        email: formData.email
       });
 
-      setMessage(res.data.message);
-      setError(null);
+      setSuccess('Hướng dẫn đặt lại mật khẩu đã được gửi đến email của bạn!');
       
-      // Chuyển hướng về trang login sau 2 giây
+      setFormData({
+        email: ''
+      });
+
       setTimeout(() => {
         navigate('/login');
-      }, 2000);
+      }, 3000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Có lỗi xảy ra. Vui lòng thử lại!');
-      setMessage(null);
+      setError(err.response?.data?.error || 'Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại!');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="container flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md w-[400px]">
-        {/* Hình minh họa */}
-        <div className="flex justify-center mb-4">
-          <img
-            src={mailImg}
-            alt="Mail Illustration"
-            className="w-24 h-24"
-          />
+    <div className="min-h-screen w-full bg-[#EBEFFF] flex font-inter">
+      {/* Phần hình ảnh bên trái */}
+      <div className="w-1/2 relative">
+        <div className="absolute top-0 left-24 w-full h-[80vh]">
+          <img src={registerImg} alt="Forgot Password Illustration" className="w-full h-full object-contain object-top" />
         </div>
+      </div>
 
-        {/* Tiêu đề */}
-        <h2 className="text-center text-[16px] font-bold text-[#1A1A1A] mb-6">
-          Điền email để lấy lại mật khẩu!
-        </h2>
+      {/* Form bên phải */}
+      <div className="w-1/2 flex flex-col items-center justify-center px-16">
+        <div className="w-full max-w-[400px]">
+          {/* Tiêu đề */}
+          <h2 className="text-center font-bold text-2xl text-[#1A1A1A] mb-4">Quên mật khẩu?</h2>
+          <p className="text-center text-gray-600 mb-8">
+            Nhập email của bạn và chúng tôi sẽ gửi hướng dẫn đặt lại mật khẩu.
+          </p>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Email */}
-          <div>
-            <label className="block text-[16px] font-normal text-[#000] mb-2">
-              Email:
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full h-[34px] border border-[#656ED3] rounded-full px-4 text-[16px] focus:outline-none focus:border-[#4c59c3]"
-              required
-            />
-          </div>
+          {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+          {success && <p className="text-green-500 text-center mb-4">{success}</p>}
 
-          {/* Thông báo thành công / lỗi */}
-          {message && <div className="text-green-500">{message}</div>}
-          {error && <div className="text-red-500">{error}</div>}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-[#1A1A1A] mb-2">
+                Email <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full h-[40px] border border-[#656ED3] rounded-[25px] px-4 focus:outline-none bg-transparent"
+                placeholder="Nhập email của bạn"
+              />
+            </div>
 
-          {/* Button Lấy lại mật khẩu */}
-          <button
-            type="submit"
-            className="w-full h-[34px] bg-[#656ED3] text-white font-medium text-[16px] rounded-full hover:bg-[#4c59c3] transition"
-          >
-            Lấy lại mật khẩu
-          </button>
-        </form>
+            {/* Nút gửi */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-[40px] bg-[#656ED3] text-white rounded-[25px] font-medium hover:bg-[#4C54B0] transition-colors flex items-center justify-center"
+            >
+              {loading ? (
+                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                'Gửi hướng dẫn đặt lại mật khẩu'
+              )}
+            </button>
 
-        {/* Form đặt lại mật khẩu */}
-        {showResetForm && (
-          <div className="mt-6 border-t pt-6">
-            <h3 className="text-center text-[16px] font-bold text-[#1A1A1A] mb-4">
-              Nhập mã xác nhận đã gửi đến email của bạn
-            </h3>
-            
-            <form onSubmit={handleResetPassword} className="space-y-4">
-              <div>
-                <label className="block text-[16px] font-normal text-[#000] mb-2">
-                  Mã xác nhận:
-                </label>
-                <input
-                  type="text"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
-                  className="w-full h-[34px] border border-[#656ED3] rounded-full px-4 text-[16px] focus:outline-none focus:border-[#4c59c3]"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-[16px] font-normal text-[#000] mb-2">
-                  Mật khẩu mới:
-                </label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full h-[34px] border border-[#656ED3] rounded-full px-4 text-[16px] focus:outline-none focus:border-[#4c59c3]"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-[16px] font-normal text-[#000] mb-2">
-                  Xác nhận mật khẩu:
-                </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full h-[34px] border border-[#656ED3] rounded-full px-4 text-[16px] focus:outline-none focus:border-[#4c59c3]"
-                  required
-                />
-              </div>
-
+            {/* Link quay lại đăng nhập */}
+            <div className="text-center">
               <button
-                type="submit"
-                className="w-full h-[34px] bg-[#656ED3] text-white font-medium text-[16px] rounded-full hover:bg-[#4c59c3] transition"
+                type="button"
+                onClick={() => navigate('/login')}
+                className="text-[#656ED3] hover:text-[#4C54B0] transition-colors"
               >
-                Đặt lại mật khẩu
+                Quay lại đăng nhập
               </button>
-            </form>
-          </div>
-        )}
-
-        {/* Nút trở lại */}
-        <div className="mt-4 text-center">
-          <button
-            onClick={() => navigate('/login')}
-            className="text-[#656ED3] hover:text-[#4c59c3] transition"
-          >
-            ← Quay lại trang đăng nhập
-          </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

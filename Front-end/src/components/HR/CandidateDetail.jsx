@@ -39,8 +39,9 @@ const CandidateDetail = () => {
       if (response.status === 200) {
         setCandidate(response.data.candidate);
         if (response.data.candidate.cv) {
-          // Lấy URL trực tiếp từ Cloudinary
-          setPdfUrl(response.data.candidate.cv);
+          // Tạo URL với token
+          const pdfUrlWithToken = `${response.data.candidate.cv.url}?token=${token}`;
+          setPdfUrl(pdfUrlWithToken);
         }
       }
     } catch (error) {
@@ -116,10 +117,13 @@ const CandidateDetail = () => {
 
   const handleDownloadCV = async () => {
     try {
-      if (!candidate.cv) {
-        message.error('Không tìm thấy file CV');
-        return;
-      }
+      const token = localStorage.getItem('token');
+      const response = await axios.get(candidate.cv.url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        responseType: 'blob'
+      });
       
       // Tạo link tải trực tiếp từ Cloudinary
       const link = document.createElement('a');
