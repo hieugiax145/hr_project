@@ -168,7 +168,8 @@ const loginUser = async (req, res) => {
         username: user.username,
         email: user.email,
         role: user.role,
-        department: user.department
+        department: user.department,
+        fullName: user.fullName
       }
     });
   } catch (error) {

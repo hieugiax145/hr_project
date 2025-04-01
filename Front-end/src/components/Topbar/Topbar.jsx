@@ -1,7 +1,10 @@
 import React from 'react';
-import { Input, Badge, Dropdown, Space, message } from 'antd';
-import { SearchOutlined, BellOutlined, MessageOutlined, UserOutlined, DownOutlined } from '@ant-design/icons';
+import { Input, Badge, Dropdown, Space, message, Layout, Avatar } from 'antd';
+import { SearchOutlined, BellOutlined, MessageOutlined, UserOutlined, DownOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
+
+const { Header } = Layout;
+const API_BASE_URL = 'http://localhost:8000/api';
 
 const Topbar = () => {
   const location = useLocation();
@@ -20,25 +23,42 @@ const Topbar = () => {
     return routes[pathname] || 'Trang chủ';
   };
 
+  // Lấy thông tin user từ localStorage
+  const userString = localStorage.getItem('user');
+  console.log('User string from localStorage:', userString);
+  const user = userString ? JSON.parse(userString) : null;
+  console.log('Parsed user data:', user);
+
+  // Hàm dịch role sang tiếng Việt
+  const translateRole = (role) => {
+    const roleTranslations = {
+      'department_head': 'Trưởng phòng ban',
+      'business_director': 'Giám đốc kinh doanh',
+      'ceo': 'CEO (Giám đốc điều hành)',
+      'recruitment': 'Bộ phận tuyển dụng',
+      'applicant': 'Ứng viên',
+      'director': 'Giám đốc'
+    };
+    return roleTranslations[role] || role;
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     message.success('Đăng xuất thành công!'); 
     navigate('/login'); 
   };
 
-  const userMenuItems = [
+  const items = [
     {
       key: 'profile',
+      icon: <UserOutlined />,
       label: 'Thông tin cá nhân',
     },
     {
-      key: 'settings',
-      label: 'Cài đặt',
-    },
-    {
       key: 'logout',
+      icon: <LogoutOutlined />,
       label: 'Đăng xuất',
-      danger: true,
       onClick: handleLogout,
     },
   ];
@@ -76,22 +96,30 @@ const Topbar = () => {
           </div>
 
           {/* User Profile */}
-          <Dropdown
-            menu={{ items: userMenuItems }}
-            trigger={['click']}
-            placement="bottomRight"
-          >
-            <div className="flex items-center gap-3 cursor-pointer">
-              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                <UserOutlined className="text-purple-600" />
-              </div>
-              <Space>
-                <div>
-                  <div className="font-['Inter'] font-normal">Duyên DTM</div>
-                  <div className="text-sm text-gray-500">HR</div>
+          <Dropdown menu={{ items }} placement="bottomRight">
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              cursor: 'pointer',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              transition: 'background-color 0.3s'
+            }}>
+              <Avatar 
+                icon={<UserOutlined />} 
+                style={{ 
+                  backgroundColor: '#656ED3',
+                  marginRight: '12px'
+                }}
+              />
+              <div>
+                <div className="font-['Inter'] font-normal">
+                  {user && user.fullName ? user.fullName : 'User'}
                 </div>
-                <DownOutlined className="text-xs text-gray-400" />
-              </Space>
+                <div className="text-sm text-gray-500">
+                  {translateRole(user?.role || '')}
+                </div>
+              </div>
             </div>
           </Dropdown>
         </div>
