@@ -27,6 +27,7 @@ const Login = () => {
       const data = await response.json();
   
       if (response.ok) {
+        console.log('User data from server:', data.user);
         // Lưu token và thông tin user
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
