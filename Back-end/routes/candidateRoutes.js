@@ -4,25 +4,28 @@ const candidateController = require('../controllers/candidateController');
 const { protect } = require('../middlewares/authMiddleware');
 const { handleUpload } = require('../middlewares/uploadMiddleware');
 
+// Lấy tất cả ứng viên
+router.get('/', protect, candidateController.getAllCandidates);
+
+// Lấy danh sách ứng viên cho calendar
+router.get('/calendar/candidates', protect, candidateController.getCandidatesForCalendar);
+
 // Lấy danh sách ứng viên theo vị trí
-router.get('/positions/:positionId/candidates', protect, candidateController.getCandidatesByPosition);
+router.get('/position/:positionId', protect, candidateController.getCandidatesByPosition);
 
 // Thêm ứng viên mới
-router.post('/positions/:positionId/candidates', protect, handleUpload, candidateController.createCandidate);
+router.post('/position/:positionId', protect, handleUpload, candidateController.createCandidate);
 
 // Cập nhật trạng thái ứng viên
-router.patch('/candidates/:candidateId/status', protect, candidateController.updateCandidateStatus);
+router.patch('/:candidateId/status', protect, candidateController.updateCandidateStatus);
 
 // Cập nhật thông tin ứng viên
-router.patch('/candidates/:candidateId', protect, candidateController.updateCandidate);
-
-// Xóa ứng viên
-router.delete('/candidates/:candidateId', protect, candidateController.deleteCandidate);
-
-// Lấy tất cả ứng viên
-router.get('/candidates', protect, candidateController.getAllCandidates);
+router.put('/:candidateId', protect, candidateController.updateCandidate);
 
 // Lấy chi tiết ứng viên
-router.get('/candidates/:candidateId', protect, candidateController.getCandidateById);
+router.get('/:candidateId', protect, candidateController.getCandidateById);
+
+// Xóa ứng viên
+router.delete('/:candidateId', protect, candidateController.deleteCandidate);
 
 module.exports = router; 

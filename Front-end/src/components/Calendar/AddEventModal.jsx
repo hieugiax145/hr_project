@@ -8,7 +8,7 @@ import axios from 'axios';
 const { TextArea } = Input;
 const { Option } = Select;
 
-const AddEventModal = ({ visible, onClose, onSave }) => {
+const AddEventModal = ({ visible, onClose, onSave, selectedDate }) => {
   const [form] = Form.useForm();
   const [candidates, setCandidates] = useState([]);
   const [users, setUsers] = useState([]);
@@ -24,29 +24,22 @@ const AddEventModal = ({ visible, onClose, onSave }) => {
           return;
         }
 
-        // Fetch candidates
+        // Fetch candidates for calendar
         try {
-          const candidatesResponse = await axios.get('http://localhost:8000/api/candidates', {
+          const candidatesResponse = await axios.get('http://localhost:8000/api/calendar/candidates', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           
-          console.log('Candidates response:', candidatesResponse.data);
-          
-          // Lấy dữ liệu từ response.candidates
-          const candidatesData = candidatesResponse.data.candidates || [];
-          
-          if (Array.isArray(candidatesData)) {
-            const availableCandidates = candidatesData.filter(
+          if (candidatesResponse.data && Array.isArray(candidatesResponse.data.candidates)) {
+            // Lọc các ứng viên có trạng thái phù hợp
+            const availableCandidates = candidatesResponse.data.candidates.filter(
               candidate => candidate && 
-              candidate.status && 
-              candidate.status !== 'Từ chối' && 
-              candidate.status !== 'Đã từ chối' &&
-              candidate._id // Đảm bảo có _id
+              candidate.stage && 
+              !['rejected', 'hired'].includes(candidate.stage)
             );
-            console.log('Available candidates:', availableCandidates);
             setCandidates(availableCandidates);
           } else {
-            console.error('Candidates data is not an array:', candidatesData);
+            console.error('Candidates data is not an array:', candidatesResponse.data);
             message.error('Dữ liệu ứng viên không đúng định dạng');
           }
         } catch (error) {
@@ -60,25 +53,15 @@ const AddEventModal = ({ visible, onClose, onSave }) => {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           
-          const usersData = usersResponse.data;
-          if (Array.isArray(usersData)) {
-            setUsers(usersData);
+          if (usersResponse.data && Array.isArray(usersResponse.data)) {
+            setUsers(usersResponse.data);
           } else {
-            console.error('Users data is not an array:', usersData);
+            console.error('Users data is not an array:', usersResponse.data);
             message.error('Dữ liệu người dùng không đúng định dạng');
           }
         } catch (error) {
           console.error('Error fetching users:', error);
-          if (error.response) {
-            console.error('Server error:', error.response.data);
-            message.error(error.response.data.message || 'Không thể tải danh sách người dùng');
-          } else if (error.request) {
-            console.error('No response:', error.request);
-            message.error('Không thể kết nối đến server');
-          } else {
-            console.error('Error:', error.message);
-            message.error('Có lỗi xảy ra khi tải danh sách người dùng');
-          }
+          message.error('Không thể tải danh sách người dùng');
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -91,6 +74,14 @@ const AddEventModal = ({ visible, onClose, onSave }) => {
       fetchData();
     }
   }, [visible]);
+
+  useEffect(() => {
+    if (selectedDate) {
+      form.setFieldsValue({
+        date: dayjs(selectedDate)
+      });
+    }
+  }, [selectedDate, form]);
 
   const handleSave = async () => {
     try {
@@ -113,7 +104,7 @@ const AddEventModal = ({ visible, onClose, onSave }) => {
         </Button>,
         <Button key="save" type="primary" onClick={handleSave} className="bg-[#656ED3]" loading={loading}>
           Lưu
-        </Button>,
+        </Button>
       ]}
       width={800}
       className="add-event-modal"
@@ -122,7 +113,7 @@ const AddEventModal = ({ visible, onClose, onSave }) => {
         form={form}
         layout="vertical"
         initialValues={{
-          date: dayjs(),
+          date: selectedDate ? dayjs(selectedDate) : dayjs(),
           startTime: dayjs('14:00', 'HH:mm'),
           endTime: dayjs('14:30', 'HH:mm'),
           eventType: 'offline',
@@ -168,7 +159,7 @@ const AddEventModal = ({ visible, onClose, onSave }) => {
                       key={candidate._id} 
                       value={candidate._id}
                     >
-                      {candidate.name} - {candidate.position} ({candidate.status})
+                      {candidate.name} - {candidate.position} ({candidate.stage})
                     </Option>
                   ))
                 ) : (

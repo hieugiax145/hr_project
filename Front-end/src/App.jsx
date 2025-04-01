@@ -17,6 +17,7 @@ import Candidates from './components/HR/Candidates';
 import CandidateDetail from './components/HR/CandidateDetail';
 import CEORecruitmentRequestDetail from './components/HR/CEORecruitmentRequestDetail';
 import Calendar from './components/Calendar/Calendar';
+import EventDetail from './pages/EventDetail';
 import Notifications from './components/Notifications/Notifications';
 
 const App = () => {
@@ -37,10 +38,15 @@ const App = () => {
           </DashboardLayout>
         } />
 
-        {/* Calendar route */}
+        {/* Calendar routes */}
         <Route path="/calendar" element={
           <DashboardLayout>
             <Calendar />
+          </DashboardLayout>
+        } />
+        <Route path="/calendar/event/:eventId" element={
+          <DashboardLayout>
+            <EventDetail />
           </DashboardLayout>
         } />
 

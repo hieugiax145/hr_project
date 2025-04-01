@@ -223,33 +223,24 @@ exports.updateCandidate = async (req, res) => {
 // Lấy tất cả ứng viên
 exports.getAllCandidates = async (req, res) => {
   try {
-    // Lấy danh sách ứng viên và populate thông tin vị trí
     const candidates = await Candidate.find()
-      .populate({
-        path: 'positionId',
-        select: 'title type mode'
-      })
+      .populate('positionId', 'name')
       .sort({ createdAt: -1 });
 
-    // Format lại dữ liệu để phù hợp với frontend
-    const formattedCandidates = candidates.map(candidate => ({
-      _id: candidate._id,
-      name: candidate.name,
-      email: candidate.email,
-      phone: candidate.phone,
-      position: candidate.positionId ? candidate.positionId.title : 'N/A',
-      type: candidate.positionId ? candidate.positionId.type : 'N/A',
-      mode: candidate.positionId ? candidate.positionId.mode : 'N/A',
-      stage: candidate.stage,
-      source: candidate.source,
-      customSource: candidate.customSource,
-      cv: candidate.cv,
-      notes: candidate.notes,
-      createdAt: candidate.createdAt
-    }));
-
     res.json({
-      candidates: formattedCandidates
+      candidates: candidates.map(candidate => ({
+        _id: candidate._id,
+        name: candidate.name,
+        email: candidate.email,
+        phone: candidate.phone,
+        position: candidate.positionId?.name || 'Chưa có vị trí',
+        stage: candidate.stage,
+        source: candidate.source,
+        customSource: candidate.customSource,
+        cv: candidate.cv,
+        notes: candidate.notes,
+        createdAt: candidate.createdAt
+      }))
     });
   } catch (error) {
     console.error('Error fetching all candidates:', error);
@@ -299,5 +290,33 @@ exports.getCandidateById = async (req, res) => {
   } catch (error) {
     console.error('Error fetching candidate details:', error);
     res.status(500).json({ message: 'Có lỗi xảy ra khi tải thông tin ứng viên' });
+  }
+};
+
+// Lấy danh sách ứng viên cho calendar
+exports.getCandidatesForCalendar = async (req, res) => {
+  try {
+    const candidates = await Candidate.find({
+      stage: { $nin: ['rejected', 'hired'] }
+    })
+    .populate('positionId', 'name')
+    .select('name email phone stage positionId')
+    .sort({ createdAt: -1 });
+
+    const formattedCandidates = candidates.map(candidate => ({
+      _id: candidate._id,
+      name: candidate.name,
+      email: candidate.email,
+      phone: candidate.phone,
+      position: candidate.positionId?.name || 'Chưa có vị trí',
+      stage: candidate.stage
+    }));
+
+    res.json({
+      candidates: formattedCandidates
+    });
+  } catch (error) {
+    console.error('Error fetching candidates for calendar:', error);
+    res.status(500).json({ message: 'Có lỗi xảy ra khi tải danh sách ứng viên' });
   }
 }; 

@@ -1,12 +1,19 @@
 const express = require('express');
-const { createInterview, getInterviews, updateInterview, deleteInterview } = require('../controllers/interviewController');
-const { protect, authorize } = require('../middlewares/authMiddleware');
-
 const router = express.Router();
+const { protect } = require('../middlewares/authMiddleware');
+const {
+  getInterviews,
+  createInterview,
+  updateInterview,
+  deleteInterview
+} = require('../controllers/interviewController');
 
-router.post('/', protect, authorize('admin', 'recruiter'), createInterview);
-router.get('/', protect, authorize('admin', 'recruiter'), getInterviews);
-router.put('/:id', protect, authorize('admin', 'recruiter'), updateInterview);
-router.delete('/:id', protect, authorize('admin'), deleteInterview);
+router.route('/')
+  .get(protect, getInterviews)
+  .post(protect, createInterview);
+
+router.route('/:id')
+  .put(protect, updateInterview)
+  .delete(protect, deleteInterview);
 
 module.exports = router;
