@@ -98,7 +98,7 @@ const JobsCandidates = () => {
       }
 
       // Kiểm tra xem có file CV được chọn không
-      if (!values.cv || !values.cv.fileList || values.cv.fileList.length === 0) {
+      if (!values.cv?.fileList?.[0]?.originFileObj) {
         message.error('Vui lòng upload CV');
         return;
       }
@@ -113,24 +113,16 @@ const JobsCandidates = () => {
         formData.append('customSource', values.customSource);
       }
 
-      // Lấy file từ fileList
+      // Lấy file từ fileList và kiểm tra kích thước
       const file = values.cv.fileList[0].originFileObj;
+      if (file.size > 5 * 1024 * 1024) { // 5MB
+        message.error('File không được vượt quá 5MB');
+        return;
+      }
       formData.append('cv', file);
 
       if (values.notes) {
         formData.append('notes', values.notes);
-      }
-
-      // Log FormData để debug
-      console.log('File info:', {
-        name: file.name,
-        type: file.type,
-        size: file.size
-      });
-
-      // Log all form data
-      for (let [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
       }
 
       const response = await axios.post(
@@ -539,21 +531,16 @@ const JobsCandidates = () => {
               >
                 <Upload.Dragger
                   name="cv"
-                  accept=".pdf"
                   maxCount={1}
                   beforeUpload={(file) => {
-                    const isPDF = file.type === 'application/pdf';
-                    if (!isPDF) {
-                      message.error('Chỉ chấp nhận file PDF');
-                    }
                     const isLt5M = file.size / 1024 / 1024 < 5;
                     if (!isLt5M) {
                       message.error('File phải nhỏ hơn 5MB');
+                      return Upload.LIST_IGNORE;
                     }
-                    return false;
+                    return false; // Prevent auto upload
                   }}
                   onChange={(info) => {
-                    console.log('Upload onChange:', info.file);
                     if (info.file.status === 'removed') {
                       form.setFieldValue('cv', undefined);
                     }
@@ -562,8 +549,8 @@ const JobsCandidates = () => {
                   <p className="ant-upload-drag-icon">
                     <InboxOutlined />
                   </p>
-                  <p className="ant-upload-text">Click hoặc kéo thả file PDF vào đây</p>
-                  <p className="ant-upload-hint">Chỉ chấp nhận file PDF, tối đa 5MB</p>
+                  <p className="ant-upload-text">Click hoặc kéo thả file vào đây</p>
+                  <p className="ant-upload-hint">Tối đa 5MB</p>
                 </Upload.Dragger>
               </Form.Item>
 

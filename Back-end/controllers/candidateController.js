@@ -35,6 +35,7 @@ exports.createCandidate = async (req, res) => {
     // Log để debug
     console.log('Request body:', req.body);
     console.log('File:', req.file);
+    console.log('Uploaded file:', req.uploadedFile);
 
     // Kiểm tra vị trí có tồn tại không
     const position = await Position.findById(positionId);
@@ -43,7 +44,7 @@ exports.createCandidate = async (req, res) => {
     }
 
     // Kiểm tra file CV có được upload không
-    if (!req.file || !req.file.cloudinaryUrl) {
+    if (!req.uploadedFile || !req.uploadedFile.url || !req.uploadedFile.public_id) {
       return res.status(400).json({ message: 'Vui lòng upload CV' });
     }
 
@@ -68,8 +69,8 @@ exports.createCandidate = async (req, res) => {
       positionId,
       stage: 'new',
       cv: {
-        url: req.file.cloudinaryUrl,
-        public_id: req.file.cloudinaryPublicId
+        url: req.uploadedFile.url,
+        public_id: req.uploadedFile.public_id
       }
     });
 

@@ -26,14 +26,19 @@ const AddEventModal = ({ visible, onClose, onSave, selectedDate }) => {
 
         // Fetch candidates for calendar
         try {
-          const candidatesResponse = await axios.get('http://localhost:8000/api/calendar/candidates', {
-            headers: { 'Authorization': `Bearer ${token}` }
+          const candidatesResponse = await axios.get('http://localhost:8000/api/candidates/calendar/candidates', {
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
           });
           
           if (candidatesResponse.data && Array.isArray(candidatesResponse.data.candidates)) {
-            // Lọc các ứng viên có trạng thái phù hợp
+            // Lọc các ứng viên có trạng thái phù hợp và không null
             const availableCandidates = candidatesResponse.data.candidates.filter(
               candidate => candidate && 
+              candidate._id && 
+              candidate.name && 
               candidate.stage && 
               !['rejected', 'hired'].includes(candidate.stage)
             );
@@ -54,7 +59,11 @@ const AddEventModal = ({ visible, onClose, onSave, selectedDate }) => {
           });
           
           if (usersResponse.data && Array.isArray(usersResponse.data)) {
-            setUsers(usersResponse.data);
+            // Lọc các user không null và có đầy đủ thông tin
+            const validUsers = usersResponse.data.filter(
+              user => user && user._id && user.username && user.email
+            );
+            setUsers(validUsers);
           } else {
             console.error('Users data is not an array:', usersResponse.data);
             message.error('Dữ liệu người dùng không đúng định dạng');
@@ -221,7 +230,7 @@ const AddEventModal = ({ visible, onClose, onSave, selectedDate }) => {
                 variant="outlined"
                 mode="multiple"
                 placeholder="Chọn người tham dự"
-                options={users.filter(user => user && user._id).map(user => ({
+                options={users.map(user => ({
                   value: user._id,
                   label: `${user.username} (${user.email})`
                 }))}

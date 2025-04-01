@@ -15,6 +15,12 @@ if (!fs.existsSync(tempDir)) {
   fs.mkdirSync(tempDir);
 }
 
+// Kiểm tra cấu hình Cloudinary
+if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+  console.error('Cloudinary configuration is missing. Please check your .env file');
+  throw new Error('Cloudinary configuration is missing');
+}
+
 // Cấu hình Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -26,8 +32,8 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'cv',
-    resource_type: 'auto',
+    folder: 'cvs',
+    resource_type: 'raw',
     format: 'pdf',
     use_filename: true,
     unique_filename: true,
@@ -74,78 +80,28 @@ const handleUpload = async (req, res, next) => {
         return res.status(400).json({ message: 'Vui lòng chọn file để upload' });
       }
 
-      console.log('File saved locally:', {
+      console.log('File uploaded successfully:', {
+        filename: req.file.filename,
         path: req.file.path,
         size: req.file.size,
-        mimetype: req.file.mimetype
+        mimetype: req.file.mimetype,
+        cloudinaryUrl: req.file.path,
+        cloudinaryPublicId: req.file.filename
       });
 
-      try {
-        // Upload lên Cloudinary với cấu hình cho PDF
-        console.log('Attempting to upload to Cloudinary...');
-        const result = await cloudinary.uploader.upload(req.file.path, {
-          resource_type: 'raw',
-          folder: 'cvs',
-          public_id: `cv-${Date.now()}`,
-          overwrite: true,
-          use_filename: false,
-          unique_filename: true,
-          type: 'upload',
-          access_mode: 'public',
-          access_type: 'anonymous'
-        });
-        
-        console.log('Cloudinary upload successful:', {
-          public_id: result.public_id,
-          url: result.secure_url,
-          format: result.format,
-          size: result.bytes,
-          resource_type: result.resource_type
-        });
-        
-        // Xóa file tạm sau khi upload thành công
-        fs.unlink(req.file.path, (err) => {
-          if (err) {
-            console.error('Error deleting temp file:', err);
-          } else {
-            console.log('Temp file deleted successfully');
-          }
-        });
-        
-        // Gán URL và public_id từ Cloudinary vào req.file
-        req.file.cloudinaryUrl = result.secure_url;
-        req.file.cloudinaryPublicId = result.public_id;
-        
-        next();
-      } catch (cloudinaryError) {
-        console.error('Cloudinary upload error:', {
-          message: cloudinaryError.message,
-          code: cloudinaryError.http_code,
-          stack: cloudinaryError.stack,
-          error: cloudinaryError.error
-        });
-
-        // Xóa file tạm nếu upload thất bại
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.error('Error deleting temp file:', err);
-        });
-
-        return res.status(500).json({ 
-          message: 'Lỗi khi upload file lên cloud',
-          error: cloudinaryError.message,
-          details: cloudinaryError.error || cloudinaryError.message,
-          code: cloudinaryError.http_code
-        });
-      }
+      // Thêm thông tin file vào request
+      req.uploadedFile = {
+        url: req.file.path,
+        public_id: req.file.filename
+      };
+      
+      next();
     });
   } catch (error) {
-    console.error('Unexpected error:', {
-      message: error.message,
-      stack: error.stack
-    });
+    console.error('Unexpected error in handleUpload:', error);
     return res.status(500).json({ 
-      message: 'Có lỗi không mong muốn xảy ra',
-      error: error.message
+      message: 'Có lỗi xảy ra trong quá trình xử lý upload',
+      error: error.message 
     });
   }
 };
