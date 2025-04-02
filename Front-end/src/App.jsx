@@ -23,6 +23,7 @@ import Notifications from './components/Notifications/Notifications';
 import EmailList from './components/Email/EmailList';
 import CreateNotification from './components/Notifications/CreateNotification';
 import SendEmail from './components/HR/SendEmail';
+import EditNotification from './components/Notifications/EditNotification';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -103,6 +104,11 @@ const App = () => {
         <Route path="/notifications/create" element={
           <DashboardLayout>
             <CreateNotification />
+          </DashboardLayout>
+        } />
+        <Route path="/notifications/edit/:id" element={
+          <DashboardLayout>
+            <EditNotification />
           </DashboardLayout>
         } />
 

@@ -5,26 +5,18 @@ const { upload } = require('../middlewares/uploadMiddleware');
 const {
   registerUser,
   loginUser,
-  forgotPassword,
-  resetPassword,
   getUserProfile,
   updateUserProfile,
-  uploadAvatar,
-  getAllUsers
+  uploadAvatar
 } = require('../controllers/userController');
 
-// Auth routes
+// Public routes
 router.post('/register', registerUser);
 router.post('/login', loginUser);
-router.post('/forgot-password', forgotPassword);
-router.post('/reset-password', resetPassword);
 
-// Profile routes
+// Protected routes
 router.get('/profile', protect, getUserProfile);
 router.put('/profile', protect, updateUserProfile);
 router.put('/avatar', protect, upload.single('avatar'), uploadAvatar);
-
-// Users routes
-router.get('/all', protect, getAllUsers);
 
 module.exports = router;

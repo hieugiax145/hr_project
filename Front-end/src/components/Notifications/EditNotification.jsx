@@ -1,65 +1,242 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Select, Button, Space, Typography, DatePicker, Upload, Radio, Table, Checkbox, message } from 'antd';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { notificationService } from '../../services/notificationService';
+import dayjs from 'dayjs';
 
 const { Title } = Typography;
 const { Option } = Select;
 
-const CreateNotification = () => {
+const EditNotification = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
   const [trainingCourses, setTrainingCourses] = useState([]);
   const [preparationTasks, setPreparationTasks] = useState([]);
-  const [candidates, setCandidates] = useState([]);
-  const [hrList, setHrList] = useState([]); 
+  const [hrList, setHrList] = useState([]);
   const [fileList, setFileList] = useState({
     personalPhoto: [],
     idCardPhotos: []
   });
+  const [notification, setNotification] = useState(null);
 
   useEffect(() => {
-    loadInitialData();
-  }, []);
+    loadData();
+  }, [id]);
 
-  const loadInitialData = async () => {
+  const loadData = async () => {
     try {
-      const [candidatesRes, hrRes] = await Promise.all([
-        notificationService.getEligibleCandidates(),
+      setLoading(true);
+      const [notificationRes, hrRes] = await Promise.all([
+        notificationService.getNotificationById(id),
         notificationService.getHRList()
       ]);
-      console.log('Candidates response:', candidatesRes);
-      console.log('HR response:', hrRes);
-      setCandidates(Array.isArray(candidatesRes?.data) ? candidatesRes.data : []);
+
+      const notification = notificationRes.data;
       setHrList(Array.isArray(hrRes) ? hrRes : []);
+      setNotification(notification);
+      
+      // Log để kiểm tra dữ liệu
+      console.log('Raw notification data:', notification);
+      console.log('HR list:', hrRes);
+      
+      // Chuyển đổi dữ liệu cho form
+      const formValues = {
+        ...notification,
+        // Chuyển đổi các trường ngày tháng
+        birthDate: notification.birthDate ? dayjs(notification.birthDate) : null,
+        'idCard.issueDate': notification.idCard?.issueDate ? dayjs(notification.idCard.issueDate) : null,
+        startDate: notification.startDate ? dayjs(notification.startDate) : null,
+        
+        // Chuyển đổi ảnh cá nhân
+        personalPhoto: notification.personalPhoto ? {
+          fileList: [{
+            uid: '-1',
+            name: 'personalPhoto',
+            status: 'done',
+            url: notification.personalPhoto,
+            thumbUrl: notification.personalPhoto
+          }]
+        } : { fileList: [] },
+        
+        // Chuyển đổi ảnh CCCD
+        'idCard.photos': notification.idCard?.photos ? {
+          fileList: notification.idCard.photos.map((url, index) => ({
+            uid: `-${index + 1}`,
+            name: `idCardPhoto${index + 1}`,
+            status: 'done',
+            url: url,
+            thumbUrl: url
+          }))
+        } : { fileList: [] },
+
+        // Đảm bảo các trường có giá trị mặc định
+        gender: notification.gender || 'male',
+        'idCard.number': notification.idCard?.number || '',
+        'idCard.issuePlace': notification.idCard?.issuePlace || '',
+        insuranceNumber: notification.insuranceNumber || '',
+        taxCode: notification.taxCode || '',
+        'bankAccount.number': notification.bankAccount?.number || '',
+        'bankAccount.bank': notification.bankAccount?.bank || '',
+        phone: notification.phone || '',
+        email: notification.email || '',
+        permanentAddress: notification.permanentAddress || '',
+        'emergencyContact.name': notification.emergencyContact?.name || '',
+        'emergencyContact.relationship': notification.emergencyContact?.relationship || '',
+        'emergencyContact.phone': notification.emergencyContact?.phone || '',
+        'emergencyContact.email': notification.emergencyContact?.email || '',
+        'emergencyContact.address': notification.emergencyContact?.address || '',
+        'education.level': notification.education?.level || 'other',
+        'education.schoolName': notification.education?.schoolName || '',
+        'education.major': notification.education?.major || '',
+        'education.graduationYear': notification.education?.graduationYear || '',
+        expectedSalary: notification.expectedSalary || '',
+        contractType: notification.contractType || '',
+        documents: notification.documents || [],
+        hrInCharge: notification.hrInCharge?._id || notification.hrInCharge || ''
+      };
+
+      // Đảm bảo các mảng có giá trị mặc định
+      setTrainingCourses(notification.trainingCourses || []);
+      setPreparationTasks(notification.preparationTasks || []);
+
+      // Cập nhật fileList cho ảnh
+      if (notification.personalPhoto) {
+        setFileList(prev => ({
+          ...prev,
+          personalPhoto: [{
+            uid: '-1',
+            name: 'personalPhoto',
+            status: 'done',
+            url: notification.personalPhoto,
+            thumbUrl: notification.personalPhoto
+          }]
+        }));
+      }
+
+      if (notification.idCard?.photos) {
+        setFileList(prev => ({
+          ...prev,
+          idCardPhotos: notification.idCard.photos.map((url, index) => ({
+            uid: `-${index + 1}`,
+            name: `idCardPhoto${index + 1}`,
+            status: 'done',
+            url: url,
+            thumbUrl: url
+          }))
+        }));
+      }
+
+      // Log để kiểm tra dữ liệu
+      console.log('Form values:', formValues);
+      console.log('Training courses:', notification.trainingCourses);
+      console.log('Preparation tasks:', notification.preparationTasks);
+      console.log('File list:', fileList);
+
+      form.setFieldsValue(formValues);
     } catch (error) {
       message.error('Lỗi khi tải dữ liệu');
       console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const onCandidateChange = (value) => {
-    console.log('Selected value:', value);
-    const selectedCandidate = candidates.find(c => c._id === value);
-    console.log('Selected candidate:', selectedCandidate);
-    if (selectedCandidate) {
-      const formValues = {
-        candidateId: value,
-        fullName: selectedCandidate.name,
-        position: selectedCandidate.positionId?.title || 'Chưa có chức vụ',
-        department: selectedCandidate.positionId?.department || 'Chưa có phòng ban',
-        branch: selectedCandidate.positionId?.branch || 'Chưa có chi nhánh',
-        email: selectedCandidate.email,
-        phone: selectedCandidate.phone,
-        address: selectedCandidate.address || '',
-        education: selectedCandidate.education || '',
-        experience: selectedCandidate.experience || '',
-        skills: selectedCandidate.skills || '',
-        hrInCharge: selectedCandidate.hrInCharge || undefined
+  const onFinish = async (values) => {
+    try {
+      // Log chi tiết các giá trị form
+      console.log('Form values:', JSON.stringify(values, null, 2));
+
+      // Kiểm tra các trường bắt buộc
+      const requiredFields = [
+        'candidateId', 
+        'hrInCharge', 
+        'position', 
+        'department', 
+        'branch',
+        'gender',
+        'birthDate',
+        'idCard.number',
+        'idCard.issueDate',
+        'idCard.issuePlace',
+        'startDate',
+        'insuranceNumber',
+        'taxCode',
+        'bankAccount.number',
+        'bankAccount.bank'
+      ];
+      
+      const missingFields = requiredFields.filter(field => {
+        const value = field.split('.').reduce((obj, key) => obj?.[key], values);
+        console.log(`Checking field ${field}:`, value); // Log từng trường
+        return !value;
+      });
+      
+      if (missingFields.length > 0) {
+        console.log('Missing fields:', missingFields); // Log các trường thiếu
+        message.error(`Vui lòng điền đầy đủ thông tin: ${missingFields.join(', ')}`);
+        return;
+      }
+
+      // Tạo object chứa tất cả dữ liệu
+      const notificationData = {
+        ...values,
+        trainingCourses,
+        preparationTasks,
+        birthDate: values.birthDate?.format('YYYY-MM-DD'),
+        'idCard.issueDate': values.idCard?.issueDate?.format('YYYY-MM-DD'),
+        startDate: values.startDate?.format('YYYY-MM-DD'),
+        emergencyContact: {
+          name: values.emergencyContact?.name || '',
+          relationship: values.emergencyContact?.relationship || '',
+          phone: values.emergencyContact?.phone || '',
+          email: values.emergencyContact?.email || '',
+          address: values.emergencyContact?.address || ''
+        },
+        education: {
+          level: values.education?.level || 'other',
+          schoolName: values.education?.schoolName || '',
+          major: values.education?.major || '',
+          graduationYear: values.education?.graduationYear || ''
+        }
       };
-      console.log('Setting form values:', formValues);
-      form.setFieldsValue(formValues);
+
+      // Log để kiểm tra dữ liệu
+      console.log('Notification data:', JSON.stringify(notificationData, null, 2));
+
+      // Tạo FormData và thêm dữ liệu
+      const formData = new FormData();
+      formData.append('data', JSON.stringify(notificationData));
+
+      // Thêm file mới nếu có
+      if (values.personalPhoto?.fileList?.[0]?.originFileObj) {
+        formData.append('personalPhoto', values.personalPhoto.fileList[0].originFileObj);
+        console.log('Adding personal photo:', values.personalPhoto.fileList[0].originFileObj);
+      }
+
+      if (values.idCard?.photos?.fileList) {
+        values.idCard.photos.fileList.forEach((file, index) => {
+          if (file.originFileObj) {
+            formData.append('idCardPhotos', file.originFileObj);
+            console.log(`Adding ID card photo ${index + 1}:`, file.originFileObj);
+          }
+        });
+      }
+
+      // Log FormData contents for debugging
+      console.log('FormData contents:');
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + (pair[1] instanceof File ? pair[1].name : pair[1]));
+      }
+
+      await notificationService.updateNotification(id, formData);
+      message.success('Cập nhật thông báo thành công');
+      navigate('/notifications');
+    } catch (error) {
+      console.error('Error updating notification:', error);
+      message.error(error.response?.data?.message || 'Lỗi khi cập nhật thông báo');
     }
   };
 
@@ -192,174 +369,12 @@ const CreateNotification = () => {
     }
   ];
 
-  const onFinish = async (values) => {
-    try {
-      // Log chi tiết các giá trị form
-      console.log('Form values:', JSON.stringify(values, null, 2));
-
-      // Kiểm tra các trường bắt buộc
-      const requiredFields = [
-        'candidateId', 
-        'hrInCharge', 
-        'position', 
-        'department', 
-        'branch',
-        'gender',
-        'birthDate',
-        'idCard.number',
-        'idCard.issueDate',
-        'idCard.issuePlace',
-        'startDate',
-        'insuranceNumber',
-        'taxCode',
-        'bankAccount.number',
-        'bankAccount.bank'
-      ];
-      
-      const missingFields = requiredFields.filter(field => {
-        const value = field.split('.').reduce((obj, key) => obj?.[key], values);
-        console.log(`Checking field ${field}:`, value); // Log từng trường
-        return !value;
-      });
-      
-      if (missingFields.length > 0) {
-        console.log('Missing fields:', missingFields); // Log các trường thiếu
-        message.error(`Vui lòng điền đầy đủ thông tin: ${missingFields.join(', ')}`);
-        return;
-      }
-
-      // Kiểm tra ảnh
-      if (!values.personalPhoto?.fileList?.[0]?.originFileObj) {
-        message.error('Vui lòng tải lên ảnh cá nhân');
-        return;
-      }
-
-      if (!values.idCard?.photos?.fileList?.[0]?.originFileObj) {
-        message.error('Vui lòng tải lên ảnh CMND/CCCD');
-        return;
-      }
-
-      // Kiểm tra dữ liệu từ state
-      if (trainingCourses.length > 0) {
-        const invalidTrainingCourses = trainingCourses.filter(course => 
-          !course.name || !course.issuedBy || !course.year
-        );
-        if (invalidTrainingCourses.length > 0) {
-          message.error('Vui lòng điền đầy đủ thông tin cho các khóa huấn luyện');
-          return;
-        }
-      }
-
-      if (preparationTasks.length > 0) {
-        const invalidTasks = preparationTasks.filter(task => 
-          !task.content || !task.department
-        );
-        if (invalidTasks.length > 0) {
-          message.error('Vui lòng điền đầy đủ thông tin cho các công việc cần chuẩn bị');
-          return;
-        }
-      }
-
-      // Tạo object chứa tất cả dữ liệu
-      const notificationData = {
-        candidateId: values.candidateId,
-        position: values.position,
-        department: values.department,
-        branch: values.branch,
-        hrInCharge: values.hrInCharge,
-        gender: values.gender,
-        birthDate: values.birthDate?.format('YYYY-MM-DD'),
-        idCard: {
-          number: values.idCard?.number,
-          issueDate: values.idCard?.issueDate?.format('YYYY-MM-DD'),
-          issuePlace: values.idCard?.issuePlace
-        },
-        startDate: values.startDate?.format('YYYY-MM-DD'),
-        insuranceNumber: values.insuranceNumber,
-        taxCode: values.taxCode,
-        bankAccount: {
-          number: values.bankAccount?.number,
-          bank: values.bankAccount?.bank
-        },
-        phone: values.phone,
-        email: values.email,
-        permanentAddress: values.permanentAddress,
-        emergencyContact: {
-          name: values.emergencyContact?.name || '',
-          relationship: values.emergencyContact?.relationship || '',
-          phone: values.emergencyContact?.phone || '',
-          email: values.emergencyContact?.email || '',
-          address: values.emergencyContact?.address || ''
-        },
-        education: {
-          level: values.education?.level || 'other',
-          schoolName: values.education?.schoolName || '',
-          major: values.education?.major || '',
-          graduationYear: values.education?.graduationYear || ''
-        },
-        expectedSalary: values.expectedSalary,
-        contractType: values.contractType,
-        documents: values.documents || [],
-        trainingCourses: trainingCourses.map(course => ({
-          name: course.name,
-          issuedBy: course.issuedBy,
-          year: course.year
-        })),
-        preparationTasks: preparationTasks.map(task => ({
-          content: task.content,
-          department: task.department
-        }))
-      };
-
-      // Log để kiểm tra dữ liệu
-      console.log('Notification data:', JSON.stringify(notificationData, null, 2));
-
-      // Tạo FormData và thêm dữ liệu
-      const formData = new FormData();
-      formData.append('data', JSON.stringify(notificationData));
-
-      // Thêm file nếu có
-      if (values.personalPhoto?.fileList?.[0]?.originFileObj) {
-        formData.append('personalPhoto', values.personalPhoto.fileList[0].originFileObj);
-        console.log('Adding personal photo:', values.personalPhoto.fileList[0].originFileObj);
-      }
-
-      // Thêm ảnh CCCD nếu có
-      if (values.idCard?.photos?.fileList) {
-        values.idCard.photos.fileList.forEach((file, index) => {
-          if (file.originFileObj) {
-            formData.append('idCardPhotos', file.originFileObj);
-            console.log(`Adding ID card photo ${index + 1}:`, file.originFileObj);
-          }
-        });
-      }
-
-      // Log FormData contents for debugging
-      console.log('FormData contents:');
-      for (let pair of formData.entries()) {
-        console.log(pair[0] + ': ' + (pair[1] instanceof File ? pair[1].name : pair[1]));
-      }
-
-      try {
-        console.log('Sending request to API...');
-        const response = await notificationService.createNotification(formData);
-        console.log('Response:', response);
-        message.success('Tạo thông báo thành công');
-        navigate('/notifications');
-      } catch (error) {
-        console.error('API Error details:', error.response?.data);
-        console.error('Error status:', error.response?.status);
-        console.error('Error message:', error.message);
-        message.error(error.response?.data?.message || 'Lỗi khi tạo thông báo');
-      }
-    } catch (error) {
-      console.error('Error creating notification:', error);
-      message.error('Lỗi khi tạo thông báo');
-    }
-  };
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <div className="p-6 pt-[104px] pl-[298px]">
+    <div className="p-6 pt-[80px] pl-[298px]">
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center gap-4 mb-6">
           <Button 
@@ -368,7 +383,7 @@ const CreateNotification = () => {
           >
             Quay lại
           </Button>
-          <Title level={4} className="m-0">Khởi tạo thông báo ứng viên mới</Title>
+          <Title level={4} className="m-0">Chỉnh sửa thông báo ứng viên</Title>
         </div>
 
         <Form
@@ -376,10 +391,6 @@ const CreateNotification = () => {
           layout="vertical"
           onFinish={onFinish}
           className="max-w-[800px]"
-          initialValues={{
-            personalPhoto: { fileList: [] },
-            'idCard.photos': { fileList: [] }
-          }}
         >
           {/* THÔNG TIN TIẾP NHẬN */}
           <div className="mb-8">
@@ -390,32 +401,31 @@ const CreateNotification = () => {
                 name="candidateId"
                 rules={[{ required: true, message: 'Vui lòng chọn ứng viên' }]}
               >
-                <Select onChange={onCandidateChange}>
-                  {candidates.map(candidate => (
-                    <Option key={candidate._id} value={candidate._id}>{candidate.name}</Option>
-                  ))}
-                </Select>
+                <Input disabled value={notification?.candidateId?.name || ''} />
               </Form.Item>
 
               <Form.Item
                 label="Chức vụ"
                 name="position"
+                rules={[{ required: true, message: 'Vui lòng nhập chức vụ' }]}
               >
-                <Input disabled />
+                <Input disabled value={notification?.position || ''} />
               </Form.Item>
 
               <Form.Item
                 label="Phòng"
                 name="department"
+                rules={[{ required: true, message: 'Vui lòng nhập phòng ban' }]}
               >
-                <Input disabled />
+                <Input disabled value={notification?.department || ''} />
               </Form.Item>
 
               <Form.Item
                 label="Chi nhánh"
                 name="branch"
+                rules={[{ required: true, message: 'Vui lòng nhập chi nhánh' }]}
               >
-                <Input disabled />
+                <Input disabled value={notification?.branch || ''} />
               </Form.Item>
 
               <Form.Item
@@ -467,42 +477,37 @@ const CreateNotification = () => {
               </Form.Item>
 
               <Form.Item
-                label={<span>Ngày sinh <span className="text-red-500">*</span></span>}
+                label="Ngày sinh"
                 name="birthDate"
-                rules={[{ required: true, message: 'Vui lòng chọn ngày sinh' }]}
               >
                 <DatePicker className="w-full" />
               </Form.Item>
 
               <Form.Item
-                label={<span>CMND/CCCD <span className="text-red-500">*</span></span>}
-                name={['idCard', 'number']}
-                rules={[{ required: true, message: 'Vui lòng nhập số CMND/CCCD' }]}
+                label="CMND/CCCD"
+                name="idCard.number"
               >
                 <Input />
               </Form.Item>
 
               <Form.Item
-                label={<span>Ngày cấp <span className="text-red-500">*</span></span>}
-                name={['idCard', 'issueDate']}
-                rules={[{ required: true, message: 'Vui lòng chọn ngày cấp' }]}
+                label="Ngày cấp"
+                name="idCard.issueDate"
               >
                 <DatePicker className="w-full" />
               </Form.Item>
 
               <Form.Item
-                label={<span>Nơi cấp <span className="text-red-500">*</span></span>}
-                name={['idCard', 'issuePlace']}
-                rules={[{ required: true, message: 'Vui lòng nhập nơi cấp' }]}
+                label="Nơi cấp"
+                name="idCard.issuePlace"
                 className="col-span-2"
               >
                 <Input />
               </Form.Item>
 
               <Form.Item
-                label={<span>Ảnh CMND/CCCD <span className="text-red-500">*</span></span>}
-                name={['idCard', 'photos']}
-                rules={[{ required: true, message: 'Vui lòng tải lên ảnh CMND/CCCD' }]}
+                label="Ảnh CMND/CCCD"
+                name="idCard.photos"
                 className="col-span-2"
               >
                 <Upload
@@ -522,41 +527,36 @@ const CreateNotification = () => {
             <h3 className="text-base font-medium mt-6 mb-4">Thông tin khác:</h3>
             <div className="grid grid-cols-2 gap-4">
               <Form.Item
-                label={<span>Ngày vào làm việc <span className="text-red-500">*</span></span>}
+                label="Ngày vào làm việc"
                 name="startDate"
-                rules={[{ required: true, message: 'Vui lòng chọn ngày vào làm việc' }]}
               >
                 <DatePicker className="w-full" />
               </Form.Item>
 
               <Form.Item
-                label={<span>Số sổ BHXH <span className="text-red-500">*</span></span>}
+                label="Số sổ BHXH"
                 name="insuranceNumber"
-                rules={[{ required: true, message: 'Vui lòng nhập số sổ BHXH' }]}
               >
                 <Input />
               </Form.Item>
 
               <Form.Item
-                label={<span>Mã số thuế cá nhân <span className="text-red-500">*</span></span>}
+                label="Mã số thuế cá nhân"
                 name="taxCode"
-                rules={[{ required: true, message: 'Vui lòng nhập mã số thuế' }]}
               >
                 <Input />
               </Form.Item>
 
               <Form.Item
-                label={<span>Số tài khoản <span className="text-red-500">*</span></span>}
-                name={['bankAccount', 'number']}
-                rules={[{ required: true, message: 'Vui lòng nhập số tài khoản' }]}
+                label="Số tài khoản"
+                name="bankAccount.number"
               >
                 <Input />
               </Form.Item>
 
               <Form.Item
-                label={<span>Tại ngân hàng <span className="text-red-500">*</span></span>}
-                name={['bankAccount', 'bank']}
-                rules={[{ required: true, message: 'Vui lòng nhập tên ngân hàng' }]}
+                label="Tại ngân hàng"
+                name="bankAccount.bank"
               >
                 <Input />
               </Form.Item>
@@ -594,35 +594,35 @@ const CreateNotification = () => {
             <div className="grid grid-cols-2 gap-4">
               <Form.Item
                 label="Họ tên"
-                name={['emergencyContact', 'name']}
+                name="emergencyContact.name"
               >
                 <Input />
               </Form.Item>
 
               <Form.Item
                 label="Mối quan hệ"
-                name={['emergencyContact', 'relationship']}
+                name="emergencyContact.relationship"
               >
                 <Input />
               </Form.Item>
 
               <Form.Item
                 label="Số điện thoại"
-                name={['emergencyContact', 'phone']}
+                name="emergencyContact.phone"
               >
                 <Input />
               </Form.Item>
 
               <Form.Item
                 label="Email"
-                name={['emergencyContact', 'email']}
+                name="emergencyContact.email"
               >
                 <Input />
               </Form.Item>
 
               <Form.Item
                 label="Địa chỉ"
-                name={['emergencyContact', 'address']}
+                name="emergencyContact.address"
                 className="col-span-2"
               >
                 <Input />
@@ -636,7 +636,7 @@ const CreateNotification = () => {
             <div className="grid grid-cols-2 gap-4">
               <Form.Item
                 label="Trình độ"
-                name={['education', 'level']}
+                name="education.level"
               >
                 <Select>
                   <Option value="postgraduate">Sau đại học</Option>
@@ -648,21 +648,21 @@ const CreateNotification = () => {
 
               <Form.Item
                 label="Tên trường"
-                name={['education', 'schoolName']}
+                name="education.schoolName"
               >
                 <Input />
               </Form.Item>
 
               <Form.Item
                 label="Chuyên ngành"
-                name={['education', 'major']}
+                name="education.major"
               >
                 <Input />
               </Form.Item>
 
               <Form.Item
                 label="Năm tốt nghiệp"
-                name={['education', 'graduationYear']}
+                name="education.graduationYear"
               >
                 <Input />
               </Form.Item>
@@ -762,4 +762,4 @@ const CreateNotification = () => {
   );
 };
 
-export default CreateNotification; 
+export default EditNotification; 

@@ -75,12 +75,12 @@ const Notifications = () => {
     },
     {
       title: 'Người tạo',
-      dataIndex: ['creator', 'name'],
+      dataIndex: ['creator', 'fullName'],
       key: 'creator',
     },
     {
       title: 'Nhân sự phụ trách',
-      dataIndex: ['hrInCharge', 'name'],
+      dataIndex: ['hrInCharge', 'fullName'],
       key: 'hrInCharge',
     },
     {

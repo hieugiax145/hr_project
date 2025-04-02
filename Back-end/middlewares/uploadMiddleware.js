@@ -32,81 +32,61 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'cvs',
-    resource_type: 'raw',
-    format: 'pdf',
+    folder: 'notifications',
+    resource_type: 'auto',
     use_filename: true,
     unique_filename: true,
     type: 'upload',
-    access_mode: 'public',
-    transformation: [
-      { flags: 'attachment' }
-    ]
+    access_mode: 'public'
   }
 });
 
 // Cấu hình multer
 const upload = multer({
   storage: storage,
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
-      cb(null, true);
-    } else {
-      cb(new Error('Chỉ chấp nhận file PDF'), false);
-    }
-  },
   limits: {
     fileSize: 5 * 1024 * 1024 // Giới hạn 5MB
+  },
+  fileFilter: function (req, file, cb) {
+    // Chỉ chấp nhận file ảnh
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Chỉ chấp nhận file ảnh!'));
+    }
   }
 });
 
 // Middleware xử lý upload và Cloudinary
-const handleUpload = async (req, res, next) => {
-  try {
-    console.log('Starting file upload process...');
-    
-    upload.single('cv')(req, res, async function (err) {
-      if (err instanceof multer.MulterError) {
-        console.error('Multer error:', err);
-        return res.status(400).json({ message: 'Lỗi khi upload file: ' + err.message });
-      } 
-      
-      if (err) {
-        console.error('Upload error:', err);
-        return res.status(400).json({ message: err.message || 'Có lỗi xảy ra khi upload file' });
-      }
+const handleUpload = (req, res, next) => {
+  console.log('Starting file upload process...');
+  
+  // Cấu hình upload fields
+  const uploadFields = upload.fields([
+    { name: 'personalPhoto', maxCount: 1 },
+    { name: 'idCardPhotos', maxCount: 2 }
+  ]);
 
-      if (!req.file) {
-        return res.status(400).json({ message: 'Vui lòng chọn file để upload' });
-      }
+  uploadFields(req, res, function (err) {
+    if (err instanceof multer.MulterError) {
+      console.error('Multer error:', err);
+      return res.status(400).json({ message: 'Lỗi khi upload file' });
+    } else if (err) {
+      console.error('Upload error:', err);
+      return res.status(400).json({ message: err.message });
+    }
 
-      console.log('File uploaded successfully:', {
-        filename: req.file.filename,
-        path: req.file.path,
-        size: req.file.size,
-        mimetype: req.file.mimetype,
-        cloudinaryUrl: req.file.path,
-        cloudinaryPublicId: req.file.filename
-      });
-
-      // Thêm thông tin file vào request
-      req.uploadedFile = {
-        url: req.file.path,
-        public_id: req.file.filename
-      };
-      
-      next();
+    // Log thông tin về files đã upload
+    console.log('Uploaded files:', {
+      personalPhoto: req.files?.personalPhoto ? req.files.personalPhoto[0] : null,
+      idCardPhotos: req.files?.idCardPhotos || []
     });
-  } catch (error) {
-    console.error('Unexpected error in handleUpload:', error);
-    return res.status(500).json({ 
-      message: 'Có lỗi xảy ra trong quá trình xử lý upload',
-      error: error.message 
-    });
-  }
+
+    next();
+  });
 };
 
-module.exports = {
+module.exports = { 
   upload,
-  handleUpload
+  handleUpload 
 };

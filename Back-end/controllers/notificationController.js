@@ -6,60 +6,149 @@ const { validateNotification } = require('../validation/notificationValidation')
 
 exports.createNotification = async (req, res) => {
   try {
-    const { error } = validateNotification(req.body);
-    if (error) {
-      return res.status(400).json({ message: error.details[0].message });
+    console.log('Received request body:', req.body);
+    console.log('Received files:', req.files);
+
+    // Parse JSON data from FormData
+    let notificationData;
+    try {
+      if (!req.body.data) {
+        console.error('No data field in request body');
+        return res.status(400).json({ message: 'Dữ liệu không hợp lệ' });
+      }
+      notificationData = JSON.parse(req.body.data);
+      console.log('Parsed notification data:', notificationData);
+    } catch (error) {
+      console.error('Error parsing notification data:', error);
+      return res.status(400).json({ message: 'Dữ liệu không hợp lệ' });
     }
 
-    // Kiểm tra candidate có trạng thái hợp lệ
-    const candidate = await Candidate.findById(req.body.candidateId)
-      .populate('positionId');
-    if (!candidate || candidate.stage !== 'offer') {
-      return res.status(400).json({ message: 'Ứng viên không hợp lệ hoặc không có trạng thái phù hợp' });
+    // Validate required fields
+    if (!notificationData.candidateId) {
+      return res.status(400).json({ message: 'Vui lòng chọn ứng viên' });
     }
 
-    // Upload ảnh cá nhân
-    let personalPhotoUrl = '';
-    if (req.files && req.files.personalPhoto) {
-      const result = await cloudinary.uploader.upload(req.files.personalPhoto.tempFilePath, {
-        folder: 'notifications/personal'
-      });
-      personalPhotoUrl = result.secure_url;
+    // Check if candidate exists and is eligible
+    const candidate = await Candidate.findById(notificationData.candidateId);
+    if (!candidate) {
+      return res.status(404).json({ message: 'Không tìm thấy ứng viên' });
     }
 
-    // Upload ảnh CCCD
-    let idCardPhotos = [];
-    if (req.files && req.files.idCardPhotos) {
-      const files = Array.isArray(req.files.idCardPhotos) 
-        ? req.files.idCardPhotos 
-        : [req.files.idCardPhotos];
+    if (candidate.stage !== 'offer') {
+      return res.status(400).json({ message: 'Ứng viên không đủ điều kiện' });
+    }
 
-      for (const file of files) {
-        const result = await cloudinary.uploader.upload(file.tempFilePath, {
-          folder: 'notifications/idcard'
+    // Handle file uploads
+    let personalPhotoUrl = null;
+    let idCardPhotoUrls = [];
+
+    if (req.files) {
+      // Xử lý ảnh cá nhân
+      if (req.files.personalPhoto) {
+        const result = await cloudinary.uploader.upload(req.files.personalPhoto[0].path, {
+          folder: 'notifications/personal'
         });
-        idCardPhotos.push(result.secure_url);
+        personalPhotoUrl = result.secure_url;
+      }
+
+      // Xử lý ảnh CCCD
+      if (req.files.idCardPhotos) {
+        const files = Array.isArray(req.files.idCardPhotos) 
+          ? req.files.idCardPhotos 
+          : [req.files.idCardPhotos];
+
+        for (const file of files) {
+          const result = await cloudinary.uploader.upload(file.path, {
+            folder: 'notifications/idcard'
+          });
+          idCardPhotoUrls.push(result.secure_url);
+        }
       }
     }
 
-    // Tạo notification mới
+    // Log để kiểm tra dữ liệu
+    console.log('Personal photo URL:', personalPhotoUrl);
+    console.log('ID card photo URLs:', idCardPhotoUrls);
+
+    // Tạo thông báo mới với đầy đủ thông tin
     const notification = new Notification({
-      ...req.body,
+      candidateId: notificationData.candidateId,
+      position: notificationData.position,
+      department: notificationData.department,
+      branch: notificationData.branch,
       creator: req.user._id,
-      position: candidate.positionId.title,
-      department: candidate.positionId.department,
+      hrInCharge: notificationData.hrInCharge,
       personalPhoto: personalPhotoUrl,
-      'idCard.photos': idCardPhotos
+      gender: notificationData.gender,
+      birthDate: notificationData.birthDate,
+      idCard: {
+        number: notificationData.idCard?.number || '',
+        issueDate: notificationData.idCard?.issueDate || null,
+        issuePlace: notificationData.idCard?.issuePlace || '',
+        photos: idCardPhotoUrls
+      },
+      startDate: notificationData.startDate,
+      insuranceNumber: notificationData.insuranceNumber,
+      taxCode: notificationData.taxCode,
+      bankAccount: {
+        number: notificationData.bankAccount?.number || '',
+        bank: notificationData.bankAccount?.bank || ''
+      },
+      phone: notificationData.phone,
+      email: notificationData.email,
+      permanentAddress: notificationData.permanentAddress,
+      emergencyContact: {
+        name: notificationData.emergencyContact?.name || '',
+        relationship: notificationData.emergencyContact?.relationship || '',
+        phone: notificationData.emergencyContact?.phone || '',
+        email: notificationData.emergencyContact?.email || '',
+        address: notificationData.emergencyContact?.address || ''
+      },
+      education: {
+        level: notificationData.education?.level || 'other',
+        schoolName: notificationData.education?.schoolName || '',
+        major: notificationData.education?.major || '',
+        graduationYear: notificationData.education?.graduationYear || ''
+      },
+      trainingCourses: notificationData.trainingCourses || [],
+      expectedSalary: notificationData.expectedSalary,
+      contractType: notificationData.contractType,
+      documents: notificationData.documents || [],
+      preparationTasks: notificationData.preparationTasks || []
     });
 
-    await notification.save();
+    // Log để kiểm tra dữ liệu trước khi lưu
+    console.log('Notification data before save:', notification);
 
-    res.status(201).json({
-      message: 'Tạo thông báo thành công',
-      data: notification
-    });
+    try {
+      await notification.save();
+      
+      // Update candidate status
+      candidate.status = 'notified';
+      await candidate.save();
+
+      // Populate thông tin creator và hrInCharge trước khi trả về
+      const populatedNotification = await Notification.findById(notification._id)
+        .populate('creator', 'fullName')
+        .populate('hrInCharge', 'fullName')
+        .populate('candidateId', 'name');
+
+      res.status(201).json({
+        message: 'Tạo thông báo thành công',
+        data: populatedNotification
+      });
+    } catch (error) {
+      console.error('Error saving notification:', error);
+      if (error.name === 'ValidationError') {
+        return res.status(400).json({ 
+          message: 'Dữ liệu không hợp lệ',
+          errors: Object.values(error.errors).map(err => err.message)
+        });
+      }
+      res.status(500).json({ message: 'Lỗi server' });
+    }
   } catch (error) {
-    console.error('Error in createNotification:', error);
+    console.error('Error creating notification:', error);
     res.status(500).json({ message: 'Lỗi server' });
   }
 };
@@ -68,8 +157,8 @@ exports.getNotifications = async (req, res) => {
   try {
     const notifications = await Notification.find()
       .populate('candidateId', 'name status')
-      .populate('creator', 'name')
-      .populate('hrInCharge', 'name')
+      .populate('creator', 'fullName')
+      .populate('hrInCharge', 'fullName')
       .sort({ createdAt: -1 });
 
     res.json({
@@ -86,8 +175,8 @@ exports.getNotificationById = async (req, res) => {
   try {
     const notification = await Notification.findById(req.params.id)
       .populate('candidateId', 'name status')
-      .populate('creator', 'name')
-      .populate('hrInCharge', 'name');
+      .populate('creator', 'fullName')
+      .populate('hrInCharge', 'fullName');
 
     if (!notification) {
       return res.status(404).json({ message: 'Không tìm thấy thông báo' });

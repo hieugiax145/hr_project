@@ -15,12 +15,24 @@ export const notificationService = {
 
   // Tạo thông báo mới
   createNotification: async (formData) => {
-    const response = await axiosInstance.post('/notifications', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+    try {
+      // Log FormData contents for debugging
+      console.log('FormData contents in service:');
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + (pair[1] instanceof File ? pair[1].name : pair[1]));
+      }
+
+      const response = await axiosInstance.post('/notifications', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Accept': 'application/json'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error in createNotification:', error);
+      throw error;
+    }
   },
 
   // Cập nhật thông báo
