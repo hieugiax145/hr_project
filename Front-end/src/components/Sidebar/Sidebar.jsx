@@ -6,7 +6,8 @@ import {
   TeamOutlined,
   CalendarOutlined,
   BellOutlined,
-  UserOutlined
+  UserOutlined,
+  MailOutlined
 } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import logo from '../../assets/logo.png';
@@ -52,6 +53,11 @@ const Sidebar = () => {
       key: '/notifications',
       icon: <BellOutlined />,
       label: 'Thông báo ứng viên mới',
+    },
+    {
+      key: '/emails',
+      icon: <MailOutlined />,
+      label: 'Email',
     },
   ];
 

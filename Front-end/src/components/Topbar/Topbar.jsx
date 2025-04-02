@@ -14,7 +14,8 @@ const Topbar = () => {
   const getPageTitle = (pathname) => {
     const routes = {
       '/': 'Trang chủ',
-      '/recruitment-requests': 'Yêu cầu tuyển dụng',
+      '/hr/recruitment-requests': 'Yêu cầu tuyển dụng',
+      '/hr/ceo-recruitment-requests': 'Yêu cầu tuyển dụng CEO',
       '/positions': 'Vị trí tuyển dụng',
       '/candidates': 'Ứng viên',
       '/calendar': 'Lịch',
@@ -70,15 +71,6 @@ const Topbar = () => {
         <h1 className="text-xl font-['Inter'] font-bold">
           {getPageTitle(location.pathname)}
         </h1>
-
-        {/* Search Bar */}
-        <div className="w-[400px]">
-          <Input
-            placeholder="Tìm kiếm"
-            prefix={<SearchOutlined className="text-gray-400" />}
-            className="rounded-full bg-gray-50 border-none h-10"
-          />
-        </div>
 
         {/* Right Section */}
         <div className="flex items-center gap-8">

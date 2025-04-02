@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { auth } = require('../middleware/auth');
+const { protect } = require('../middlewares/authMiddleware');
 const {
   createNotification,
   getNotifications,
@@ -12,14 +12,14 @@ const {
 } = require('../controllers/notificationController');
 
 // Routes cho thông báo
-router.post('/', auth, createNotification);
-router.get('/', auth, getNotifications);
-router.get('/:id', auth, getNotificationById);
-router.put('/:id', auth, updateNotification);
-router.delete('/:id', auth, deleteNotification);
+router.post('/', protect, createNotification);
+router.get('/', protect, getNotifications);
+router.get('/:id', protect, getNotificationById);
+router.put('/:id', protect, updateNotification);
+router.delete('/:id', protect, deleteNotification);
 
 // Routes bổ sung
-router.get('/candidates/eligible', auth, getEligibleCandidates);
-router.get('/users/hr', auth, getHRList);
+router.get('/candidates/eligible', protect, getEligibleCandidates);
+router.get('/users/hr', protect, getHRList);
 
 module.exports = router;

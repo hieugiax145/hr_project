@@ -59,6 +59,10 @@ const positionSchema = new mongoose.Schema({
   applicants: {
     type: Number,
     default: 0
+  },
+  creator: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
 }, {
   timestamps: true

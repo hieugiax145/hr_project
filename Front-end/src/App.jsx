@@ -19,8 +19,8 @@ import CEORecruitmentRequestDetail from './components/HR/CEORecruitmentRequestDe
 import Calendar from './components/Calendar/Calendar';
 import EventDetail from './pages/EventDetail';
 import Notifications from './components/Notifications/Notifications';
+import EmailList from './components/Email/EmailList';
 import CreateNotification from './components/Notifications/CreateNotification';
-
 const App = () => {
   return (
     <Router>
@@ -119,6 +119,14 @@ const App = () => {
             <CEORecruitmentRequestDetail />
           </DashboardLayout>
         } />
+        <Route
+          path="/emails"
+          element={
+              <DashboardLayout>
+                <EmailList />
+              </DashboardLayout>
+          }
+        />
       </Routes>
     </Router>
   );

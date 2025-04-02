@@ -400,7 +400,10 @@ const CandidateDetail = () => {
                     >
                       Tải CV
                     </Button>
-                    <Button icon={<MessageOutlined />}>
+                    <Button 
+                      icon={<MessageOutlined />}
+                      onClick={() => navigate('/emails')}
+                    >
                       Gửi mail
                     </Button>
                   </div>

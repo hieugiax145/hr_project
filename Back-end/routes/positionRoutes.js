@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { auth } = require('../middleware/auth');
+const { protect } = require('../middlewares/authMiddleware');
 const {
   getPositions,
   getPositionById,
@@ -16,12 +16,12 @@ router.get('/', getPositions);
 router.get('/:id', getPositionById);
 
 // Protected routes
-router.post('/', auth, createPosition);
-router.put('/:id', auth, updatePosition);
-router.delete('/:id', auth, deletePosition);
+router.post('/', protect, createPosition);
+router.put('/:id', protect, updatePosition);
+router.delete('/:id', protect, deletePosition);
 
 // Candidate routes
-router.get('/:positionId/candidates', auth, candidateController.getCandidatesByPosition);
-router.post('/:positionId/candidates', auth, handleUpload, candidateController.createCandidate);
+router.get('/:positionId/candidates', protect, candidateController.getCandidatesByPosition);
+router.post('/:positionId/candidates', protect, handleUpload, candidateController.createCandidate);
 
 module.exports = router; 

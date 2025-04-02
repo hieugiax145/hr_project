@@ -26,10 +26,10 @@ const app = express();
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.NODE_ENV === 'development' 
-    ? ['http://localhost:5173', 'http://localhost:3000']
-    : process.env.FRONTEND_URL,
-  credentials: true
+  origin: 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Rate limiting
@@ -93,12 +93,14 @@ const jobRoutes = require('./routes/jobRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const offerRoutes = require('./routes/offerRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const emailRoutes = require('./routes/emailRoutes');
 
 // API Routes
 app.use('/api/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/emails', emailRoutes);
 
 // 404 handler
 app.use((req, res) => {
