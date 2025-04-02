@@ -77,15 +77,88 @@ const Calendar = () => {
   const handleAddEvent = async (values) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:8000/api/interviews', values, {
-        headers: { Authorization: `Bearer ${token}` }
+      if (!token) {
+        message.error('Vui lòng đăng nhập lại');
+        return;
+      }
+
+      // Convert date and times to full ISO datetime
+      const eventDate = dayjs(values.date);
+      const startTime = dayjs(values.startTime);
+      const endTime = dayjs(values.endTime);
+
+      // Combine date with times to create full datetime
+      const startDateTime = eventDate
+        .hour(startTime.hour())
+        .minute(startTime.minute())
+        .second(0)
+        .millisecond(0);
+
+      const endDateTime = eventDate
+        .hour(endTime.hour())
+        .minute(endTime.minute())
+        .second(0)
+        .millisecond(0);
+
+      // Validate thời gian
+      if (endDateTime.isBefore(startDateTime)) {
+        message.error('Thời gian kết thúc phải sau thời gian bắt đầu');
+        return;
+      }
+
+      // Format dữ liệu trước khi gửi
+      const formattedData = {
+        title: values.title?.trim(),
+        date: eventDate.toISOString(),
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
+        eventType: values.eventType,
+        location: values.location?.trim() || '',
+        room: values.room,
+        description: values.description?.trim() || '',
+        type: values.type,
+        attendees: values.attendees || [],
+        candidate: values.assignTo === 'no-candidates' ? null : values.assignTo,
+        beforeEvent: values.beforeEvent || '5min',
+        allDay: values.allDay || false
+      };
+
+      // Validate dữ liệu bắt buộc
+      if (!formattedData.title) {
+        message.error('Vui lòng nhập tiêu đề');
+        return;
+      }
+
+      if (!formattedData.candidate) {
+        message.error('Vui lòng chọn ứng viên');
+        return;
+      }
+
+      // Log dữ liệu trước khi gửi để debug
+      console.log('Data being sent:', formattedData);
+
+      const response = await axios.post('http://localhost:8000/api/interviews', formattedData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
-      message.success('Thêm sự kiện thành công');
-      setIsAddEventModalVisible(false);
-      fetchEvents();
+
+      if (response.status === 201 || response.status === 200) {
+        message.success('Thêm sự kiện thành công');
+        setIsAddEventModalVisible(false);
+        fetchEvents();
+      }
     } catch (error) {
       console.error('Error adding event:', error);
-      message.error('Không thể thêm sự kiện');
+      if (error.response?.status === 401) {
+        message.error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại');
+      } else {
+        // Log error response để debug
+        console.error('Error response:', error.response?.data);
+        const errorMessage = error.response?.data?.message || 'Không thể thêm sự kiện';
+        message.error(errorMessage);
+      }
     }
   };
 
@@ -95,7 +168,12 @@ const Calendar = () => {
     return (
       <div className="bg-white rounded-lg shadow-sm">
         <div className="flex justify-between items-center p-4 border-b">
-          <h3 className="text-lg font-medium">Lịch chi tiết</h3>
+          <h3 
+            className="text-lg font-medium cursor-pointer hover:text-[#656ED3] transition-colors"
+            onClick={() => selectedDate && navigate(`/calendar/event/${selectedDate.format('YYYY-MM-DD')}`)}
+          >
+            Lịch chi tiết
+          </h3>
           <CloseOutlined className="cursor-pointer text-gray-500" onClick={() => setSelectedDate(null)} />
         </div>
 

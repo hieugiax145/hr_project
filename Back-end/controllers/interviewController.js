@@ -11,6 +11,23 @@ const getInterviews = asyncHandler(async (req, res) => {
   res.json(interviews);
 });
 
+// @desc    Get interview by ID
+// @route   GET /api/interviews/:id
+// @access  Private
+const getInterviewById = asyncHandler(async (req, res) => {
+  const interview = await Interview.findById(req.params.id)
+    .populate('candidate', 'name position')
+    .populate('attendees', 'username email')
+    .populate('createdBy', 'username');
+
+  if (!interview) {
+    res.status(404);
+    throw new Error('Không tìm thấy cuộc phỏng vấn');
+  }
+
+  res.json(interview);
+});
+
 // @desc    Create new interview
 // @route   POST /api/interviews
 // @access  Private
@@ -69,6 +86,7 @@ const deleteInterview = async (req, res) => {
 
 module.exports = {
   getInterviews,
+  getInterviewById,
   createInterview,
   updateInterview,
   deleteInterview

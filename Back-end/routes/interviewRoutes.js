@@ -3,6 +3,7 @@ const router = express.Router();
 const { protect } = require('../middlewares/authMiddleware');
 const {
   getInterviews,
+  getInterviewById,
   createInterview,
   updateInterview,
   deleteInterview
@@ -13,6 +14,7 @@ router.route('/')
   .post(protect, createInterview);
 
 router.route('/:id')
+  .get(protect, getInterviewById)
   .put(protect, updateInterview)
   .delete(protect, deleteInterview);
 

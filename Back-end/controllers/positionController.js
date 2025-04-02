@@ -3,89 +3,72 @@ const Position = require('../models/Position');
 // Tạo vị trí mới
 exports.createPosition = async (req, res) => {
   try {
-    const position = new Position(req.body);
+    const position = new Position({
+      ...req.body,
+      creator: req.user._id // Lấy từ middleware auth
+    });
+
     await position.save();
+
     res.status(201).json({
-      success: true,
-      position
+      message: 'Tạo vị trí thành công',
+      data: position
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    console.error('Error in createPosition:', error);
+    res.status(500).json({ message: 'Lỗi khi tạo vị trí' });
   }
 };
 
-// Lấy danh sách vị trí với filter và tìm kiếm
+// Lấy danh sách vị trí với phân trang
 exports.getPositions = async (req, res) => {
   try {
-    const { search, type, mode, page = 1, limit = 8 } = req.query;
-    
-    // Xây dựng query
-    let query = {};
-    
-    // Tìm kiếm theo title hoặc department
-    if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { department: { $regex: search, $options: 'i' } }
-      ];
-    }
-    
-    // Filter theo type
-    if (type && type !== 'all') {
-      query.type = type;
-    }
-    
-    // Filter theo mode
-    if (mode && mode !== 'all') {
-      query.mode = mode;
-    }
-
-    // Tính toán skip và limit cho phân trang
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 8;
     const skip = (page - 1) * limit;
 
-    // Thực hiện query với phân trang
-    const positions = await Position.find(query)
-      .skip(skip)
-      .limit(parseInt(limit))
-      .sort({ createdAt: -1 });
+    const [positions, total] = await Promise.all([
+      Position.find()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('creator', 'name'),
+      Position.countDocuments()
+    ]);
 
-    // Đếm tổng số kết quả
-    const total = await Position.countDocuments(query);
-
-    res.status(200).json({
-      positions,
-      total
+    res.json({
+      message: 'Lấy danh sách vị trí thành công',
+      data: positions,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalItems: total,
+        itemsPerPage: limit
+      }
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    console.error('Error in getPositions:', error);
+    res.status(500).json({ message: 'Lỗi khi lấy danh sách vị trí' });
   }
 };
 
 // Lấy chi tiết một vị trí
-exports.getPosition = async (req, res) => {
+exports.getPositionById = async (req, res) => {
   try {
-    const position = await Position.findById(req.params.id);
+    const position = await Position.findById(req.params.id)
+      .populate('creator', 'name');
+
     if (!position) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy vị trí'
-      });
+      return res.status(404).json({ message: 'Không tìm thấy vị trí' });
     }
-    res.status(200).json({
-      success: true,
-      position
+
+    res.json({
+      message: 'Lấy thông tin vị trí thành công',
+      data: position
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    console.error('Error in getPositionById:', error);
+    res.status(500).json({ message: 'Lỗi khi lấy thông tin vị trí' });
   }
 };
 
@@ -95,23 +78,20 @@ exports.updatePosition = async (req, res) => {
     const position = await Position.findByIdAndUpdate(
       req.params.id,
       req.body,
-      { new: true, runValidators: true }
+      { new: true }
     );
+
     if (!position) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy vị trí'
-      });
+      return res.status(404).json({ message: 'Không tìm thấy vị trí' });
     }
-    res.status(200).json({
-      success: true,
-      position
+
+    res.json({
+      message: 'Cập nhật vị trí thành công',
+      data: position
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    console.error('Error in updatePosition:', error);
+    res.status(500).json({ message: 'Lỗi khi cập nhật vị trí' });
   }
 };
 
@@ -119,20 +99,16 @@ exports.updatePosition = async (req, res) => {
 exports.deletePosition = async (req, res) => {
   try {
     const position = await Position.findByIdAndDelete(req.params.id);
+
     if (!position) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy vị trí'
-      });
+      return res.status(404).json({ message: 'Không tìm thấy vị trí' });
     }
-    res.status(200).json({
-      success: true,
+
+    res.json({
       message: 'Xóa vị trí thành công'
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    console.error('Error in deletePosition:', error);
+    res.status(500).json({ message: 'Lỗi khi xóa vị trí' });
   }
 }; 

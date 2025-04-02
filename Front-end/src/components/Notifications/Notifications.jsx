@@ -1,96 +1,136 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, List, Avatar, Badge, Spin, message } from 'antd';
-import axios from 'axios';
-
-const { Content } = Layout;
+import { Table, Button, Space, message, Modal } from 'antd';
+import { useNavigate } from 'react-router-dom';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { notificationService } from '../../services/notificationService';
+import dayjs from 'dayjs';
 
 const Notifications = () => {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem('token');
-        if (!token) {
-          message.error('Vui lòng đăng nhập lại');
-          return;
-        }
-
-        const response = await axios.get('http://localhost:8000/api/notifications', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        setNotifications(response.data);
-      } catch (error) {
-        console.error('Error fetching notifications:', error);
-        message.error('Có lỗi xảy ra khi tải thông báo');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchNotifications();
   }, []);
 
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case 'success':
-        return '✅';
-      case 'warning':
-        return '⚠️';
-      case 'error':
-        return '❌';
-      default:
-        return '📢';
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const response = await notificationService.getNotifications();
+      setNotifications(response.data);
+    } catch (error) {
+      message.error('Lỗi khi tải danh sách thông báo');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleDelete = (id) => {
+    Modal.confirm({
+      title: 'Xác nhận xóa',
+      content: 'Bạn có chắc chắn muốn xóa thông báo này?',
+      okText: 'Xóa',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await notificationService.deleteNotification(id);
+          message.success('Xóa thông báo thành công');
+          fetchNotifications();
+        } catch (error) {
+          message.error('Lỗi khi xóa thông báo');
+        }
+      },
+    });
+  };
+
+  const columns = [
+    {
+      title: 'ID',
+      dataIndex: 'recruitmentId',
+      key: 'recruitmentId',
+      width: 80,
+    },
+    {
+      title: 'Họ và Tên',
+      dataIndex: ['candidateId', 'name'],
+      key: 'name',
+    },
+    {
+      title: 'Chức vụ',
+      dataIndex: 'position',
+      key: 'position',
+    },
+    {
+      title: 'Phòng',
+      dataIndex: 'department',
+      key: 'department',
+    },
+    {
+      title: 'Chi nhánh',
+      dataIndex: 'branch',
+      key: 'branch',
+    },
+    {
+      title: 'Người tạo',
+      dataIndex: ['creator', 'name'],
+      key: 'creator',
+    },
+    {
+      title: 'Nhân sự phụ trách',
+      dataIndex: ['hrInCharge', 'name'],
+      key: 'hrInCharge',
+    },
+    {
+      title: 'Ngày tạo',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date) => dayjs(date).format('DD/MM/YYYY'),
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      width: 150,
+      render: (_, record) => (
+        <Space>
+          <Button
+            icon={<EyeOutlined />}
+            onClick={() => navigate(`/notifications/${record._id}`)}
+          />
+          <Button
+            icon={<EditOutlined />}
+            onClick={() => navigate(`/notifications/edit/${record._id}`)}
+          />
+          <Button
+            icon={<DeleteOutlined />}
+            danger
+            onClick={() => handleDelete(record._id)}
+          />
+        </Space>
+      ),
+    },
+  ];
+
   return (
-    <Layout style={{ minHeight: '100vh', background: '#F5F5F5' }}>
-      <Layout style={{ marginLeft: 282 }}>
-        <Content style={{ margin: '80px 16px 24px', minHeight: 280, overflow: 'auto' }}>
-          <div className="bg-white rounded-lg p-6">
-            <h1 className="text-xl font-bold mb-6">Thông báo</h1>
-            
-            <Spin spinning={loading}>
-              <List
-                itemLayout="horizontal"
-                dataSource={notifications}
-                renderItem={(item) => (
-                  <List.Item className="hover:bg-gray-50 p-4 rounded-lg cursor-pointer">
-                    <List.Item.Meta
-                      avatar={
-                        <Avatar className="bg-gray-200 flex items-center justify-center">
-                          {getNotificationIcon(item.type)}
-                        </Avatar>
-                      }
-                      title={
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{item.title}</span>
-                          {!item.read && (
-                            <Badge status="processing" color="#1890ff" />
-                          )}
-                        </div>
-                      }
-                      description={
-                        <div className="text-sm text-gray-500">
-                          <p>{item.message}</p>
-                          <p className="mt-1">{new Date(item.createdAt).toLocaleString('vi-VN')}</p>
-                        </div>
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
-            </Spin>
-          </div>
-        </Content>
-      </Layout>
-    </Layout>
+    <div>
+      <div className="flex justify-between mb-4">
+        <h1 className="text-2xl font-bold">Danh sách thông báo</h1>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => navigate('/notifications/create')}
+        >
+          Tạo mới
+        </Button>
+      </div>
+
+      <Table
+        columns={columns}
+        dataSource={notifications}
+        rowKey="_id"
+        loading={loading}
+      />
+    </div>
   );
 };
 

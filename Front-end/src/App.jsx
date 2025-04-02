@@ -19,6 +19,7 @@ import CEORecruitmentRequestDetail from './components/HR/CEORecruitmentRequestDe
 import Calendar from './components/Calendar/Calendar';
 import EventDetail from './pages/EventDetail';
 import Notifications from './components/Notifications/Notifications';
+import CreateNotification from './components/Notifications/CreateNotification';
 
 const App = () => {
   return (
@@ -50,10 +51,15 @@ const App = () => {
           </DashboardLayout>
         } />
 
-        {/* Notifications route */}
+        {/* Notifications routes */}
         <Route path="/notifications" element={
           <DashboardLayout>
             <Notifications />
+          </DashboardLayout>
+        } />
+        <Route path="/notifications/create" element={
+          <DashboardLayout>
+            <CreateNotification />
           </DashboardLayout>
         } />
 
