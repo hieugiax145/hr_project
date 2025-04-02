@@ -8,7 +8,8 @@ import axios from 'axios';
 
 const CreateRecruitmentRequest = () => {
   const navigate = useNavigate();
-  const [selectedMainLocation, setSelectedMainLocation] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [selectedMainLocations, setSelectedMainLocations] = useState([]);
   const [formData, setFormData] = useState({
     department: '',
     position: '',
@@ -17,7 +18,9 @@ const CreateRecruitmentRequest = () => {
     budget: 'Đạt chuẩn',
     jobDescription: '',
     requirements: '',
-    benefits: ''
+    benefits: '',
+    currentSalary: '',
+    overflowSalary: ''
   });
 
   const mainLocations = [
@@ -34,17 +37,44 @@ const CreateRecruitmentRequest = () => {
     { value: 'Kinh doanh', label: 'Kinh doanh' }
   ];
 
-  // Kiểm tra token ngay khi component mount
+  // Kiểm tra token và lấy thông tin người dùng khi component mount
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      message.error('Vui lòng đăng nhập để thực hiện chức năng này');
-      navigate('/login');
-    }
+    const fetchUserData = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('Vui lòng đăng nhập để thực hiện chức năng này');
+        navigate('/login');
+        return;
+      }
+
+      try {
+        const response = await axios.get('http://localhost:8000/api/users/profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        setCurrentUser(response.data);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        if (error.response?.status === 401) {
+          localStorage.removeItem('token');
+          message.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại');
+          navigate('/login');
+        }
+      }
+    };
+
+    fetchUserData();
   }, [navigate]);
 
   const handleMainLocationChange = (locationId) => {
-    setSelectedMainLocation(locationId);
+    setSelectedMainLocations(prev => {
+      if (prev.includes(locationId)) {
+        return prev.filter(id => id !== locationId);
+      } else {
+        return [...prev, locationId];
+      }
+    });
   };
 
   const handleInputChange = (name, value) => {
@@ -64,7 +94,7 @@ const CreateRecruitmentRequest = () => {
       }
 
       // Validate required fields
-      if (!formData.department || !formData.position || !formData.quantity || !selectedMainLocation) {
+      if (!formData.department || !formData.position || !formData.quantity || selectedMainLocations.length === 0) {
         message.error('Vui lòng điền đầy đủ thông tin bắt buộc');
         return;
       }
@@ -81,16 +111,14 @@ const CreateRecruitmentRequest = () => {
       // Xác định trạng thái dựa trên quỹ tuyển dụng
       const status = formData.budget === 'Đạt chuẩn' ? 'Đã duyệt' : 'Đã nộp';
 
+      // Format locations data
+      const mainLocation = selectedMainLocations[0] || ''; // Take first location as main
+      const otherLocations = selectedMainLocations.slice(1); // Take remaining as other locations
+
       const response = await api.post('/api/applications', {
-        department: formData.department,
-        position: formData.position,
-        quantity: parseInt(formData.quantity),
-        mainLocation: selectedMainLocation,
-        reason: formData.reason,
-        budget: formData.budget,
-        jobDescription: formData.jobDescription,
-        requirements: formData.requirements,
-        benefits: formData.benefits,
+        ...formData,
+        mainLocation,
+        otherLocations,
         status: status
       });
 
@@ -170,7 +198,7 @@ const CreateRecruitmentRequest = () => {
                 <label className="text-sm text-[#1A1A1A] w-full md:w-[120px] mb-2 md:mb-0 md:mr-4">
                   Nhân sự lập phiếu
                 </label>
-                <span className="text-sm text-[#1A1A1A]">Trưởng phòng</span>
+                <span className="text-sm text-[#1A1A1A]">{currentUser?.fullName || 'Đang tải...'}</span>
               </div>
               <div className="flex flex-col md:flex-row md:items-center">
                 <label className="text-sm text-[#1A1A1A] w-full md:w-[120px] mb-2 md:mb-0">
@@ -228,9 +256,8 @@ const CreateRecruitmentRequest = () => {
                         className="flex items-center gap-2 cursor-pointer"
                       >
                         <input
-                          type="radio"
-                          name="mainLocation"
-                          checked={selectedMainLocation === location.id}
+                          type="checkbox"
+                          checked={selectedMainLocations.includes(location.id)}
                           onChange={() => handleMainLocationChange(location.id)}
                           className="text-[#8D75F5] focus:ring-[#8D75F5]"
                         />
@@ -271,8 +298,9 @@ const CreateRecruitmentRequest = () => {
                 </div>
               </div>
               <div>
-                <label className="text-sm text-[#1A1A1A] inline-block w-[120px] align-top">
-                  Quỹ tuyển dụng <span className="text-[#D92D20]">*</span>
+                <label className="text-sm text-[#1A1A1A] inline-flex items-center w-[120px] whitespace-nowrap mr-4">
+                  Quỹ tuyển dụng
+                  <span className="text-[#D92D20]">*</span>
                 </label>
                 <div className="inline-flex gap-6">
                   <label className="flex items-center gap-2">
@@ -280,9 +308,9 @@ const CreateRecruitmentRequest = () => {
                       type="radio" 
                       name="budget"
                       value="Đạt chuẩn"
-                      checked={formData.budget === "Đạt chuẩn"}
+                      checked={formData.budget === 'Đạt chuẩn'}
                       onChange={(e) => handleInputChange('budget', e.target.value)}
-                      className="text-[#7B61FF]" 
+                      className="text-[#8D75F5] focus:ring-[#8D75F5]"
                     />
                     <span className="text-sm">Đạt chuẩn</span>
                   </label>
@@ -291,14 +319,43 @@ const CreateRecruitmentRequest = () => {
                       type="radio" 
                       name="budget"
                       value="Vượt quỹ"
-                      checked={formData.budget === "Vượt quỹ"}
+                      checked={formData.budget === 'Vượt quỹ'}
                       onChange={(e) => handleInputChange('budget', e.target.value)}
-                      className="text-[#7B61FF]" 
+                      className="text-[#8D75F5] focus:ring-[#8D75F5]"
                     />
                     <span className="text-sm">Vượt quỹ</span>
                   </label>
                 </div>
               </div>
+
+              {formData.budget === 'Vượt quỹ' && (
+                <>
+                  <div className="flex flex-col md:flex-row md:items-center">
+                    <label className="text-sm text-[#1A1A1A] w-full md:w-[120px] mb-2 md:mb-0">
+                      Mức lương hiện tại <span className="text-[#D92D20]">*</span>
+                    </label>
+                    <Input
+                      name="currentSalary"
+                      value={formData.currentSalary}
+                      onChange={(e) => handleInputChange('currentSalary', e.target.value)}
+                      placeholder="Nhập mức lương hiện tại"
+                      className="w-full md:w-[300px] border-0 border-b border-[#E0E0E0] rounded-none px-0 h-[36px] hover:border-b-[#7B61FF] focus:border-b-[#7B61FF]"
+                    />
+                  </div>
+                  <div className="flex flex-col md:flex-row md:items-center">
+                    <label className="text-sm text-[#1A1A1A] w-full md:w-[120px] mb-2 md:mb-0">
+                      Mức lương vượt quỹ <span className="text-[#D92D20]">*</span>
+                    </label>
+                    <Input
+                      name="overflowSalary"
+                      value={formData.overflowSalary}
+                      onChange={(e) => handleInputChange('overflowSalary', e.target.value)}
+                      placeholder="Nhập mức lương vượt quỹ"
+                      className="w-full md:w-[300px] border-0 border-b border-[#E0E0E0] rounded-none px-0 h-[36px] hover:border-b-[#7B61FF] focus:border-b-[#7B61FF]"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </div>
 

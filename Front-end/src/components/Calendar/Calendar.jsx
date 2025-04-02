@@ -259,7 +259,7 @@ const Calendar = () => {
         <AddEventModal
           visible={isAddEventModalVisible}
           onClose={handleCloseModal}
-          onSubmit={handleAddEvent}
+          onSave={handleAddEvent}
           selectedDate={selectedDate}
         />
 

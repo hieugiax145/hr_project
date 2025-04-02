@@ -177,7 +177,9 @@ exports.getEligibleCandidates = async (req, res) => {
   try {
     const candidates = await Candidate.find({
       stage: { $in: ['offer', 'hired'] }
-    }).select('name position department branch');
+    })
+    .populate('positionId', 'title department branch level')
+    .select('name positionId email phone address education experience skills hrInCharge');
 
     res.json({
       message: 'Lấy danh sách ứng viên thành công',

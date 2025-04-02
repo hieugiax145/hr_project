@@ -112,7 +112,11 @@ const deleteApplication = async (req, res) => {
 // ✅ Lấy chi tiết một phiếu tuyển dụng
 const getApplicationById = async (req, res) => {
   try {
-    const application = await Application.findById(req.params.id).select('-__v');
+    const application = await Application.findById(req.params.id)
+      .populate('requester', 'fullName username')
+      .populate('userId', 'fullName username')
+      .select('-__v');
+    
     if (!application) {
       return res.status(404).json({ message: 'Không tìm thấy yêu cầu tuyển dụng' });
     }

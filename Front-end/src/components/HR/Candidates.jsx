@@ -34,7 +34,11 @@ const Candidates = () => {
       });
 
       if (response.status === 200) {
-        setCandidates(response.data.candidates || []);
+        const candidatesWithPosition = response.data.candidates.map(candidate => ({
+          ...candidate,
+          positionId: candidate.positionId || null
+        }));
+        setCandidates(candidatesWithPosition || []);
       }
     } catch (error) {
       console.error('Error fetching candidates:', error);
@@ -84,7 +88,7 @@ const Candidates = () => {
       onFilter: (value, record) => {
         return (
           String(record.name).toLowerCase().includes(value.toLowerCase()) ||
-          String(record.position).toLowerCase().includes(value.toLowerCase()) ||
+          String(record.positionId?.title || '').toLowerCase().includes(value.toLowerCase()) ||
           String(record.email).toLowerCase().includes(value.toLowerCase())
         );
       },
@@ -104,20 +108,15 @@ const Candidates = () => {
     },
     {
       title: 'Vị trí ứng tuyển',
-      dataIndex: 'position',
-      key: 'position',
+      dataIndex: 'positionId',
+      key: 'positionId',
+      render: (positionId) => positionId?.title || 'N/A',
     },
     {
-      title: 'Loại',
-      dataIndex: 'type',
-      key: 'type',
-      render: (text) => <span>{text}</span>,
-    },
-    {
-      title: 'Chế độ',
-      dataIndex: 'mode',
-      key: 'mode',
-      render: (text) => <span>{text}</span>,
+      title: 'Phòng ban',
+      dataIndex: 'positionId',
+      key: 'positionId',
+      render: (positionId) => positionId?.department || 'N/A',
     },
     {
       title: 'Ngày ứng tuyển',
@@ -135,7 +134,7 @@ const Candidates = () => {
               <Button 
                 type="text" 
                 icon={<FileTextOutlined />} 
-                onClick={() => window.open(record.cv, '_blank')}
+                onClick={() => window.open(record.cv.url, '_blank')}
               />
             </Tooltip>
           )}

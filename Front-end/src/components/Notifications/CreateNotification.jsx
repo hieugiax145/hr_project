@@ -44,8 +44,9 @@ const CreateNotification = () => {
     if (selectedCandidate) {
       console.log('Selected candidate:', selectedCandidate);
       form.setFieldsValue({
+        candidateId: value,
         fullName: selectedCandidate.name,
-        position: selectedCandidate.positionId?.level || 'Chưa có chức vụ',
+        position: selectedCandidate.positionId?.title || 'Chưa có chức vụ',
         department: selectedCandidate.positionId?.department || 'Chưa có phòng ban',
         branch: selectedCandidate.positionId?.branch || 'Chưa có chi nhánh',
         email: selectedCandidate.email,
@@ -190,36 +191,80 @@ const CreateNotification = () => {
 
   const onFinish = async (values) => {
     try {
+      console.log('Form values before processing:', values);
+      
+      // Kiểm tra xem có candidateId không
+      if (!values.candidateId) {
+        message.error('Vui lòng chọn ứng viên');
+        return;
+      }
+
       const formData = new FormData();
 
       // Xử lý dữ liệu cơ bản
       Object.keys(values).forEach(key => {
         if (key === 'birthDate' || key === 'startDate' || key === 'idCard.issueDate') {
-          formData.append(key, values[key].format('YYYY-MM-DD'));
+          if (values[key]) {
+            formData.append(key, values[key].format('YYYY-MM-DD'));
+          }
         } else if (key === 'personalPhoto' && values[key]?.fileList?.[0]?.originFileObj) {
           formData.append('personalPhoto', values[key].fileList[0].originFileObj);
         } else if (key === 'idCard.photos' && values[key]?.fileList) {
           values[key].fileList.forEach(file => {
             formData.append('idCardPhotos', file.originFileObj);
           });
+        } else if (key === 'idCard') {
+          // Xử lý nested object idCard
+          Object.keys(values[key]).forEach(idCardKey => {
+            if (idCardKey === 'issueDate' && values[key][idCardKey]) {
+              formData.append(`idCard.${idCardKey}`, values[key][idCardKey].format('YYYY-MM-DD'));
+            } else {
+              formData.append(`idCard.${idCardKey}`, values[key][idCardKey]);
+            }
+          });
+        } else if (key === 'bankAccount') {
+          // Xử lý nested object bankAccount
+          Object.keys(values[key]).forEach(bankKey => {
+            formData.append(`bankAccount.${bankKey}`, values[key][bankKey]);
+          });
+        } else if (key === 'emergencyContact') {
+          // Xử lý nested object emergencyContact
+          Object.keys(values[key]).forEach(contactKey => {
+            formData.append(`emergencyContact.${contactKey}`, values[key][contactKey]);
+          });
+        } else if (key === 'education') {
+          // Xử lý nested object education
+          Object.keys(values[key]).forEach(eduKey => {
+            formData.append(`education.${eduKey}`, values[key][eduKey]);
+          });
         } else if (Array.isArray(values[key])) {
           formData.append(key, JSON.stringify(values[key]));
-        } else if (typeof values[key] === 'object') {
+        } else if (typeof values[key] === 'object' && values[key] !== null) {
           formData.append(key, JSON.stringify(values[key]));
-        } else {
+        } else if (values[key] !== undefined && values[key] !== null) {
           formData.append(key, values[key]);
         }
       });
 
       // Thêm dữ liệu từ state
-      formData.append('trainingCourses', JSON.stringify(trainingCourses));
-      formData.append('preparationTasks', JSON.stringify(preparationTasks));
+      if (trainingCourses.length > 0) {
+        formData.append('trainingCourses', JSON.stringify(trainingCourses));
+      }
+      if (preparationTasks.length > 0) {
+        formData.append('preparationTasks', JSON.stringify(preparationTasks));
+      }
+
+      // Log formData để debug
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+      }
 
       await notificationService.createNotification(formData);
       message.success('Tạo thông báo thành công');
       navigate('/notifications');
     } catch (error) {
-      message.error('Lỗi khi tạo thông báo');
+      console.error('Error creating notification:', error);
+      message.error(error.response?.data?.message || 'Lỗi khi tạo thông báo');
     }
   };
 

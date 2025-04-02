@@ -1,42 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, List, Avatar, Button, Input, Space, Checkbox, Tooltip, message, Tabs } from 'antd';
+import { Layout, List, Avatar, Button, Input, Space, Checkbox, Tooltip, message, Tabs, Modal, Form } from 'antd';
 import { SearchOutlined, ReloadOutlined, DeleteOutlined, StarOutlined, ArrowRightOutlined, ArrowLeftOutlined, PaperClipOutlined, CloseOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import DOMPurify from 'dompurify';
+import { useNavigate } from 'react-router-dom';
 
 const { Content } = Layout;
 const { TabPane } = Tabs;
 const API_BASE_URL = 'http://localhost:8000/api';
 
 const EmailList = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [emails, setEmails] = useState([]);
   const [selectedEmail, setSelectedEmail] = useState(null);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalEmails, setTotalEmails] = useState(0);
+  const emailsPerPage = 5;
   const [showDetail, setShowDetail] = useState(false);
+  const [activeTab, setActiveTab] = useState('inbox');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showReplyModal, setShowReplyModal] = useState(false);
+  const [showForwardModal, setShowForwardModal] = useState(false);
+  const [form] = Form.useForm();
 
   useEffect(() => {
-    fetchEmails(1);
-  }, []);
+    fetchEmails(currentPage);
+  }, [activeTab, currentPage]);
 
   const fetchEmails = async (pageNum) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/emails?page=${pageNum}&limit=5`, {
+      const endpoint = activeTab === 'sent' ? '/emails/sent' : '/emails';
+      const response = await axios.get(`${API_BASE_URL}${endpoint}?page=${pageNum}&limit=${emailsPerPage}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
       if (response.status === 200) {
-        const { emails: newEmails, total: totalEmails } = response.data;
-        // Sắp xếp email mới nhất lên đầu
+        const { emails: newEmails, total } = response.data;
         const sortedEmails = [...newEmails].sort((a, b) => new Date(b.date) - new Date(a.date));
-        setEmails(prev => pageNum === 1 ? sortedEmails : [...prev, ...sortedEmails]);
-        setHasMore(emails.length + newEmails.length < totalEmails);
-        setPage(pageNum);
+        setEmails(sortedEmails);
+        setTotalEmails(total);
+        setTotalPages(Math.ceil(total / emailsPerPage));
       }
     } catch (error) {
       console.error('Error fetching emails:', error);
@@ -46,17 +55,27 @@ const EmailList = () => {
     }
   };
 
-  const handleLoadMore = () => {
-    fetchEmails(page + 1);
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const handleReload = () => {
+    fetchEmails(currentPage);
   };
 
   const handleEmailClick = (email) => {
     if (selectedEmail?._id === email._id && showDetail) {
-      // Nếu click vào email đang được chọn và panel đang mở, đóng panel
       setSelectedEmail(null);
       setShowDetail(false);
     } else {
-      // Trong mọi trường hợp khác (click email mới hoặc click lại email cũ khi panel đã đóng)
       setSelectedEmail(email);
       setShowDetail(true);
     }
@@ -65,6 +84,66 @@ const EmailList = () => {
   const handleCloseDetail = () => {
     setSelectedEmail(null);
     setShowDetail(false);
+  };
+
+  const handleDelete = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_BASE_URL}/emails/${selectedEmail._id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      message.success('Email đã được xóa');
+      setShowDeleteModal(false);
+      handleCloseDetail();
+      fetchEmails(1);
+    } catch (error) {
+      console.error('Error deleting email:', error);
+      message.error('Có lỗi xảy ra khi xóa email');
+    }
+  };
+
+  const handleReply = async (values) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_BASE_URL}/emails/send`, {
+        to: selectedEmail.from,
+        subject: `Re: ${selectedEmail.subject}`,
+        content: values.content
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      message.success('Email đã được gửi');
+      setShowReplyModal(false);
+      form.resetFields();
+    } catch (error) {
+      console.error('Error sending reply:', error);
+      message.error('Có lỗi xảy ra khi gửi email');
+    }
+  };
+
+  const handleForward = async (values) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_BASE_URL}/emails/send`, {
+        to: values.to,
+        subject: `Fwd: ${selectedEmail.subject}`,
+        content: values.content
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      message.success('Email đã được chuyển tiếp');
+      setShowForwardModal(false);
+      form.resetFields();
+    } catch (error) {
+      console.error('Error forwarding email:', error);
+      message.error('Có lỗi xảy ra khi chuyển tiếp email');
+    }
   };
 
   const formatDate = (dateString) => {
@@ -77,7 +156,6 @@ const EmailList = () => {
 
   const renderEmailContent = (email) => {
     if (email.html) {
-      // Nếu email có nội dung HTML, sanitize và render nó
       return (
         <div 
           dangerouslySetInnerHTML={{ 
@@ -89,8 +167,6 @@ const EmailList = () => {
         />
       );
     }
-
-    // Nếu không có HTML, hiển thị text preview
     return <div style={{ whiteSpace: 'pre-wrap' }}>{email.preview}</div>;
   };
 
@@ -131,11 +207,20 @@ const EmailList = () => {
                 overflowX: 'auto',
                 whiteSpace: 'nowrap'
               }}>
-                <Button type="text">Thư đã gửi</Button>
-                <Button type="text">Thư mẫu</Button>
-                <Button type="text">Thư đến</Button>
-                <Button type="text">Thước lọc</Button>
-                <Button type="text" style={{ color: '#7B61FF' }}>Xem tất cả</Button>
+                <Button 
+                  type="text" 
+                  style={{ color: activeTab === 'inbox' ? '#7B61FF' : undefined }}
+                  onClick={() => setActiveTab('inbox')}
+                >
+                  Thư đến
+                </Button>
+                <Button 
+                  type="text"
+                  style={{ color: activeTab === 'sent' ? '#7B61FF' : undefined }}
+                  onClick={() => setActiveTab('sent')}
+                >
+                  Thư đã gửi
+                </Button>
                 <Button type="primary" style={{ marginLeft: 'auto', background: '#7B61FF' }}>
                   + Thêm mới
                 </Button>
@@ -149,10 +234,34 @@ const EmailList = () => {
                 gap: '8px',
                 alignItems: 'center'
               }}>
-                <Button type="text" icon={<ReloadOutlined />} />
-                <Button type="text" icon={<DeleteOutlined />} />
-                <Button type="text" icon={<ArrowRightOutlined />} />
-                <Button type="text" icon={<ArrowLeftOutlined />} />
+                <Button 
+                  type="text" 
+                  icon={<ReloadOutlined />} 
+                  onClick={handleReload}
+                  title="Tải lại"
+                />
+                <Button 
+                  type="text" 
+                  icon={<DeleteOutlined />} 
+                  title="Xóa"
+                />
+                <Button 
+                  type="text" 
+                  icon={<ArrowRightOutlined />} 
+                  onClick={handleNextPage}
+                  disabled={currentPage >= totalPages}
+                  title="Trang tiếp"
+                />
+                <Button 
+                  type="text" 
+                  icon={<ArrowLeftOutlined />} 
+                  onClick={handlePrevPage}
+                  disabled={currentPage <= 1}
+                  title="Trang trước"
+                />
+                <span style={{ marginLeft: 'auto', color: '#666' }}>
+                  Trang {currentPage} / {totalPages}
+                </span>
               </div>
 
               {/* Email List */}
@@ -209,13 +318,6 @@ const EmailList = () => {
                     </div>
                   )}
                 />
-                {hasMore && (
-                  <div style={{ textAlign: 'center', padding: '12px' }}>
-                    <Button onClick={handleLoadMore} loading={loading}>
-                      Tải thêm
-                    </Button>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -243,7 +345,6 @@ const EmailList = () => {
                       <Space>
                         <Button icon={<DeleteOutlined />}>Xóa</Button>
                         <Button icon={<StarOutlined />}>Đánh dấu</Button>
-                        <Button icon={<ArrowRightOutlined />}>Chuyển tiếp</Button>
                         <Button icon={<CloseOutlined />} onClick={handleCloseDetail}>Đóng</Button>
                       </Space>
                     </div>
@@ -275,7 +376,7 @@ const EmailList = () => {
                         {renderEmailContent(selectedEmail)}
                       </div>
 
-                      {/* Attachments section remains the same */}
+                      {/* Attachments */}
                       {selectedEmail.attachments?.length > 0 && (
                         <div style={{ 
                           marginTop: '24px',
@@ -311,6 +412,24 @@ const EmailList = () => {
                           ))}
                         </div>
                       )}
+
+                      {/* Action Buttons */}
+                      <div style={{ 
+                        marginTop: '24px',
+                        padding: '16px',
+                        borderTop: '1px solid #f0f0f0',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <Button danger onClick={() => setShowDeleteModal(true)}>Hủy</Button>
+                        <Space>
+                          <Button onClick={() => setShowReplyModal(true)}>Phản hồi</Button>
+                          <Button type="primary" style={{ background: '#7B61FF' }} onClick={() => setShowForwardModal(true)}>
+                            Chuyển tiếp
+                          </Button>
+                        </Space>
+                      </div>
                     </div>
                   </>
                 ) : (
@@ -329,8 +448,99 @@ const EmailList = () => {
           </div>
         </Content>
       </Layout>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        title="Xác nhận xóa"
+        open={showDeleteModal}
+        onOk={handleDelete}
+        onCancel={() => setShowDeleteModal(false)}
+      >
+        <p>Bạn có chắc chắn muốn xóa email này?</p>
+      </Modal>
+
+      {/* Reply Modal */}
+      <Modal
+        title="Phản hồi email"
+        open={showReplyModal}
+        onCancel={() => setShowReplyModal(false)}
+        footer={null}
+        width={800}
+      >
+        <Form form={form} onFinish={handleReply} layout="vertical">
+          <Form.Item
+            label="Đến"
+            name="to"
+            initialValue={selectedEmail?.from}
+            rules={[{ required: true, message: 'Vui lòng nhập email người nhận' }]}
+          >
+            <Input disabled />
+          </Form.Item>
+          <Form.Item
+            label="Tiêu đề"
+            name="subject"
+            initialValue={`Re: ${selectedEmail?.subject}`}
+            rules={[{ required: true, message: 'Vui lòng nhập tiêu đề' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="Nội dung"
+            name="content"
+            rules={[{ required: true, message: 'Vui lòng nhập nội dung' }]}
+          >
+            <Input.TextArea rows={10} />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <Button onClick={() => setShowReplyModal(false)}>Hủy</Button>
+              <Button type="primary" htmlType="submit">Gửi</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Forward Modal */}
+      <Modal
+        title="Chuyển tiếp email"
+        open={showForwardModal}
+        onCancel={() => setShowForwardModal(false)}
+        footer={null}
+        width={800}
+      >
+        <Form form={form} onFinish={handleForward} layout="vertical">
+          <Form.Item
+            label="Đến"
+            name="to"
+            rules={[{ required: true, message: 'Vui lòng nhập email người nhận' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="Tiêu đề"
+            name="subject"
+            initialValue={`Fwd: ${selectedEmail?.subject}`}
+            rules={[{ required: true, message: 'Vui lòng nhập tiêu đề' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="Nội dung"
+            name="content"
+            rules={[{ required: true, message: 'Vui lòng nhập nội dung' }]}
+          >
+            <Input.TextArea rows={10} />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <Button onClick={() => setShowForwardModal(false)}>Hủy</Button>
+              <Button type="primary" htmlType="submit">Gửi</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
     </Layout>
   );
 };
 
-export default EmailList; 
+export default EmailList;

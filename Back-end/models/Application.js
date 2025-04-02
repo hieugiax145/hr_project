@@ -31,9 +31,43 @@ const ApplicationSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  jobDescription: { type: String, required: true },
-  requirements: { type: String, required: true },
-  benefits: { type: String, required: true },
+  reason: {
+    type: String,
+    required: true,
+    default: 'Tuyển do thiếu nhân sự'
+  },
+  budget: {
+    type: String,
+    required: true,
+    default: 'Đạt chuẩn'
+  },
+  jobDescription: { 
+    type: String, 
+    required: true 
+  },
+  requirements: { 
+    type: String, 
+    required: true 
+  },
+  benefits: { 
+    type: String, 
+    required: true 
+  },
+  currentSalary: {
+    type: String,
+    required: true
+  },
+  overflowSalary: {
+    type: String,
+    required: true
+  },
+  mainLocation: {
+    type: String,
+    required: true
+  },
+  otherLocations: [{
+    type: String
+  }],
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

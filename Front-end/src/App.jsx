@@ -21,6 +21,8 @@ import EventDetail from './pages/EventDetail';
 import Notifications from './components/Notifications/Notifications';
 import EmailList from './components/Email/EmailList';
 import CreateNotification from './components/Notifications/CreateNotification';
+import SendEmail from './components/HR/SendEmail';
+
 const App = () => {
   return (
     <Router>
@@ -124,6 +126,22 @@ const App = () => {
           element={
               <DashboardLayout>
                 <EmailList />
+              </DashboardLayout>
+          }
+        />
+        <Route
+          path="/send-email"
+          element={
+              <DashboardLayout>
+                <SendEmail />
+              </DashboardLayout>
+          }
+        />
+        <Route
+          path="/candidates/:id/send-email"
+          element={
+              <DashboardLayout>
+                <SendEmail />
               </DashboardLayout>
           }
         />

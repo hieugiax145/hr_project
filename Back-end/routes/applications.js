@@ -7,7 +7,9 @@ router.get('/:id', async (req, res) => {
       return res.status(400).json({ message: 'ID is required' });
     }
 
-    const application = await Application.findById(id);
+    const application = await Application.findById(id)
+      .populate('requester', 'fullName username')
+      .populate('userId', 'fullName username');
     
     if (!application) {
       return res.status(404).json({ message: 'Application not found' });

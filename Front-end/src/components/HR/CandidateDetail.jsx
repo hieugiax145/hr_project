@@ -402,7 +402,7 @@ const CandidateDetail = () => {
                     </Button>
                     <Button 
                       icon={<MessageOutlined />}
-                      onClick={() => navigate('/emails')}
+                      onClick={() => navigate(`/candidates/${id}/send-email`)}
                     >
                       Gửi mail
                     </Button>

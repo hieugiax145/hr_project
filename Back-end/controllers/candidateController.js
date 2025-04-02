@@ -273,7 +273,7 @@ exports.updateCandidate = async (req, res) => {
 exports.getAllCandidates = async (req, res) => {
   try {
     const candidates = await Candidate.find()
-      .populate('positionId', 'name')
+      .populate('positionId', 'title department')
       .sort({ createdAt: -1 });
 
     res.json({
@@ -282,7 +282,7 @@ exports.getAllCandidates = async (req, res) => {
         name: candidate.name,
         email: candidate.email,
         phone: candidate.phone,
-        position: candidate.positionId?.name || 'Chưa có vị trí',
+        positionId: candidate.positionId,
         stage: candidate.stage,
         source: candidate.source,
         customSource: candidate.customSource,
@@ -292,7 +292,7 @@ exports.getAllCandidates = async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Error fetching all candidates:', error);
+    console.error('Error in getAllCandidates:', error);
     res.status(500).json({ message: 'Có lỗi xảy ra khi tải danh sách ứng viên' });
   }
 };

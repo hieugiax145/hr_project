@@ -23,6 +23,13 @@ const RecruitmentRequestDetail = () => {
     date: ''
   });
 
+  // Mapping cho các địa điểm
+  const locationMapping = {
+    'hochiminh': 'Hồ Chí Minh',
+    'hanoi': 'Hà Nội',
+    'danang': 'Đà Nẵng'
+  };
+
   useEffect(() => {
     const fetchRequestDetail = async () => {
       try {
@@ -38,6 +45,25 @@ const RecruitmentRequestDetail = () => {
             'Authorization': `Bearer ${token}`
           }
         });
+
+        // Fetch user data if we have userId
+        if (response.data.userId) {
+          try {
+            const userResponse = await axios.get(`http://localhost:8000/api/users/${response.data.userId}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            response.data.requester = userResponse.data;
+          } catch (userError) {
+            console.error('Error fetching user data:', userError);
+          }
+        }
+
+        // Format date if it exists
+        if (response.data.date) {
+          response.data.date = new Date(response.data.date).toLocaleDateString('vi-VN');
+        }
 
         setFormData(response.data);
       } catch (error) {
@@ -108,7 +134,9 @@ const RecruitmentRequestDetail = () => {
                 <label className="text-sm text-[#1A1A1A] w-full md:w-[120px] mb-2 md:mb-0 md:mr-4">
                   Nhân sự lập phiếu
                 </label>
-                <span className="text-sm text-[#1A1A1A]">Trưởng phòng</span>
+                <span className="text-sm text-[#1A1A1A]">
+                  {formData.requester?.fullName || formData.userId?.fullName || 'N/A'}
+                </span>
               </div>
               <div className="flex flex-col md:flex-row md:items-center">
                 <label className="text-sm text-[#1A1A1A] w-full md:w-[120px] mb-2 md:mb-0">
@@ -153,9 +181,14 @@ const RecruitmentRequestDetail = () => {
                 </label>
                 <div className="inline-block">
                   <div className="flex gap-4">
-                    <span className="text-sm">{formData.mainLocation}</span>
+                    {formData.mainLocation && (
+                      <span className="text-sm">{locationMapping[formData.mainLocation] || formData.mainLocation}</span>
+                    )}
                     {formData.otherLocations && formData.otherLocations.length > 0 && (
-                      <span className="text-sm">, {formData.otherLocations.join(', ')}</span>
+                      <span className="text-sm">, {formData.otherLocations.map(loc => locationMapping[loc] || loc).join(', ')}</span>
+                    )}
+                    {!formData.mainLocation && (!formData.otherLocations || formData.otherLocations.length === 0) && (
+                      <span className="text-sm">Chưa cập nhật</span>
                     )}
                   </div>
                 </div>
@@ -164,14 +197,36 @@ const RecruitmentRequestDetail = () => {
                 <label className="text-sm text-[#1A1A1A] inline-flex items-center w-[120px] whitespace-nowrap mr-4">
                   Lý do tuyển dụng
                 </label>
-                <span className="text-sm">{formData.reason}</span>
+                <span className="text-sm">{formData.reason || 'N/A'}</span>
               </div>
               <div>
                 <label className="text-sm text-[#1A1A1A] inline-block w-[120px] align-top">
                   Quỹ tuyển dụng
                 </label>
-                <span className="text-sm">{formData.budget}</span>
+                <div className="inline-block">
+                  <span className="text-sm">{formData.budget || 'N/A'}</span>
+                </div>
               </div>
+              {formData.budget === 'Vượt quỹ' && (
+                <>
+                  <div>
+                    <label className="text-sm text-[#1A1A1A] inline-block w-[120px] align-top">
+                      Lương hiện tại
+                    </label>
+                    <div className="inline-block">
+                      <span className="text-sm">{formData.currentSalary || 'N/A'}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm text-[#1A1A1A] inline-block w-[120px] align-top">
+                      Lương vượt quỹ
+                    </label>
+                    <div className="inline-block">
+                      <span className="text-sm">{formData.overflowSalary || 'N/A'}</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 

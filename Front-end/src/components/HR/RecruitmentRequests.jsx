@@ -266,7 +266,7 @@ const RecruitmentRequests = () => {
                         {request.userId?.fullName || request.requester?.fullName || 'N/A'}
                       </td>
                       <td className="p-4 text-sm">
-                        {request.responsible?.fullName || 'Chưa có người phụ trách'}
+                        {request.userId?.fullName || request.requester?.fullName || 'N/A'}
                       </td>
                       <td className="p-4 text-sm">{request.position}</td>
                       <td className="p-4 text-sm">{request.quantity}</td>

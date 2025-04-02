@@ -204,7 +204,7 @@ const Positions = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7B61FF]"></div>
               </div>
             ) : (
-              <div className={`flex-1 overflow-y-auto pb-6 ${selectedPosition ? 'pr-4' : ''}`}>
+              <div className={`${selectedPosition ? 'w-[40%]' : 'flex-1'} overflow-y-auto pb-6 ${selectedPosition ? 'pr-4' : ''}`}>
                 <div className={`${
                   selectedPosition 
                     ? 'space-y-4' 
@@ -357,7 +357,7 @@ const Positions = () => {
 
             {/* Position Detail Panel */}
             {selectedPosition && (
-              <div className="w-[400px] bg-white rounded-lg p-6 overflow-y-auto">
+              <div className="w-[60%] bg-white rounded-lg p-6 overflow-y-auto">
                 <div className="flex justify-between items-start mb-6">
                   <div>
                     <div className="text-xs bg-[#F4F1FE] text-[#7B61FF] px-2 py-1 rounded-md inline-block mb-2">

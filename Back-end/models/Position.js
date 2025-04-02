@@ -11,6 +11,12 @@ const positionSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  branch: {
+    type: String,
+    required: true,
+    enum: ['Hồ Chí Minh', 'Đà Nẵng', 'Hà Nội'],
+    default: 'Hà Nội'
+  },
   level: {
     type: String,
     required: true,
