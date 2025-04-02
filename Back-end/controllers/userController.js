@@ -121,12 +121,36 @@ const registerUser = async (req, res) => {
       email,
       password: hashedPassword,
       role,
-      department,
-      fullName
+      fullName,
+      // Chỉ thêm department nếu role là department_head
+      ...(role === 'department_head' ? { department } : {})
     });
 
     await newUser.save();
-    res.status(201).json({ message: 'Đăng ký tài khoản thành công' });
+
+    // Tạo JWT token
+    const token = jwt.sign(
+      { 
+        id: newUser._id,
+        username: newUser.username,
+        role: newUser.role 
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    res.status(201).json({ 
+      message: 'Đăng ký tài khoản thành công',
+      token,
+      user: {
+        id: newUser._id,
+        username: newUser.username,
+        email: newUser.email,
+        role: newUser.role,
+        department: newUser.department,
+        fullName: newUser.fullName
+      }
+    });
   } catch (err) {
     console.error('Registration error:', err);
     res.status(500).json({ error: 'Đăng ký thất bại. Vui lòng thử lại!' });

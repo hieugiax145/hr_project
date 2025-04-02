@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Login from './components/Login/Login';
 import Register from './components/Login/Register';
 import ForgotPassword from './components/Login/ForgotPassword';
@@ -7,6 +7,7 @@ import DashboardLayout from './components/Layout/DashboardLayout';
 import Dashboard from './components/HR/dashboard';
 import RecruitmentRequests from './components/HR/RecruitmentRequests';
 import CEORecruitmentRequests from './components/HR/CEORecruitmentRequests';
+import OtherRecruitmentRequests from './components/HR/OtherRecruitmentRequests';
 import CreateRecruitmentRequest from './components/HR/CreateRecruitmentRequest';
 import RecruitmentRequestDetail from './components/HR/RecruitmentRequestDetail';
 import Positions from './components/HR/Positions';
@@ -23,6 +24,23 @@ import EmailList from './components/Email/EmailList';
 import CreateNotification from './components/Notifications/CreateNotification';
 import SendEmail from './components/HR/SendEmail';
 
+// Protected Route Component
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const userString = localStorage.getItem('user');
+  const user = userString ? JSON.parse(userString) : null;
+  const userRole = user?.role;
+  
+  if (!userRole) {
+    return <Navigate to="/login" />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(userRole)) {
+    return <Navigate to="/dashboard" />;
+  }
+
+  return children;
+};
+
 const App = () => {
   return (
     <Router>
@@ -38,6 +56,29 @@ const App = () => {
         <Route path="/dashboard" element={
           <DashboardLayout>
             <Dashboard />
+          </DashboardLayout>
+        } />
+
+        {/* Recruitment Requests routes with role-based access */}
+        <Route path="/hr/recruitment-requests" element={
+          <DashboardLayout>
+            <ProtectedRoute allowedRoles={['department_head']}>
+              <RecruitmentRequests />
+            </ProtectedRoute>
+          </DashboardLayout>
+        } />
+        <Route path="/hr/ceo-recruitment-requests" element={
+          <DashboardLayout>
+            <ProtectedRoute allowedRoles={['ceo']}>
+              <CEORecruitmentRequests />
+            </ProtectedRoute>
+          </DashboardLayout>
+        } />
+        <Route path="/hr/other-recruitment-requests" element={
+          <DashboardLayout>
+            <ProtectedRoute allowedRoles={['recruitment', 'applicant', 'director', 'business_director']}>
+              <OtherRecruitmentRequests />
+            </ProtectedRoute>
           </DashboardLayout>
         } />
 
@@ -66,16 +107,6 @@ const App = () => {
         } />
 
         {/* HR Routes */}
-        <Route path="/hr/recruitment-requests" element={
-          <DashboardLayout>
-            <RecruitmentRequests />
-          </DashboardLayout>
-        } />
-        <Route path="/hr/ceo-recruitment-requests" element={
-          <DashboardLayout>
-            <CEORecruitmentRequests />
-          </DashboardLayout>
-        } />
         <Route path="/hr/recruitment-requests/create" element={
           <DashboardLayout>
             <CreateRecruitmentRequest />

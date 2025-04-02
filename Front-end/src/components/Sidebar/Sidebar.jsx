@@ -30,7 +30,7 @@ const Sidebar = () => {
       label: 'Trang chủ',
     },
     {
-      key: userRole === 'ceo' ? '/hr/ceo-recruitment-requests' : '/hr/recruitment-requests',
+      key: 'recruitment-requests',
       icon: <FileSearchOutlined />,
       label: 'Yêu cầu tuyển dụng',
     },
@@ -62,7 +62,21 @@ const Sidebar = () => {
   ];
 
   const handleMenuClick = (item) => {
-    navigate(item.key);
+    if (item.key === 'recruitment-requests') {
+      // Xử lý chuyển hướng dựa trên role
+      switch (userRole) {
+        case 'department_head':
+          navigate('/hr/recruitment-requests');
+          break;
+        case 'ceo':
+          navigate('/hr/ceo-recruitment-requests');
+          break;
+        default:
+          navigate('/hr/other-recruitment-requests');
+      }
+    } else {
+      navigate(item.key);
+    }
   };
 
   // Hàm kiểm tra route active
@@ -72,9 +86,10 @@ const Sidebar = () => {
     if (currentPath === menuKey) return true;
     
     // Xử lý đặc biệt cho route yêu cầu tuyển dụng
-    if (menuKey === '/hr/recruitment-requests' || menuKey === '/hr/ceo-recruitment-requests') {
+    if (menuKey === 'recruitment-requests') {
       return currentPath.startsWith('/hr/recruitment-requests') || 
-             currentPath === '/hr/ceo-recruitment-requests';
+             currentPath === '/hr/ceo-recruitment-requests' ||
+             currentPath === '/hr/other-recruitment-requests';
     }
     
     if (menuKey === '/positions') {
