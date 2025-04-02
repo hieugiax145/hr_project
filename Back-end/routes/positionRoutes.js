@@ -12,8 +12,8 @@ const { handleUpload } = require('../middlewares/uploadMiddleware');
 const candidateController = require('../controllers/candidateController');
 
 // Public routes
-router.get('/', getPositions);
-router.get('/:id', getPositionById);
+router.get('/', protect, getPositions);
+router.get('/:id', protect, getPositionById);
 
 // Protected routes
 router.post('/', protect, createPosition);

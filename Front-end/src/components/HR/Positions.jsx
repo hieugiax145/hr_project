@@ -51,8 +51,8 @@ const Positions = () => {
       });
 
       if (response.status === 200) {
-        setPositions(response.data.positions || []);
-        setTotalPages(Math.ceil((response.data.total || 0) / itemsPerPage));
+        setPositions(response.data.data || []);
+        setTotalPages(response.data.pagination.totalPages || 1);
       }
     } catch (error) {
       console.error('Error fetching positions:', error);

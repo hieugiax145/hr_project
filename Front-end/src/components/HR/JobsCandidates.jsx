@@ -44,7 +44,7 @@ const JobsCandidates = () => {
         // Fetch position
         const positionResponse = await axios.get(`${API_BASE_URL}/positions/${id}`, { headers });
         if (positionResponse.status === 200) {
-          setPosition(positionResponse.data.position);
+          setPosition(positionResponse.data.data);
         }
 
         // Fetch candidates

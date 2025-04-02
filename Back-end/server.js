@@ -70,9 +70,36 @@ mongoose.connect(process.env.MONGO_URI)
     console.log('Connected to MongoDB');
     
     const PORT = process.env.PORT || 8000;
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
+
+    // Xử lý graceful shutdown
+    const gracefulShutdown = async (signal) => {
+      console.log(`\n${signal} received. Starting graceful shutdown...`);
+      
+      // Đóng server HTTP
+      server.close(() => {
+        console.log('HTTP server closed');
+      });
+
+      // Đóng kết nối MongoDB
+      try {
+        await mongoose.connection.close();
+        console.log('MongoDB connection closed');
+      } catch (err) {
+        console.error('Error closing MongoDB connection:', err);
+      }
+
+      // Đợi tất cả các kết nối được đóng
+      setTimeout(() => {
+        console.log('Graceful shutdown completed');
+        process.exit(0);
+      }, 1000);
+    };
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
   })
   .catch(err => {
     console.error('MongoDB connection error:', err);
@@ -113,30 +140,3 @@ app.use((req, res) => {
 //Error Handler - Đặt ở cuối middleware stack
 const errorHandler = require('./utils/errorHandler');
 app.use(errorHandler);
-
-// Xử lý graceful shutdown
-const gracefulShutdown = async (signal) => {
-  console.log(`\n${signal} received. Starting graceful shutdown...`);
-  
-  // Đóng server HTTP
-  app.close(() => {
-    console.log('HTTP server closed');
-  });
-
-  // Đóng kết nối MongoDB
-  try {
-    await mongoose.connection.close();
-    console.log('MongoDB connection closed');
-  } catch (err) {
-    console.error('Error closing MongoDB connection:', err);
-  }
-
-  // Đợi tất cả các kết nối được đóng
-  setTimeout(() => {
-    console.log('Graceful shutdown completed');
-    process.exit(0);
-  }, 1000);
-};
-
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
