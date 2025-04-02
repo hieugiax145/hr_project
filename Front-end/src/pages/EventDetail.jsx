@@ -5,6 +5,8 @@ import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
+import CalendarSidebar from '../components/Calendar/CalendarSidebar';
+import Sidebar from '../components/Sidebar/Sidebar';
 
 const EventDetail = () => {
   const { eventId } = useParams();
@@ -13,6 +15,7 @@ const EventDetail = () => {
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [selectedView, setSelectedView] = useState('Tuần');
 
   useEffect(() => {
     if (!eventId) {
@@ -21,7 +24,6 @@ const EventDetail = () => {
       return;
     }
 
-    // Kiểm tra xem eventId có phải là một ngày không
     if (dayjs(eventId, 'YYYY-MM-DD', true).isValid()) {
       setSelectedDate(dayjs(eventId));
       setLoading(false);
@@ -40,9 +42,6 @@ const EventDetail = () => {
         return;
       }
 
-      // Log để debug
-      console.log('Fetching event with ID:', eventId);
-
       const response = await axios.get(`http://localhost:8000/api/interviews/${eventId}`, {
         headers: { 
           Authorization: `Bearer ${token}`,
@@ -50,23 +49,16 @@ const EventDetail = () => {
         }
       });
 
-      console.log('Event detail response:', response.data);
-
       if (response.data) {
         setEvent(response.data);
         if (response.data.date) {
           setSelectedDate(dayjs(response.data.date));
         }
-      } else {
-        throw new Error('Không tìm thấy thông tin sự kiện');
       }
     } catch (error) {
       console.error('Error fetching event detail:', error);
-      console.error('Error response:', error.response);
-      
       if (error.response?.status === 404) {
         message.error('Không tìm thấy sự kiện này');
-        // Chờ 2 giây trước khi chuyển hướng để người dùng đọc được thông báo
         setTimeout(() => navigate('/calendar'), 2000);
       } else if (error.response?.status === 401) {
         message.error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại');
@@ -89,10 +81,7 @@ const EventDetail = () => {
       }
 
       const response = await axios.get('http://localhost:8000/api/interviews', {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        headers: { Authorization: `Bearer ${token}` }
       });
       
       if (response.data) {
@@ -134,106 +123,124 @@ const EventDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 mt-[80px] ml-[282px]">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-4">
-          <Button 
-            icon={<ArrowLeftOutlined />} 
-            onClick={() => navigate('/calendar')}
-          >
-            Quay lại
-          </Button>
-          <h1 className="text-2xl font-semibold">
-            {event ? event.title : `Tháng ${selectedDate.format('M')}, ${selectedDate.format('YYYY')}`}
-          </h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex gap-2">
-            <Button onClick={() => setSelectedDate(prev => prev.subtract(1, 'week'))}>
-              &lt;
-            </Button>
-            <Button onClick={() => setSelectedDate(prev => prev.add(1, 'week'))}>
-              &gt;
-            </Button>
-          </div>
-          <div className="flex gap-2">
-            <Button className={selectedDate.format('dddd') === 'Ngày' ? 'bg-blue-100' : ''}>Ngày</Button>
-            <Button className="bg-blue-100">Tuần</Button>
-            <Button>Tháng</Button>
-          </div>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />} 
-            className="bg-[#656ED3]"
-            onClick={() => navigate('/calendar')}
-          >
-            Tạo lịch
-          </Button>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow">
-        {/* Header */}
-        <div className="grid grid-cols-8 border-b">
-          <div className="p-4 border-r"></div>
-          {getDaysInWeek().map((date, index) => (
-            <div 
-              key={index}
-              className={`p-4 text-center border-r ${
-                date.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD') 
-                  ? 'bg-blue-50' 
-                  : ''
-              }`}
-            >
-              <div className="font-medium">T{date.format('d')}</div>
-              <div className="text-lg">{date.format('D')}</div>
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex flex-1 ml-[250px]">
+        <CalendarSidebar />
+        <div className="flex-1 ml-[250px] p-6 pt-[104px] pl-[298px]">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-4">
+              <Button 
+                icon={<ArrowLeftOutlined />} 
+                onClick={() => navigate('/calendar')}
+              >
+                Quay lại
+              </Button>
+              <h1 className="text-2xl font-semibold">
+                {event ? event.title : `Tháng ${selectedDate.format('M')}, ${selectedDate.format('YYYY')}`}
+              </h1>
             </div>
-          ))}
-        </div>
-
-        {/* Time slots */}
-        <div className="relative">
-          {timeSlots.map((time, index) => (
-            <div key={index} className="grid grid-cols-8 border-b" style={{ height: '60px' }}>
-              <div className="p-2 border-r text-sm text-gray-500">{time}</div>
-              {getDaysInWeek().map((date, dayIndex) => {
-                const dayEvents = getEventsForDay(date);
-                return (
-                  <div key={dayIndex} className="border-r relative">
-                    {dayEvents.map((evt, eventIndex) => {
-                      if (dayjs(evt.startTime).format('HH:00') === time) {
-                        const duration = dayjs(evt.endTime).diff(dayjs(evt.startTime), 'hour');
-                        return (
-                          <div
-                            key={eventIndex}
-                            className={`absolute w-[95%] left-[2.5%] rounded p-2 text-sm ${
-                              evt._id === eventId
-                                ? 'bg-[#656ED3] text-white'
-                                : 'bg-[#E8F5E9] text-[#1B5E20]'
-                            } border ${
-                              evt._id === eventId
-                                ? 'border-[#4E55A4]'
-                                : 'border-[#A5D6A7]'
-                            }`}
-                            style={{
-                              top: '0',
-                              height: `${duration * 60}px`,
-                              zIndex: evt._id === eventId ? 2 : 1
-                            }}
-                            onClick={() => navigate(`/calendar/event/${evt._id}`)}
-                          >
-                            <div className="font-medium">{evt.title}</div>
-                            <div>{dayjs(evt.startTime).format('HH:mm')} - {dayjs(evt.endTime).format('HH:mm')}</div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })}
-                  </div>
-                );
-              })}
+            <div className="flex items-center gap-4">
+              <div className="flex gap-2">
+                <Button onClick={() => setSelectedDate(prev => prev.subtract(1, 'week'))}>
+                  &lt;
+                </Button>
+                <Button onClick={() => setSelectedDate(prev => prev.add(1, 'week'))}>
+                  &gt;
+                </Button>
+              </div>
+              <div className="flex border rounded-lg overflow-hidden">
+                <button 
+                  className={`px-4 py-1 ${selectedView === 'Ngày' ? 'bg-[#7B61FF] text-white' : 'bg-white'}`}
+                  onClick={() => setSelectedView('Ngày')}
+                >
+                  Ngày
+                </button>
+                <button 
+                  className={`px-4 py-1 ${selectedView === 'Tuần' ? 'bg-[#7B61FF] text-white' : 'bg-white'}`}
+                  onClick={() => setSelectedView('Tuần')}
+                >
+                  Tuần
+                </button>
+                <button 
+                  className={`px-4 py-1 ${selectedView === 'Tháng' ? 'bg-[#7B61FF] text-white' : 'bg-white'}`}
+                  onClick={() => setSelectedView('Tháng')}
+                >
+                  Tháng
+                </button>
+              </div>
+              <Button 
+                type="primary" 
+                icon={<PlusOutlined />} 
+                className="bg-[#7B61FF] hover:bg-[#6B51EF]"
+                onClick={() => navigate('/calendar')}
+              >
+                Tạo lịch
+              </Button>
             </div>
-          ))}
+          </div>
+
+          <div className="bg-white rounded-lg shadow">
+            {/* Header */}
+            <div className="grid grid-cols-8 border-b">
+              <div className="p-4 border-r"></div>
+              {getDaysInWeek().map((date, index) => (
+                <div 
+                  key={index}
+                  className={`p-4 text-center border-r ${
+                    date.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD') 
+                      ? 'bg-[#F4F1FE]' 
+                      : ''
+                  }`}
+                >
+                  <div className="font-medium">T{date.format('d')}</div>
+                  <div className="text-lg">{date.format('D')}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Time slots */}
+            <div className="relative">
+              {timeSlots.map((time, index) => (
+                <div key={index} className="grid grid-cols-8 border-b" style={{ height: '60px' }}>
+                  <div className="p-2 border-r text-sm text-gray-500">{time}</div>
+                  {getDaysInWeek().map((date, dayIndex) => {
+                    const dayEvents = getEventsForDay(date);
+                    return (
+                      <div 
+                        key={dayIndex}
+                        className={`border-r relative ${
+                          date.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD')
+                            ? 'bg-[#F4F1FE]'
+                            : ''
+                        }`}
+                      >
+                        {dayEvents.map((event, eventIndex) => {
+                          const startTime = dayjs(event.startTime);
+                          if (startTime.format('HH') === time.split(':')[0]) {
+                            return (
+                              <div
+                                key={eventIndex}
+                                className="absolute left-0 right-0 mx-1 p-1 bg-[#E7F6EC] text-[#12B76A] text-xs rounded"
+                                style={{
+                                  top: '0',
+                                  zIndex: 10
+                                }}
+                                onClick={() => navigate(`/calendar/event/${event._id}`)}
+                              >
+                                {event.title}
+                              </div>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

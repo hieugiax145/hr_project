@@ -123,20 +123,68 @@ exports.updateCandidateStatus = async (req, res) => {
     const { candidateId } = req.params;
     const { stage } = req.body;
 
+    console.log('Updating candidate status:', {
+      candidateId,
+      stage,
+      body: req.body,
+      headers: req.headers
+    });
+
+    // Kiểm tra giá trị stage có hợp lệ không
+    const validStages = ['new', 'reviewing', 'interview1', 'interview2', 'offer', 'hired', 'rejected'];
+    if (!stage) {
+      return res.status(400).json({ 
+        message: 'Trường stage là bắt buộc',
+        validStages
+      });
+    }
+
+    if (!validStages.includes(stage)) {
+      return res.status(400).json({ 
+        message: 'Trạng thái không hợp lệ',
+        receivedStage: stage,
+        validStages
+      });
+    }
+
+    // Tìm candidate
     const candidate = await Candidate.findById(candidateId);
     if (!candidate) {
       return res.status(404).json({ message: 'Không tìm thấy ứng viên' });
     }
 
-    candidate.stage = stage;
-    await candidate.save();
+    console.log('Current candidate:', candidate);
 
-    res.json({
-      candidate
-    });
+    // Chỉ cập nhật trường stage
+    candidate.stage = stage;
+    
+    try {
+      // Sử dụng findOneAndUpdate để chỉ cập nhật trường stage
+      const updatedCandidate = await Candidate.findOneAndUpdate(
+        { _id: candidateId },
+        { $set: { stage: stage } },
+        { new: true }
+      );
+
+      console.log('Updated candidate:', updatedCandidate);
+
+      res.json({
+        message: 'Cập nhật trạng thái ứng viên thành công',
+        candidate: updatedCandidate
+      });
+    } catch (updateError) {
+      console.error('Error updating candidate:', updateError);
+      res.status(500).json({ 
+        message: 'Có lỗi xảy ra khi cập nhật trạng thái ứng viên',
+        error: updateError.message 
+      });
+    }
   } catch (error) {
     console.error('Error updating candidate status:', error);
-    res.status(500).json({ message: 'Có lỗi xảy ra khi cập nhật trạng thái ứng viên' });
+    res.status(500).json({ 
+      message: 'Có lỗi xảy ra khi cập nhật trạng thái ứng viên',
+      error: error.message 
+    });
   }
 };
 

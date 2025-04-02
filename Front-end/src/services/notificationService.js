@@ -3,13 +3,13 @@ import axiosInstance from '../config/axios';
 export const notificationService = {
   // Lấy danh sách ứng viên hợp lệ (trạng thái Tuyển hoặc Offer)
   getEligibleCandidates: async () => {
-    const response = await axiosInstance.get('/notifications/candidates/eligible');
+    const response = await axiosInstance.get('/notifications/eligible-candidates');
     return response.data;
   },
 
   // Lấy danh sách HR
   getHRList: async () => {
-    const response = await axiosInstance.get('/notifications/users/hr');
+    const response = await axiosInstance.get('/notifications/hr-list');
     return response.data;
   },
 

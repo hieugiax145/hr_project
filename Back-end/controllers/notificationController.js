@@ -12,8 +12,9 @@ exports.createNotification = async (req, res) => {
     }
 
     // Kiểm tra candidate có trạng thái hợp lệ
-    const candidate = await Candidate.findById(req.body.candidateId);
-    if (!candidate || !['Tuyển', 'Offer'].includes(candidate.status)) {
+    const candidate = await Candidate.findById(req.body.candidateId)
+      .populate('positionId');
+    if (!candidate || candidate.stage !== 'offer') {
       return res.status(400).json({ message: 'Ứng viên không hợp lệ hoặc không có trạng thái phù hợp' });
     }
 
@@ -44,7 +45,9 @@ exports.createNotification = async (req, res) => {
     // Tạo notification mới
     const notification = new Notification({
       ...req.body,
-      creator: req.user._id, // Lấy từ JWT token
+      creator: req.user._id,
+      position: candidate.positionId.title,
+      department: candidate.positionId.department,
       personalPhoto: personalPhotoUrl,
       'idCard.photos': idCardPhotos
     });
@@ -173,7 +176,7 @@ exports.deleteNotification = async (req, res) => {
 exports.getEligibleCandidates = async (req, res) => {
   try {
     const candidates = await Candidate.find({
-      status: { $in: ['Tuyển', 'Offer'] }
+      stage: { $in: ['offer', 'hired'] }
     }).select('name position department branch');
 
     res.json({
@@ -189,12 +192,17 @@ exports.getEligibleCandidates = async (req, res) => {
 // API để lấy danh sách HR
 exports.getHRList = async (req, res) => {
   try {
-    const hrUsers = await User.find().select('name');
+    const users = await User.find()
+      .select('_id fullName username email role department')
+      .sort({ fullName: 1 });
 
-    res.json({
-      message: 'Lấy danh sách HR thành công',
-      data: hrUsers
-    });
+    console.log('All Users:', users);
+
+    if (!users || users.length === 0) {
+      return res.json([]);
+    }
+
+    res.json(users);
   } catch (error) {
     console.error('Error in getHRList:', error);
     res.status(500).json({ message: 'Lỗi server' });

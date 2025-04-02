@@ -8,7 +8,7 @@ import JobCard from './JobCard';
 import BarChart from './BarChart';
 import PositionStats from './PositionStats';
 import EmployeeStats from './EmployeeStats';
-import Calendar from './Calendar';
+import Calendar from '../Calendar/Calendar';
 import ApplicationSourceStats from './ApplicationSourceStats';
 
 const { Content } = Layout;

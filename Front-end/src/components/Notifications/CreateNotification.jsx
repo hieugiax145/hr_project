@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Select, Button, Space, Typography, DatePicker, Upload, Radio, Table, Checkbox, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeftOutlined, PlusOutlined, DeleteOutlined, MinusCircleOutlined, UploadOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
+import { ArrowLeftOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { notificationService } from '../../services/notificationService';
 
 const { Title } = Typography;
-const { TextArea } = Input;
 const { Option } = Select;
 
 const CreateNotification = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [trainingCourses, setTrainingCourses] = useState([]);
+  const [preparationTasks, setPreparationTasks] = useState([]);
   const [candidates, setCandidates] = useState([]);
   const [hrList, setHrList] = useState([]);
-  const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [fileList, setFileList] = useState({
+    personalPhoto: [],
+    idCardPhotos: []
+  });
 
   useEffect(() => {
     loadInitialData();
@@ -27,21 +29,32 @@ const CreateNotification = () => {
         notificationService.getEligibleCandidates(),
         notificationService.getHRList()
       ]);
-      setCandidates(candidatesRes.data);
-      setHrList(hrRes.data);
+      console.log('Candidates response:', candidatesRes);
+      console.log('HR response:', hrRes);
+      setCandidates(Array.isArray(candidatesRes?.data) ? candidatesRes.data : []);
+      setHrList(Array.isArray(hrRes) ? hrRes : []);
     } catch (error) {
       message.error('Lỗi khi tải dữ liệu');
+      console.error('Error loading data:', error);
     }
   };
 
   const onCandidateChange = (value) => {
-    const candidate = candidates.find(c => c._id === value);
-    setSelectedCandidate(candidate);
-    if (candidate) {
+    const selectedCandidate = candidates.find(c => c._id === value);
+    if (selectedCandidate) {
+      console.log('Selected candidate:', selectedCandidate);
       form.setFieldsValue({
-        position: candidate.position,
-        department: candidate.department,
-        branch: candidate.branch
+        fullName: selectedCandidate.name,
+        position: selectedCandidate.positionId?.level || 'Chưa có chức vụ',
+        department: selectedCandidate.positionId?.department || 'Chưa có phòng ban',
+        branch: selectedCandidate.positionId?.branch || 'Chưa có chi nhánh',
+        email: selectedCandidate.email,
+        phone: selectedCandidate.phone,
+        address: selectedCandidate.address || '',
+        education: selectedCandidate.education || '',
+        experience: selectedCandidate.experience || '',
+        skills: selectedCandidate.skills || '',
+        hrInCharge: selectedCandidate.hrInCharge || undefined
       });
     }
   };
@@ -58,16 +71,46 @@ const CreateNotification = () => {
       title: 'Tên khóa huấn luyện, đào tạo/ Chứng chỉ',
       dataIndex: 'name',
       key: 'name',
+      render: (_, record, index) => (
+        <Input
+          value={record.name}
+          onChange={(e) => {
+            const newData = [...trainingCourses];
+            newData[index].name = e.target.value;
+            setTrainingCourses(newData);
+          }}
+        />
+      )
     },
     {
       title: 'Nơi cấp',
       dataIndex: 'issuedBy',
       key: 'issuedBy',
+      render: (_, record, index) => (
+        <Input
+          value={record.issuedBy}
+          onChange={(e) => {
+            const newData = [...trainingCourses];
+            newData[index].issuedBy = e.target.value;
+            setTrainingCourses(newData);
+          }}
+        />
+      )
     },
     {
       title: 'Năm',
       dataIndex: 'year',
       key: 'year',
+      render: (_, record, index) => (
+        <Input
+          value={record.year}
+          onChange={(e) => {
+            const newData = [...trainingCourses];
+            newData[index].year = e.target.value;
+            setTrainingCourses(newData);
+          }}
+        />
+      )
     },
     {
       title: 'Thao tác',
@@ -100,11 +143,31 @@ const CreateNotification = () => {
       title: 'Nội dung',
       dataIndex: 'content',
       key: 'content',
+      render: (_, record, index) => (
+        <Input.TextArea
+          value={record.content}
+          onChange={(e) => {
+            const newData = [...preparationTasks];
+            newData[index].content = e.target.value;
+            setPreparationTasks(newData);
+          }}
+        />
+      )
     },
     {
       title: 'Bộ phận thực hiện',
       dataIndex: 'department',
       key: 'department',
+      render: (_, record, index) => (
+        <Input
+          value={record.department}
+          onChange={(e) => {
+            const newData = [...preparationTasks];
+            newData[index].department = e.target.value;
+            setPreparationTasks(newData);
+          }}
+        />
+      )
     },
     {
       title: 'Thao tác',
@@ -115,6 +178,11 @@ const CreateNotification = () => {
           type="text" 
           danger 
           icon={<DeleteOutlined />}
+          onClick={() => {
+            const newData = [...preparationTasks];
+            newData.splice(index, 1);
+            setPreparationTasks(newData);
+          }}
         />
       )
     }
@@ -143,6 +211,10 @@ const CreateNotification = () => {
         }
       });
 
+      // Thêm dữ liệu từ state
+      formData.append('trainingCourses', JSON.stringify(trainingCourses));
+      formData.append('preparationTasks', JSON.stringify(preparationTasks));
+
       await notificationService.createNotification(formData);
       message.success('Tạo thông báo thành công');
       navigate('/notifications');
@@ -152,7 +224,7 @@ const CreateNotification = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 mt-[80px] ml-[282px]">
+    <div className="p-6 pt-[104px] pl-[298px]">
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center gap-4 mb-6">
           <Button 
@@ -169,6 +241,10 @@ const CreateNotification = () => {
           layout="vertical"
           onFinish={onFinish}
           className="max-w-[800px]"
+          initialValues={{
+            personalPhoto: { fileList: [] },
+            'idCard.photos': { fileList: [] }
+          }}
         >
           {/* THÔNG TIN TIẾP NHẬN */}
           <div className="mb-8">
@@ -208,13 +284,13 @@ const CreateNotification = () => {
               </Form.Item>
 
               <Form.Item
-                label="Nhân sự phụ trách"
+                label={<span>Nhân sự phụ trách <span className="text-red-500">*</span></span>}
                 name="hrInCharge"
                 rules={[{ required: true, message: 'Vui lòng chọn nhân sự phụ trách' }]}
               >
                 <Select>
                   {hrList.map(hr => (
-                    <Option key={hr._id} value={hr._id}>{hr.name}</Option>
+                    <Option key={hr._id} value={hr._id}>{hr.fullName}</Option>
                   ))}
                 </Select>
               </Form.Item>
@@ -239,43 +315,45 @@ const CreateNotification = () => {
                 label="Ngày sinh"
                 name="birthDate"
               >
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                <DatePicker className="w-full" />
               </Form.Item>
 
               <Form.Item
-                label="Căn cước công dân"
+                label="CMND/CCCD"
                 name="idCard.number"
               >
-                <Input placeholder="Nhập CCCD" />
+                <Input />
               </Form.Item>
 
               <Form.Item
-                label="Ngày cấp CCCD"
+                label="Ngày cấp"
                 name="idCard.issueDate"
               >
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                <DatePicker className="w-full" />
               </Form.Item>
 
               <Form.Item
-                label="Nơi cấp CCCD"
+                label="Nơi cấp"
                 name="idCard.issuePlace"
                 className="col-span-2"
               >
-                <Input placeholder="Nhập nơi cấp CCCD" />
+                <Input />
               </Form.Item>
 
               <Form.Item
-                label="Ảnh CCCD (2 mặt)"
+                label="Ảnh CMND/CCCD"
                 name="idCard.photos"
+                className="col-span-2"
               >
                 <Upload
                   listType="picture-card"
                   maxCount={2}
-                  beforeUpload={() => false}
+                  fileList={fileList.idCardPhotos}
+                  onChange={({ fileList }) => setFileList(prev => ({ ...prev, idCardPhotos: fileList }))}
                 >
                   <div>
                     <PlusOutlined />
-                    <div style={{ marginTop: 8 }}>Tải lên</div>
+                    <div style={{ marginTop: 8 }}>Upload</div>
                   </div>
                 </Upload>
               </Form.Item>
@@ -287,35 +365,35 @@ const CreateNotification = () => {
                 label="Ngày vào làm việc"
                 name="startDate"
               >
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                <DatePicker className="w-full" />
               </Form.Item>
 
               <Form.Item
                 label="Số sổ BHXH"
                 name="insuranceNumber"
               >
-                <Input placeholder="Nhập thông tin mô tả" />
+                <Input />
               </Form.Item>
 
               <Form.Item
                 label="Mã số thuế cá nhân"
                 name="taxCode"
               >
-                <Input placeholder="Nhập mã số thuế" />
+                <Input />
               </Form.Item>
 
               <Form.Item
                 label="Số tài khoản"
                 name="bankAccount.number"
               >
-                <Input placeholder="Nhập thông tin mô tả" />
+                <Input />
               </Form.Item>
 
               <Form.Item
                 label="Tại ngân hàng"
                 name="bankAccount.bank"
               >
-                <Input placeholder="Nhập thông tin mô tả" />
+                <Input />
               </Form.Item>
             </div>
           </div>
@@ -328,14 +406,14 @@ const CreateNotification = () => {
                 label="Số điện thoại"
                 name="phone"
               >
-                <Input placeholder="Nhập số điện thoại" />
+                <Input />
               </Form.Item>
 
               <Form.Item
                 label="Email"
                 name="email"
               >
-                <Input placeholder="Nhập email" />
+                <Input />
               </Form.Item>
 
               <Form.Item
@@ -343,7 +421,7 @@ const CreateNotification = () => {
                 name="permanentAddress"
                 className="col-span-2"
               >
-                <Input placeholder="Nhập địa chỉ thường trú" />
+                <Input />
               </Form.Item>
             </div>
 
@@ -353,28 +431,28 @@ const CreateNotification = () => {
                 label="Họ tên"
                 name="emergencyContact.name"
               >
-                <Input placeholder="Nhập thông tin mô tả" />
+                <Input />
               </Form.Item>
 
               <Form.Item
                 label="Mối quan hệ"
                 name="emergencyContact.relationship"
               >
-                <Input placeholder="Nhập thông tin mô tả" />
+                <Input />
               </Form.Item>
 
               <Form.Item
                 label="Số điện thoại"
                 name="emergencyContact.phone"
               >
-                <Input placeholder="Nhập thông tin số điện thoại" />
+                <Input />
               </Form.Item>
 
               <Form.Item
                 label="Email"
                 name="emergencyContact.email"
               >
-                <Input placeholder="Nhập thông tin email" />
+                <Input />
               </Form.Item>
 
               <Form.Item
@@ -382,7 +460,7 @@ const CreateNotification = () => {
                 name="emergencyContact.address"
                 className="col-span-2"
               >
-                <Input placeholder="Nhập thông tin mô tả" />
+                <Input />
               </Form.Item>
             </div>
           </div>
@@ -407,21 +485,21 @@ const CreateNotification = () => {
                 label="Tên trường"
                 name="education.schoolName"
               >
-                <Input placeholder="Nhập thông tin mô tả" />
+                <Input />
               </Form.Item>
 
               <Form.Item
                 label="Chuyên ngành"
                 name="education.major"
               >
-                <Input placeholder="Nhập thông tin mô tả" />
+                <Input />
               </Form.Item>
 
               <Form.Item
                 label="Năm tốt nghiệp"
                 name="education.graduationYear"
               >
-                <Input placeholder="Nhập thông tin mô tả" />
+                <Input />
               </Form.Item>
             </div>
           </div>
@@ -433,13 +511,14 @@ const CreateNotification = () => {
               columns={trainingColumns}
               dataSource={trainingCourses}
               pagination={false}
-              className="mb-4"
+              rowKey="id"
             />
             <Button 
               type="dashed" 
               block 
               icon={<PlusOutlined />}
-              onClick={() => setTrainingCourses([...trainingCourses, {}])}
+              onClick={() => setTrainingCourses([...trainingCourses, { id: Date.now(), name: '', issuedBy: '', year: '' }])}
+              className="mt-4"
             >
               Thêm 1 dòng
             </Button>
@@ -453,14 +532,14 @@ const CreateNotification = () => {
                 label="Mức lương"
                 name="expectedSalary"
               >
-                <Input defaultValue="8 triệu" />
+                <Input />
               </Form.Item>
 
               <Form.Item
                 label="Loại hợp đồng"
                 name="contractType"
               >
-                <Input defaultValue="Thử việc" />
+                <Input />
               </Form.Item>
             </div>
           </div>
@@ -489,54 +568,29 @@ const CreateNotification = () => {
             <h2 className="text-lg font-medium mb-4">CÔNG VIỆC CẦN CHUẨN BỊ</h2>
             <Table
               columns={preparationColumns}
-              dataSource={[
-                {
-                  content: [
-                    'Chỗ ngồi làm việc',
-                    'Phụ cấp hành chính khác: vé xe'
-                  ].join('\n'),
-                  department: 'Hành chính nhân sự'
-                },
-                {
-                  content: [
-                    'Hồ sơ nhân sự mới (thư mời nhận việc, thông tin nhân sự...)',
-                    'Chào mừng nhân sự mới: giới thiệu nhân sự với các phòng',
-                    'Đào tạo hội nhập (nội quy, quy định, chính sách công ty, ...)'
-                  ].join('\n'),
-                  department: 'Hành chính nhân sự'
-                },
-                {
-                  content: [
-                    'Cung cấp tài khoản nội bộ',
-                    'Cài đặt tài khoản trên thiết bị máy tính, điện thoại',
-                    'Hướng dẫn sử dụng (email, IP, server,...) cho nhân viên mới'
-                  ].join('\n'),
-                  department: 'Hành chính nhân sự'
-                }
-              ]}
+              dataSource={preparationTasks}
               pagination={false}
-              className="mb-4"
+              rowKey="id"
             />
             <Button 
               type="dashed" 
               block 
               icon={<PlusOutlined />}
+              onClick={() => setPreparationTasks([...preparationTasks, { id: Date.now(), content: '', department: '' }])}
+              className="mt-4"
             >
               Thêm 1 dòng
             </Button>
           </div>
 
-          {/* Buttons */}
-          <Form.Item className="mt-8">
-            <Space>
-              <Button onClick={() => navigate('/notifications')}>
-                Hủy
-              </Button>
-              <Button type="primary" htmlType="submit" className="bg-[#656ED3]">
-                Tạo mới
-              </Button>
-            </Space>
-          </Form.Item>
+          <div className="flex justify-end gap-4">
+            <Button onClick={() => navigate('/notifications')}>
+              Hủy
+            </Button>
+            <Button type="primary" htmlType="submit">
+              Lưu
+            </Button>
+          </div>
         </Form>
       </div>
     </div>

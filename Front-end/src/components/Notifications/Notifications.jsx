@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, message, Modal } from 'antd';
+import { Table, Button, Space, message, Modal, Select, Input } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, FilterOutlined, SearchOutlined } from '@ant-design/icons';
 import { notificationService } from '../../services/notificationService';
 import dayjs from 'dayjs';
 
@@ -9,6 +9,8 @@ const Notifications = () => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedFilters, setSelectedFilters] = useState([]);
+  const [searchText, setSearchText] = useState('');
 
   useEffect(() => {
     fetchNotifications();
@@ -112,24 +114,58 @@ const Notifications = () => {
   ];
 
   return (
-    <div>
-      <div className="flex justify-between mb-4">
-        <h1 className="text-2xl font-bold">Danh sách thông báo</h1>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/notifications/create')}
-        >
-          Tạo mới
-        </Button>
-      </div>
+    <div className="p-6 pt-[104px] pl-[298px]">
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold">Thông báo ứng viên mới</h1>
+          <div className="flex items-center gap-4">
+            <Input
+              placeholder="Search..."
+              prefix={<SearchOutlined className="text-gray-400" />}
+              className="w-[280px]"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+            />
+            <Button 
+              type="primary" 
+              className="bg-[#7B61FF] hover:bg-[#6B51EF]"
+              onClick={() => navigate('/notifications/create')}
+            >
+              + Mới
+            </Button>
+            <Select
+              mode="multiple"
+              style={{ width: '200px' }}
+              placeholder={
+                <div className="flex items-center gap-2">
+                  <FilterOutlined />
+                  <span>Bộ lọc</span>
+                </div>
+              }
+              value={selectedFilters}
+              onChange={setSelectedFilters}
+              options={[
+                { value: 'department', label: 'Phòng ban' },
+                { value: 'position', label: 'Chức vụ' },
+                { value: 'date', label: 'Ngày tạo' }
+              ]}
+            />
+          </div>
+        </div>
 
-      <Table
-        columns={columns}
-        dataSource={notifications}
-        rowKey="_id"
-        loading={loading}
-      />
+        <Table
+          columns={columns}
+          dataSource={notifications}
+          rowKey="_id"
+          loading={loading}
+          pagination={{
+            total: 50,
+            pageSize: 10,
+            showSizeChanger: false,
+            showQuickJumper: false,
+          }}
+        />
+      </div>
     </div>
   );
 };

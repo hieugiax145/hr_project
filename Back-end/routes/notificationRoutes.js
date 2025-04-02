@@ -1,25 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middlewares/authMiddleware');
-const {
-  createNotification,
-  getNotifications,
-  getNotificationById,
-  updateNotification,
-  deleteNotification,
-  getEligibleCandidates,
-  getHRList
-} = require('../controllers/notificationController');
+const notificationController = require('../controllers/notificationController');
 
-// Routes cho thông báo
-router.post('/', protect, createNotification);
-router.get('/', protect, getNotifications);
-router.get('/:id', protect, getNotificationById);
-router.put('/:id', protect, updateNotification);
-router.delete('/:id', protect, deleteNotification);
+// Lấy danh sách ứng viên và HR
+router.get('/eligible-candidates', protect, notificationController.getEligibleCandidates);
+router.get('/hr-list', protect, notificationController.getHRList);
 
-// Routes bổ sung
-router.get('/candidates/eligible', protect, getEligibleCandidates);
-router.get('/users/hr', protect, getHRList);
+// CRUD operations
+router.get('/', protect, notificationController.getNotifications);
+router.get('/:id', protect, notificationController.getNotificationById);
+router.post('/', protect, notificationController.createNotification);
+router.put('/:id', protect, notificationController.updateNotification);
+router.delete('/:id', protect, notificationController.deleteNotification);
 
 module.exports = router;

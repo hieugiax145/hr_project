@@ -13,6 +13,11 @@ const positionRoutes = require('./routes/positionRoutes');
 const userRoutes = require('./routes/userRoutes');
 const candidateRoutes = require('./routes/candidateRoutes');
 const interviewRoutes = require('./routes/interviewRoutes');
+const jobRoutes = require('./routes/jobRoutes');
+const applicationRoutes = require('./routes/applicationRoutes');
+const offerRoutes = require('./routes/offerRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const emailRoutes = require('./routes/emailRoutes');
 
 // Cloudinary configuration
 cloudinary.config({
@@ -54,6 +59,11 @@ app.use('/api/positions', positionRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/candidates', candidateRoutes);
 app.use('/api/interviews', interviewRoutes);
+app.use('/api/jobs', jobRoutes);
+app.use('/api/applications', applicationRoutes);
+app.use('/api/offers', offerRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/emails', emailRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -114,20 +124,6 @@ const Interview = require('./models/Interview');
 const Offer = require('./models/Offer');
 const Notification = require('./models/Notification');
 const Position = require('./models/Position');
-
-// Routes
-const jobRoutes = require('./routes/jobRoutes');
-const applicationRoutes = require('./routes/applicationRoutes');
-const offerRoutes = require('./routes/offerRoutes');
-const reviewRoutes = require('./routes/reviewRoutes');
-const emailRoutes = require('./routes/emailRoutes');
-
-// API Routes
-app.use('/api/jobs', jobRoutes);
-app.use('/api/applications', applicationRoutes);
-app.use('/api/offers', offerRoutes);
-app.use('/api/reviews', reviewRoutes);
-app.use('/api/emails', emailRoutes);
 
 // 404 handler
 app.use((req, res) => {
