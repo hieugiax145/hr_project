@@ -8,7 +8,7 @@ import JobCard from './JobCard';
 import BarChart from './BarChart';
 import PositionStats from './PositionStats';
 import EmployeeStats from './EmployeeStats';
-import Calendar from '../Calendar/Calendar';
+import Calendar from './Calendar';
 import ApplicationSourceStats from './ApplicationSourceStats';
 
 const { Content } = Layout;
@@ -176,4 +176,3 @@ export default function Dashboard() {
     </Layout>
   );
 }
-

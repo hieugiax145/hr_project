@@ -221,7 +221,11 @@ const EmailList = () => {
                 >
                   Thư đã gửi
                 </Button>
-                <Button type="primary" style={{ marginLeft: 'auto', background: '#7B61FF' }}>
+                <Button 
+                  type="primary" 
+                  style={{ marginLeft: 'auto', background: '#7B61FF' }}
+                  onClick={() => navigate('/send-email')}
+                >
                   + Thêm mới
                 </Button>
               </div>
