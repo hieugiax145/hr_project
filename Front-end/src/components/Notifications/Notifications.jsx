@@ -52,6 +52,7 @@ const Notifications = () => {
       dataIndex: 'recruitmentId',
       key: 'recruitmentId',
       width: 80,
+      render: (_, __, index) => index + 1,
     },
     {
       title: 'Họ và Tên',
@@ -155,12 +156,12 @@ const Notifications = () => {
 
         <Table
           columns={columns}
-          dataSource={notifications}
+          dataSource={notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))}
           rowKey="_id"
           loading={loading}
           pagination={{
-            total: 50,
-            pageSize: 10,
+            total: notifications.length,
+            pageSize: 5,
             showSizeChanger: false,
             showQuickJumper: false,
           }}
