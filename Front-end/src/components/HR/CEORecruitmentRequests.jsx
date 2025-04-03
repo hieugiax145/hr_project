@@ -253,7 +253,7 @@ const CEORecruitmentRequests = () => {
                         {request.requester?.fullName || request.userId?.fullName || 'N/A'}
                       </td>
                       <td className="p-4 text-sm">
-                        {request.responsible?.fullName || 'Chưa có người phụ trách'}
+                      {request.requester?.fullName || request.userId?.fullName || 'N/A'}
                       </td>
                       <td className="p-4 text-sm">{request.position}</td>
                       <td className="p-4 text-sm">{request.quantity}</td>
