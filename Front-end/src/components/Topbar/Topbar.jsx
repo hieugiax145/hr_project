@@ -108,8 +108,8 @@ const Topbar = () => {
   ];
 
   return (
-    <div className="fixed top-0 right-0 left-[250px] z-10">
-      <div className="bg-[#FCFCFC] h-16 px-6 flex items-center justify-between border-b border-gray-200">
+    <div className="fixed top-4 right-4 left-[298px] z-10">
+      <div className="bg-[#FCFCFC] h-16 rounded-2xl shadow-sm px-6 flex items-center justify-between">
         {/* Page Title with Back Button */}
         <div className="flex items-center gap-4">
           {isNewRoute(location.pathname) && (

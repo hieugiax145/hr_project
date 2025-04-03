@@ -8,6 +8,16 @@ const cloudinary = require('cloudinary').v2;
 const path = require('path');
 require('./utils/cronJobs');
 
+// Import models
+const User = require('./models/User');
+const JobPosition = require('./models/JobPosition');
+const Application = require('./models/Application');
+const Interview = require('./models/Interview');
+const Offer = require('./models/Offer');
+const Notification = require('./models/Notification');
+const Position = require('./models/Position');
+const Comment = require('./models/Comment');
+
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
@@ -20,6 +30,7 @@ const applicationRoutes = require('./routes/applicationRoutes');
 const offerRoutes = require('./routes/offerRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const emailRoutes = require('./routes/emailRoutes');
+const commentRoutes = require('./routes/commentRoutes');
 const evaluationRoutes = require('./routes/evaluationRoutes');
 
 // Cloudinary configuration
@@ -43,7 +54,7 @@ app.use(cors({
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 1000 // limit each IP to 1000 requests per windowMs
 });
 app.use('/api/', limiter);
 
@@ -71,6 +82,7 @@ app.use('/api/applications', applicationRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/emails', emailRoutes);
+app.use('/api/candidates', commentRoutes);
 app.use('/api/evaluations', evaluationRoutes);
 
 // Error handling middleware
@@ -123,15 +135,6 @@ mongoose.connect(process.env.MONGO_URI)
     console.error('MongoDB connection error:', err);
     process.exit(1);
   });
-
-// Models
-const User = require('./models/User');
-const JobPosition = require('./models/JobPosition');
-const Application = require('./models/Application');
-const Interview = require('./models/Interview');
-const Offer = require('./models/Offer');
-const Notification = require('./models/Notification');
-const Position = require('./models/Position');
 
 // 404 handler
 app.use((req, res) => {
