@@ -42,6 +42,11 @@ const evaluationSchema = new mongoose.Schema({
   },
   result: String,
   note: String,
+  evaluationPeriod: {
+    type: String,
+    enum: ['HĐTV - 2 tuần', 'HĐTV - 1 tháng', 'HĐTV - 2 tháng', 'HĐTV - Review 6 tháng', 'HĐTV - Review 1 năm'],
+    default: 'HĐTV - 2 tháng'
+  },
   createdAt: {
     type: Date,
     default: Date.now
