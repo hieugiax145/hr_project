@@ -48,11 +48,11 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // Giới hạn 5MB
   },
   fileFilter: function (req, file, cb) {
-    // Chỉ chấp nhận file ảnh
-    if (file.mimetype.startsWith('image/')) {
+    // Chấp nhận cả file ảnh và PDF
+    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
-      cb(new Error('Chỉ chấp nhận file ảnh!'));
+      cb(new Error('Chỉ chấp nhận file ảnh hoặc PDF!'));
     }
   }
 });
@@ -86,7 +86,38 @@ const handleUpload = (req, res, next) => {
   });
 };
 
+// Middleware xử lý upload CV
+const handleCVUpload = (req, res, next) => {
+  console.log('Starting CV upload process...');
+  
+  const uploadCV = upload.single('cv');
+
+  uploadCV(req, res, function (err) {
+    if (err instanceof multer.MulterError) {
+      console.error('Multer error:', err);
+      return res.status(400).json({ message: 'Lỗi khi upload CV' });
+    } else if (err) {
+      console.error('Upload error:', err);
+      return res.status(400).json({ message: err.message });
+    }
+
+    // Log thông tin về file CV đã upload
+    console.log('Uploaded CV:', req.file);
+    
+    // Lưu thông tin file vào req.uploadedFile để controller có thể sử dụng
+    if (req.file) {
+      req.uploadedFile = {
+        url: req.file.path,
+        public_id: req.file.filename
+      };
+    }
+
+    next();
+  });
+};
+
 module.exports = { 
   upload,
-  handleUpload 
+  handleUpload,
+  handleCVUpload
 };

@@ -2,13 +2,13 @@ import React from 'react';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const data = [
-  { name: 'Jun', value: 150, color: '#8884d8' },
-  { name: 'Jul', value: 180, color: '#8884d8' },
-  { name: 'Aug', value: 298, color: '#82ca9d' },
-  { name: 'Sep', value: 180, color: '#8884d8' },
   { name: 'Oct', value: 140, color: '#8884d8' },
   { name: 'Nov', value: 160, color: '#8884d8' },
-  { name: 'Dec', value: 250, color: '#8884d8' }
+  { name: 'Dec', value: 250, color: '#8884d8' },
+  { name: 'Jan', value: 180, color: '#82ca9d' },
+  { name: 'Feb', value: 220, color: '#8884d8' },
+  { name: 'Mar', value: 190, color: '#8884d8' },
+  { name: 'Apr', value: 210, color: '#8884d8' }
 ];
 
 const CustomBar = (props) => {

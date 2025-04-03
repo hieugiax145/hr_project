@@ -8,7 +8,7 @@ const {
   updatePosition,
   deletePosition
 } = require('../controllers/positionController');
-const { handleUpload } = require('../middlewares/uploadMiddleware');
+const { handleCVUpload } = require('../middlewares/uploadMiddleware');
 const candidateController = require('../controllers/candidateController');
 
 // Public routes
@@ -22,6 +22,6 @@ router.delete('/:id', protect, deletePosition);
 
 // Candidate routes
 router.get('/:positionId/candidates', protect, candidateController.getCandidatesByPosition);
-router.post('/:positionId/candidates', protect, handleUpload, candidateController.createCandidate);
+router.post('/:positionId/candidates', protect, handleCVUpload, candidateController.createCandidate);
 
 module.exports = router; 

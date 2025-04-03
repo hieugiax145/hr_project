@@ -47,7 +47,10 @@ const Topbar = () => {
       '/emails': 'Email',
       '/send-email': 'Gửi email',
       '/hr/ceo-recruitment-requests/:id': 'Chi tiết yêu cầu tuyển dụng CEO',
-      '/hr/recruitment-requests/:id': 'Chi tiết yêu cầu tuyển dụng'
+      '/hr/recruitment-requests/:id': 'Chi tiết yêu cầu tuyển dụng',
+      '/notifications/edit/:id': 'Chỉnh sửa thông báo',
+      '/notifications/:id': 'Thông báo ứng viên mới',
+      '/notifications/:id/evaluate': 'Đánh giá ứng viên'
     };
 
     // Xử lý các route có tham số động
