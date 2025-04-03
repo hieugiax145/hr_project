@@ -249,7 +249,13 @@ const RecruitmentRequests = () => {
                     <tr 
                       key={request._id} 
                       className="border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
-                      onClick={() => navigate(`/hr/recruitment-requests/${request._id}`)}
+                      onClick={() => {
+                        if (request.status === 'Đã nộp') {
+                          navigate(`/hr/recruitment-requests/${request._id}/edit`);
+                        } else {
+                          navigate(`/hr/recruitment-requests/${request._id}`);
+                        }
+                      }}
                     >
                       <td className="p-4" onClick={(e) => e.stopPropagation()}>
                         <input 

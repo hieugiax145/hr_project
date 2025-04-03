@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout } from 'antd';
+import { Layout, Button } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import moment from 'moment';
@@ -148,6 +148,21 @@ const OtherRecruitmentRequests = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+            {/* Add pagination controls */}
+            <div className="p-4 flex justify-end gap-2">
+              <Button 
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                Trước
+              </Button>
+              <Button 
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Sau
+              </Button>
             </div>
           </div>
         </Content>

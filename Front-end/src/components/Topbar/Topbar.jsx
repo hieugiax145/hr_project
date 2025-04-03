@@ -18,7 +18,8 @@ const Topbar = () => {
       '/candidates/:id',
       '/send-email',
       '/hr/ceo-recruitment-requests/:id',
-      '/hr/recruitment-requests/:id'
+      '/hr/recruitment-requests/:id',
+      '/hr/recruitment-requests/:id/edit'
     ];
     
     return newRoutes.some(route => {

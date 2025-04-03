@@ -12,7 +12,9 @@ const connectIMAP = () => {
       host: 'imap.gmail.com',
       port: 993,
       tls: true,
-      tlsOptions: { rejectUnauthorized: false }
+      tlsOptions: { rejectUnauthorized: false },
+      authTimeout: 30000, // Tăng timeout lên 30s
+      connTimeout: 30000
     });
 
     imap.once('ready', () => {

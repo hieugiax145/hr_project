@@ -10,6 +10,7 @@ import CEORecruitmentRequests from './components/HR/CEORecruitmentRequests';
 import OtherRecruitmentRequests from './components/HR/OtherRecruitmentRequests';
 import CreateRecruitmentRequest from './components/HR/CreateRecruitmentRequest';
 import RecruitmentRequestDetail from './components/HR/RecruitmentRequestDetail';
+import EditRecruitmentRequestDetail from './components/HR/EditRecruitmentRequestDetail';
 import Positions from './components/HR/Positions';
 import CreatePosition from './components/HR/CreatePosition';
 import EditPosition from './components/HR/EditPosition';
@@ -125,6 +126,13 @@ const App = () => {
         <Route path="/hr/recruitment-requests/:id" element={
           <DashboardLayout>
             <RecruitmentRequestDetail />
+          </DashboardLayout>
+        } />
+        <Route path="/hr/recruitment-requests/:id/edit" element={
+          <DashboardLayout>
+            <ProtectedRoute allowedRoles={['department_head']}>
+              <EditRecruitmentRequestDetail />
+            </ProtectedRoute>
           </DashboardLayout>
         } />
         <Route path="/positions" element={

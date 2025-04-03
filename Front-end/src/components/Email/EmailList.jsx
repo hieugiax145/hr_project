@@ -16,7 +16,6 @@ const EmailList = () => {
   const [selectedEmail, setSelectedEmail] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalEmails, setTotalEmails] = useState(0);
   const emailsPerPage = 5;
   const [showDetail, setShowDetail] = useState(false);
   const [activeTab, setActiveTab] = useState('inbox');
@@ -44,7 +43,6 @@ const EmailList = () => {
         const { emails: newEmails, total } = response.data;
         const sortedEmails = [...newEmails].sort((a, b) => new Date(b.date) - new Date(a.date));
         setEmails(sortedEmails);
-        setTotalEmails(total);
         setTotalPages(Math.ceil(total / emailsPerPage));
       }
     } catch (error) {
