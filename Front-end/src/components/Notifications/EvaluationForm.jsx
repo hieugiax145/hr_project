@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Button, Typography, Table, Input, Space, message, Select } from 'antd';
-import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, PlusOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import Topbar from '../Topbar/Topbar';
 import Sidebar from '../Sidebar/Sidebar';
 import { evaluationService } from '../../services/evaluationService';
 import { notificationService } from '../../services/notificationService';
+import html2pdf from 'html2pdf.js';
 
 const { Title } = Typography;
 const { Content } = Layout;
@@ -280,6 +281,158 @@ const EvaluationForm = () => {
     futurePlan: 'Kế hoạch phát triển'
   };
 
+  // Xử lý xuất file PDF
+  const handleExportPDF = () => {
+    try {
+      // Tạo một div tạm thời để chứa nội dung PDF
+      const tempDiv = document.createElement('div');
+      tempDiv.style.padding = '20px';
+      tempDiv.style.fontFamily = 'Times New Roman, serif';
+      
+      // Tạo tiêu đề
+      const title = document.createElement('h1');
+      title.style.textAlign = 'center';
+      title.style.fontSize = '18px';
+      title.style.fontWeight = 'bold';
+      title.style.marginBottom = '20px';
+      title.textContent = 'ĐÁNH GIÁ KẾT QUẢ THỬ VIỆC';
+      tempDiv.appendChild(title);
+      
+      // Thêm thông tin cơ bản
+      const basicInfo = document.createElement('div');
+      basicInfo.style.marginBottom = '20px';
+      basicInfo.innerHTML = `
+        <p><strong>Họ và tên:</strong> ${notification?.candidateId?.name || ''}</p>
+        <p><strong>Team:</strong> ${notification?.department || ''}</p>
+        <p><strong>Leader:</strong> ${notification?.hrInCharge?.fullName || ''}</p>
+        <p><strong>Vị trí:</strong> ${notification?.position || ''}</p>
+        <p><strong>Kỳ đánh giá:</strong> HĐTV - 2 tháng</p>
+      `;
+      tempDiv.appendChild(basicInfo);
+      
+      // Tạo bảng đánh giá
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+      table.style.marginBottom = '20px';
+      
+      // Tạo header cho bảng
+      const thead = document.createElement('thead');
+      thead.innerHTML = `
+        <tr style="background-color: #8B1C1C; color: white;">
+          <th style="border: 1px solid #000; padding: 8px; text-align: center;">STT</th>
+          <th style="border: 1px solid #000; padding: 8px; text-align: center;">Các Hạng mục công việc được giao</th>
+          <th style="border: 1px solid #000; padding: 8px; text-align: center;">Chi tiết công việc</th>
+          <th style="border: 1px solid #000; padding: 8px; text-align: center;">Kết quả công việc</th>
+          <th style="border: 1px solid #000; padding: 8px; text-align: center;">Mức độ hoàn thành</th>
+          <th style="border: 1px solid #000; padding: 8px; text-align: center;">Nhận xét chi tiết</th>
+          <th style="border: 1px solid #000; padding: 8px; text-align: center;">Ghi chú</th>
+        </tr>
+      `;
+      table.appendChild(thead);
+      
+      // Tạo body cho bảng
+      const tbody = document.createElement('tbody');
+      tasks.forEach((task, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="border: 1px solid #000; padding: 8px; text-align: center;">${index + 1}</td>
+          <td style="border: 1px solid #000; padding: 8px;">${task.task || ''}</td>
+          <td style="border: 1px solid #000; padding: 8px;">${task.details || ''}</td>
+          <td style="border: 1px solid #000; padding: 8px;">${task.results || ''}</td>
+          <td style="border: 1px solid #000; padding: 8px; text-align: center;">${task.completion || ''}</td>
+          <td style="border: 1px solid #000; padding: 8px;">${task.comments || ''}</td>
+          <td style="border: 1px solid #000; padding: 8px;">${task.notes || ''}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      tempDiv.appendChild(table);
+      
+      // Thêm phần tự đánh giá
+      const selfEvalTitle = document.createElement('h2');
+      selfEvalTitle.style.fontSize = '14px';
+      selfEvalTitle.style.fontWeight = 'bold';
+      selfEvalTitle.style.marginBottom = '10px';
+      selfEvalTitle.textContent = 'NHẬN XÉT TỰ ĐÁNH GIÁ TỔNG QUAN';
+      tempDiv.appendChild(selfEvalTitle);
+      
+      const selfEvalContent = document.createElement('div');
+      selfEvalContent.style.marginBottom = '20px';
+      selfEvalContent.innerHTML = `
+        <p><strong>Điểm mạnh:</strong> ${selfEvaluation.advantages || ''}</p>
+        <p><strong>Điểm yếu:</strong> ${selfEvaluation.disadvantages || ''}</p>
+        <p><strong>Điểm cần cải thiện:</strong> ${selfEvaluation.improvements || ''}</p>
+        <p><strong>Đánh giá chung:</strong> ${selfEvaluation.overall || ''}</p>
+      `;
+      tempDiv.appendChild(selfEvalContent);
+      
+      // Thêm phần quản lý đánh giá
+      const managerEvalTitle = document.createElement('h2');
+      managerEvalTitle.style.fontSize = '14px';
+      managerEvalTitle.style.fontWeight = 'bold';
+      managerEvalTitle.style.marginBottom = '10px';
+      managerEvalTitle.textContent = 'QUẢN LÝ TRỰC TIẾP ĐÁNH GIÁ TỔNG QUAN';
+      tempDiv.appendChild(managerEvalTitle);
+      
+      const managerEvalContent = document.createElement('div');
+      managerEvalContent.style.marginBottom = '20px';
+      managerEvalContent.innerHTML = `
+        <p><strong>Đánh giá chung:</strong> ${managerEvaluation.overall || ''}</p>
+        <p><strong>Kế hoạch phát triển:</strong> ${managerEvaluation.futurePlan || ''}</p>
+      `;
+      tempDiv.appendChild(managerEvalContent);
+      
+      // Thêm kết quả đánh giá
+      const resultTitle = document.createElement('h2');
+      resultTitle.style.fontSize = '14px';
+      resultTitle.style.fontWeight = 'bold';
+      resultTitle.style.marginBottom = '10px';
+      resultTitle.textContent = 'KẾT QUẢ ĐÁNH GIÁ';
+      tempDiv.appendChild(resultTitle);
+      
+      const resultContent = document.createElement('div');
+      resultContent.style.marginBottom = '20px';
+      resultContent.innerHTML = `<p>${result || ''}</p>`;
+      tempDiv.appendChild(resultContent);
+      
+      // Thêm lưu ý
+      const noteTitle = document.createElement('h2');
+      noteTitle.style.fontSize = '14px';
+      noteTitle.style.fontWeight = 'bold';
+      noteTitle.style.marginBottom = '10px';
+      noteTitle.textContent = 'Lưu ý (thay đổi mức lương nếu có):';
+      tempDiv.appendChild(noteTitle);
+      
+      const noteContent = document.createElement('div');
+      noteContent.style.marginBottom = '20px';
+      noteContent.innerHTML = `<p>${note || ''}</p>`;
+      tempDiv.appendChild(noteContent);
+      
+      // Thêm div tạm thời vào body
+      document.body.appendChild(tempDiv);
+      
+      // Cấu hình cho html2pdf
+      const options = {
+        margin: 10,
+        filename: `Danh-gia-${notification?.candidateId?.name || 'thu-viec'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      // Tạo PDF
+      html2pdf().from(tempDiv).set(options).save().then(() => {
+        // Xóa div tạm thời sau khi tạo PDF
+        document.body.removeChild(tempDiv);
+        message.success('Xuất file PDF thành công');
+      });
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      message.error('Lỗi khi xuất file PDF');
+    }
+  };
+
   return (
     <Layout style={{ minHeight: '100vh', background: '#F5F5F5' }}>
       <Sidebar />
@@ -311,7 +464,11 @@ const EvaluationForm = () => {
                 >
                   Lưu
                 </Button>
-                <Button className="bg-[#DAF374] hover:bg-[#c5dd60] text-black border-none">
+                <Button 
+                  className="bg-[#DAF374] hover:bg-[#c5dd60] text-black border-none"
+                  onClick={handleExportPDF}
+                  icon={<DownloadOutlined />}
+                >
                   Xuất file
                 </Button>
               </Space>

@@ -250,7 +250,7 @@ const AddEventModal = ({ visible, onClose, onSave, selectedDate }) => {
               >
                 {users.map(user => (
                   <Option key={user._id} value={user._id}>
-                    {user.username} ({user.email})
+                    {user.fullName} ({user.email})
                   </Option>
                 ))}
               </Select>
