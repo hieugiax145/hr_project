@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Topbar from '../Topbar/Topbar';
 import Sidebar from '../Sidebar/Sidebar';
 import { evaluationService } from '../../services/evaluationService';
+import { notificationService } from '../../services/notificationService';
 
 const { Title } = Typography;
 const { Content } = Layout;
@@ -21,6 +22,7 @@ const EvaluationForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [isLoading, setIsLoading] = useState(true);
+  const [notification, setNotification] = useState(null);
   
   // State cho các trường dữ liệu
   const [tasks, setTasks] = useState([
@@ -42,28 +44,34 @@ const EvaluationForm = () => {
   const [result, setResult] = useState('');
   const [note, setNote] = useState('');
 
-  // Load dữ liệu đánh giá
+  // Load dữ liệu đánh giá và thông báo
   useEffect(() => {
-    loadEvaluation();
+    loadData();
   }, [id]);
 
-  const loadEvaluation = async () => {
+  const loadData = async () => {
     try {
       setIsLoading(true);
-      const data = await evaluationService.getEvaluationByNotificationId(id);
-      if (data) {
-        setTasks(data.tasks.length > 0 ? data.tasks.map((task, index) => ({
+      const [evaluationData, notificationData] = await Promise.all([
+        evaluationService.getEvaluationByNotificationId(id),
+        notificationService.getNotificationById(id)
+      ]);
+
+      setNotification(notificationData.data);
+
+      if (evaluationData) {
+        setTasks(evaluationData.tasks.length > 0 ? evaluationData.tasks.map((task, index) => ({
           ...task,
           key: String(index + 1),
           stt: index + 1
         })) : [{ key: '1', stt: 1, task: '', details: '', results: '', completion: '', comments: '', notes: '' }]);
-        setSelfEvaluation(data.selfEvaluation);
-        setManagerEvaluation(data.managerEvaluation);
-        setResult(data.result);
-        setNote(data.note);
+        setSelfEvaluation(evaluationData.selfEvaluation);
+        setManagerEvaluation(evaluationData.managerEvaluation);
+        setResult(evaluationData.result);
+        setNote(evaluationData.note);
       }
     } catch (error) {
-      message.error('Lỗi khi tải dữ liệu đánh giá');
+      message.error('Lỗi khi tải dữ liệu');
     } finally {
       setIsLoading(false);
     }
@@ -313,12 +321,12 @@ const EvaluationForm = () => {
             <div className="bg-[#8B1C1C] text-white p-4 mb-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="mb-2">Họ và tên:</p>
-                  <p className="mb-2">Team:</p>
-                  <p className="mb-0">Leader:</p>
+                  <p className="mb-2">Họ và tên: {notification?.candidateId?.name}</p>
+                  <p className="mb-2">Team: {notification?.department}</p>
+                  <p className="mb-0">Leader: {notification?.hrInCharge?.fullName}</p>
                 </div>
                 <div>
-                  <p className="mb-2">Vị trí:</p>
+                  <p className="mb-2">Vị trí: {notification?.position}</p>
                 </div>
               </div>
             </div>
