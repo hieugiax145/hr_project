@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout, Button, Tag, message, Modal, Form, Input, Select, Avatar, Card } from 'antd';
-import { ArrowLeftOutlined, EditOutlined, UserOutlined, MessageOutlined, DownloadOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, BarChartOutlined, RiseOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, EditOutlined, UserOutlined, MessageOutlined, DownloadOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, BarChartOutlined, RiseOutlined, CommentOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
 import 'moment/locale/vi';
@@ -117,7 +117,10 @@ const CandidateDetail = () => {
   const [upcomingInterview, setUpcomingInterview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
+  const [comments, setComments] = useState([]);
   const [form] = Form.useForm();
+  const [commentForm] = Form.useForm();
 
   const fetchCandidateDetail = useCallback(async () => {
     try {
@@ -156,9 +159,33 @@ const CandidateDetail = () => {
     }
   }, [id, navigate]);
 
+  const fetchComments = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/candidates/${id}/comments`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.status === 200) {
+        setComments(response.data.comments);
+      }
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      message.error('Có lỗi xảy ra khi tải nhận xét');
+    }
+  };
+
   useEffect(() => {
     fetchCandidateDetail();
   }, [fetchCandidateDetail]);
+
+  useEffect(() => {
+    if (isCommentModalVisible) {
+      fetchComments();
+    }
+  }, [isCommentModalVisible]);
 
   const getStatusColor = (stage) => {
     const colors = {
@@ -242,6 +269,31 @@ const CandidateDetail = () => {
       'hr': 'HR'
     };
     return roleTranslations[role] || role;
+  };
+
+  const handleAddComment = async (values) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_BASE_URL}/candidates/${id}/comments`,
+        values,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      if (response.status === 201) {
+        message.success('Thêm nhận xét thành công');
+        commentForm.resetFields();
+        setIsCommentModalVisible(false);
+        fetchComments();
+      }
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      message.error('Có lỗi xảy ra khi thêm nhận xét');
+    }
   };
 
   if (loading) {
@@ -454,6 +506,66 @@ const CandidateDetail = () => {
                   </Button>
                 )}
               </div>
+
+              {/* Card: Nhận xét */}
+              <div style={{ 
+                background: 'white',
+                borderRadius: '8px',
+                padding: '24px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                marginTop: '16px'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '16px'
+                }}>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 500 }}>Nhận xét</h3>
+                  <Button 
+                    type="primary"
+                    icon={<CommentOutlined />}
+                    onClick={() => setIsCommentModalVisible(true)}
+                  >
+                    Thêm nhận xét
+                  </Button>
+                </div>
+                <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                  {comments.map((comment, index) => (
+                    <div 
+                      key={comment._id} 
+                      style={{
+                        padding: '12px',
+                        borderBottom: index < comments.length - 1 ? '1px solid #f0f0f0' : 'none',
+                        display: 'flex',
+                        gap: '12px'
+                      }}
+                    >
+                      <Avatar style={{ backgroundColor: '#1890ff' }}>
+                        {comment.user.fullName[0]}
+                      </Avatar>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          marginBottom: '4px' 
+                        }}>
+                          <span style={{ fontWeight: 500 }}>{comment.user.fullName}</span>
+                          <span style={{ color: '#8c8c8c', fontSize: '12px' }}>
+                            {moment(comment.createdAt).fromNow()}
+                          </span>
+                        </div>
+                        <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{comment.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {comments.length === 0 && (
+                    <div style={{ textAlign: 'center', color: '#8c8c8c', padding: '24px' }}>
+                      Chưa có nhận xét nào
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Right content */}
@@ -589,6 +701,48 @@ const CandidateDetail = () => {
             </Button>
             <Button type="primary" htmlType="submit">
               Cập nhật
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Comment Modal */}
+      <Modal
+        title="Thêm nhận xét"
+        open={isCommentModalVisible}
+        onCancel={() => {
+          setIsCommentModalVisible(false);
+          commentForm.resetFields();
+        }}
+        footer={null}
+      >
+        <Form
+          form={commentForm}
+          layout="vertical"
+          onFinish={handleAddComment}
+        >
+          <Form.Item
+            name="content"
+            rules={[{ required: true, message: 'Vui lòng nhập nội dung nhận xét' }]}
+          >
+            <TextArea
+              rows={4}
+              placeholder="Nhập nhận xét của bạn..."
+            />
+          </Form.Item>
+
+          <Form.Item className="text-right">
+            <Button 
+              onClick={() => {
+                setIsCommentModalVisible(false);
+                commentForm.resetFields();
+              }} 
+              style={{ marginRight: 8 }}
+            >
+              Hủy
+            </Button>
+            <Button type="primary" htmlType="submit">
+              Thêm nhận xét
             </Button>
           </Form.Item>
         </Form>

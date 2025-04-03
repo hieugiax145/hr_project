@@ -92,8 +92,31 @@ const Sidebar = () => {
              currentPath === '/hr/other-recruitment-requests';
     }
     
+    // Xử lý cho route vị trí tuyển dụng
     if (menuKey === '/positions') {
       return currentPath.startsWith('/positions');
+    }
+    
+    // Xử lý cho route ứng viên
+    if (menuKey === '/candidates') {
+      return currentPath.startsWith('/candidates');
+    }
+    
+    // Xử lý cho route lịch
+    if (menuKey === '/calendar') {
+      return currentPath.startsWith('/calendar');
+    }
+    
+    // Xử lý cho route thông báo
+    if (menuKey === '/notifications') {
+      return currentPath.startsWith('/notifications');
+    }
+    
+    // Xử lý cho route email
+    if (menuKey === '/emails') {
+      return currentPath.startsWith('/emails') || 
+             currentPath.startsWith('/send-email') ||
+             currentPath.includes('/send-email');
     }
     
     return false;

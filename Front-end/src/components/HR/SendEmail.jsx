@@ -18,6 +18,21 @@ const SendEmail = () => {
     subject: '',
     content: ''
   });
+  const [upcomingInterview, setUpcomingInterview] = useState(null);
+
+  // Hàm chuyển đổi trạng thái ứng viên
+  const getStatusText = (stage) => {
+    const texts = {
+      'new': 'Mới',
+      'reviewing': 'Đang xem xét',
+      'interview1': 'Phỏng vấn vòng 1',
+      'interview2': 'Phỏng vấn vòng 2',
+      'offer': 'Đề xuất',
+      'hired': 'Đã tuyển',
+      'rejected': 'Từ chối'
+    };
+    return texts[stage] || stage;
+  };
 
   useEffect(() => {
     const fetchCandidateData = async () => {
@@ -25,53 +40,58 @@ const SendEmail = () => {
 
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:8000/api/candidates/${id}`, {
+        
+        // Lấy thông tin ứng viên
+        const candidateResponse = await axios.get(`http://localhost:8000/api/candidates/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
         });
         
-        if (response.data && response.data.candidate) {
-          const candidate = response.data.candidate;
+        // Lấy thông tin phỏng vấn
+        const interviewResponse = await axios.get(`http://localhost:8000/api/interviews/candidate/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        if (candidateResponse.data && candidateResponse.data.candidate) {
+          const candidate = candidateResponse.data.candidate;
+          
+          // Lưu thông tin phỏng vấn nếu có
+          if (interviewResponse.status === 200 && interviewResponse.data.length > 0) {
+            setUpcomingInterview(interviewResponse.data[0]);
+          }
+          
+          // Lấy thông tin HR từ localStorage
+          const userString = localStorage.getItem('user');
+          const user = userString ? JSON.parse(userString) : null;
+          const hrName = user?.fullName || '[tên HR]';
+          const hrPhone = user?.phone || '[SDT]';
           
           // Tạo nội dung email mẫu
-          const emailContent = `THƯ MỜI THAM DỰ [GIAI ĐOẠN TUYỂN DỤNG]
+          const emailContent = `Thân gửi ${candidate.name || '[họ tên ứng viên]'},
 
-Kính gửi: [anh/chị] ${candidate.name || '[họ tên ứng viên]'},
+Công ty TNHH Rikkei Education (Rikkei) rất cảm ơn Bạn đã quan tâm ứng tuyển vào vị trí: ${candidate.position || '[tên vị trí tuyển dụng]'}
 
-Hội đồng Tuyển dụng và Ban lãnh đạo Rikkei Academy xin gửi tới [Anh/Chị] lời chào và lời chúc sức khỏe!
-Qua thông tin tìm hiểu sơ bộ, chúng tôi nhận thấy [Anh/Chị] phù hợp với yêu cầu vị trí ${candidate.position || '[tên vị trí tuyển dụng]'}.
-Để có thể trao đổi chi tiết hơn về công việc, cũng như đánh giá chính xác hơn kiến thức và năng lực của [Anh/Chị],
-chúng tôi kính mời [Anh/Chị] tham gia buổi tuyển dụng với thông tin như sau:
+Trân trọng mời Bạn tham dự buổi phỏng vấn tại Rikkei theo thông tin chi tiết như sau:
 
-Vị trí tuyển dụng: ${candidate.position || '[tên vị trí tuyển dụng]'}
+✔ Thời gian: ${upcomingInterview ? moment(upcomingInterview.startTime).format('HH:mm, DD/MM/YYYY') : '[thời gian phỏng vấn]'}
+✔ Địa điểm: Tầng 7 tháp A tòa Sông Đà, đường Phạm Hùng, quận Nam Từ Liêm, Hà Nội
+✔ Hình thức phỏng vấn: Trực tiếp
+✔ Thời lượng: 30 - 45 phút
+✔ Người liên hệ: ${hrName} – ${hrPhone}
 
-Thời gian: 09:00, Thứ 3, ngày 01/10/2024
+🔹 Bạn vui lòng phản hồi lại email để xác nhận tham gia phỏng vấn.
+🔹 Cám ơn Bạn đã sắp xếp để có buổi trao đổi này. Chúc Bạn có một buổi phỏng vấn thành công!
 
-Hình thức: Online (Link) / Offline: Tầng 7, khối A, tòa nhà Sông Đà, Phạm Hùng, Nam Từ Liêm, HN
+Trân trọng,
 
-Người liên hệ: [tên HR] – [SDT]
-
-Đến với Rikkei Academy học viên sẽ được đào tạo theo triết lý 4T độc quyền (Tin cậy – Thực tiễn – Tinh gọn – Tận tâm):
-✔ Tin cậy: Rikkei Academy cam kết là học viện đào tạo đáng tin cậy, uy tín đối với học viên. Chương trình đào tạo được nghiên cứu kỹ lưỡng bởi chuyên gia, giúp học viên có đầy đủ kiến thức chuẩn và cần thiết cho ngành học của mình.
-
-✔ Thực tiễn: Chuyên gia tại Rikkei Academy không ngừng học hỏi, cập nhật công nghệ và kiến thức mới để đưa ra chương trình học thực tiễn, bám sát nhu cầu thị trường để đào tạo học viên.
-
-✔ Tinh gọn: Chương trình đào tạo của Rikkei Academy được thiết kế tinh gọn, đầy đủ kiến thức cần thiết và phù hợp với trình độ của từng học viên để đảm bảo chất lượng, kết quả đầu ra.
-
-✔ Tận tâm: Giảng viên, trợ giảng tại Rikkei Academy luôn tận tâm để hỗ trợ, chia sẻ, kết nối với học viên qua những câu chuyện nghề, hỗ trợ liên tục và mang đến kỹ thuật đặt câu hỏi nâng cao tư duy phản biện của học viên, giúp học viên thấy hứng thú và có động lực để theo đuổi nghề.
-
-Tìm hiểu thêm về Rikkei Academy tại:
-🔹 Fanpage Rikkei Academy: [Link]
-🔹 Fanpage Tuyển dụng Rikkei Academy: [Link]
-🔹 Website Tuyển dụng Rikkei Academy: [Link]
-
-Trân trọng cảm ơn,
 TM. HỘI ĐỒNG TUYỂN DỤNG`;
 
           setEmailData({
             to: candidate.email,
-            subject: `[RIKKEI ACADEMY] THƯ MỜI [GIAI ĐOẠN TUYỂN DỤNG]_[${candidate.position}]_[${candidate.name}]`,
+            subject: `[RIKKEI ACADEMY] THƯ MỜI ${candidate.name} CHỨC VỤ ỨNG TUYỂN ${candidate.position} GIAI ĐOẠN ${getStatusText(candidate.stage)}`,
             content: emailContent
           });
         }

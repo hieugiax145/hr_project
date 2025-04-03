@@ -13,7 +13,6 @@ const Topbar = () => {
   // Hàm kiểm tra xem có phải là route mới không
   const isNewRoute = (pathname) => {
     const newRoutes = [
-      '/hr/other-recruitment-requests',
       '/positions/:id/candidates',
       '/candidates/:id',
       '/send-email',
