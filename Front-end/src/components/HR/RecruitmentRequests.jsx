@@ -16,6 +16,48 @@ const RecruitmentRequests = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [selectedRequests, setSelectedRequests] = useState([]);
+  const [showFilter, setShowFilter] = useState(false);
+  const [selectedDepartments, setSelectedDepartments] = useState([]);
+  const [selectedStatuses, setSelectedStatuses] = useState([]);
+
+  // Lấy danh sách phòng ban và trạng thái duy nhất từ requests
+  const departments = [...new Set(requests.map(request => request.department))];
+  const statuses = [...new Set(requests.map(request => request.status))];
+
+  // Lọc requests dựa trên các bộ lọc đã chọn
+  const filteredRequests = requests.filter(request => {
+    const departmentMatch = selectedDepartments.length === 0 || selectedDepartments.includes(request.department);
+    const statusMatch = selectedStatuses.length === 0 || selectedStatuses.includes(request.status);
+    return departmentMatch && statusMatch;
+  });
+
+  // Reset bộ lọc về mặc định
+  const resetFilters = () => {
+    setSelectedDepartments([]);
+    setSelectedStatuses([]);
+  };
+
+  // Xử lý thay đổi bộ lọc phòng ban
+  const handleDepartmentChange = (department) => {
+    setSelectedDepartments(prev => {
+      if (prev.includes(department)) {
+        return prev.filter(d => d !== department);
+      } else {
+        return [...prev, department];
+      }
+    });
+  };
+
+  // Xử lý thay đổi bộ lọc trạng thái
+  const handleStatusChange = (status) => {
+    setSelectedStatuses(prev => {
+      if (prev.includes(status)) {
+        return prev.filter(s => s !== status);
+      } else {
+        return [...prev, status];
+      }
+    });
+  };
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -134,11 +176,11 @@ const RecruitmentRequests = () => {
     );
   }
 
-  // Tính toán số trang
-  const totalPages = Math.ceil(requests.length / itemsPerPage);
+  // Tính toán số trang dựa trên requests đã lọc
+  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentRequests = requests.slice(startIndex, endIndex);
+  const currentRequests = filteredRequests.slice(startIndex, endIndex);
 
   // Tạo mảng số trang
   const getPageNumbers = () => {
@@ -206,13 +248,67 @@ const RecruitmentRequests = () => {
                   <FaTrash size={14} />
                   <span>Xóa</span>
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-[10px] hover:border-[#8D75F5] hover:text-[#8D75F5]">
+                <button 
+                  className={`flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-[10px] hover:border-[#8D75F5] hover:text-[#8D75F5] ${
+                    showFilter ? 'border-[#8D75F5] text-[#8D75F5]' : ''
+                  }`}
+                  onClick={() => setShowFilter(!showFilter)}
+                >
                   <FaFilter size={14} />
                   <span>Bộ lọc</span>
                 </button>
               </div>
             </div>
           </div>
+
+          {/* Filter Panel */}
+          {showFilter && (
+            <div className="mb-4 bg-white p-4 rounded-lg shadow-sm">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium">Bộ lọc</h3>
+                <button 
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                  onClick={resetFilters}
+                >
+                  Đặt lại
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-medium mb-2">Phòng</h4>
+                  <div className="space-y-2">
+                    {departments.map(department => (
+                      <label key={department} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedDepartments.includes(department)}
+                          onChange={() => handleDepartmentChange(department)}
+                          className="rounded border-gray-300"
+                        />
+                        <span>{department}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2">Trạng thái</h4>
+                  <div className="space-y-2">
+                    {statuses.map(status => (
+                      <label key={status} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedStatuses.includes(status)}
+                          onChange={() => handleStatusChange(status)}
+                          className="rounded border-gray-300"
+                        />
+                        <span>{status}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="bg-white rounded-lg shadow-sm flex-1 flex flex-col">
             {/* Table */}
