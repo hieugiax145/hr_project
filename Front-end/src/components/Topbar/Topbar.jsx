@@ -1,7 +1,8 @@
 import React from 'react';
 import { Input, Badge, Dropdown, Space, message, Layout, Avatar, Button } from 'antd';
-import { SearchOutlined, BellOutlined, MessageOutlined, UserOutlined, DownOutlined, LogoutOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { SearchOutlined, BellOutlined, UserOutlined, DownOutlined, LogoutOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
+import NotificationDropdown from './NotificationDropdown';
 
 const { Header } = Layout;
 const API_BASE_URL = 'http://localhost:8000/api';
@@ -72,9 +73,10 @@ const Topbar = () => {
 
   // Lấy thông tin user từ localStorage
   const userString = localStorage.getItem('user');
-  console.log('User string from localStorage:', userString);
   const user = userString ? JSON.parse(userString) : null;
-  console.log('Parsed user data:', user);
+
+  // Hàm kiểm tra xem có phải là CEO không
+  const isCEO = user?.role === 'ceo';
 
   // Hàm dịch role sang tiếng Việt
   const translateRole = (role) => {
@@ -134,15 +136,8 @@ const Topbar = () => {
         <div className="flex items-center gap-8">
           {/* Icons */}
           <div className="flex items-center gap-6">
-            {/* Chat */}
-            <Badge count={3}>
-              <MessageOutlined className="text-2xl text-gray-600 cursor-pointer" />
-            </Badge>
-
-            {/* Notifications */}
-            <Badge count={5}>
-              <BellOutlined className="text-2xl text-gray-600 cursor-pointer" />
-            </Badge>
+            {/* Notifications - Only show for CEO */}
+            {isCEO && <NotificationDropdown />}
           </div>
 
           {/* User Profile */}

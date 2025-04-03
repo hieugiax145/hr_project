@@ -112,8 +112,8 @@ const CreateRecruitmentRequest = () => {
       const status = formData.budget === 'Đạt chuẩn' ? 'Đã duyệt' : 'Đã nộp';
 
       // Format locations data
-      const mainLocation = selectedMainLocations[0] || ''; // Take first location as main
-      const otherLocations = selectedMainLocations.slice(1); // Take remaining as other locations
+      const mainLocation = selectedMainLocations[0] || '';
+      const otherLocations = selectedMainLocations.slice(1);
 
       const response = await api.post('/api/applications', {
         ...formData,
@@ -123,6 +123,19 @@ const CreateRecruitmentRequest = () => {
       });
 
       if (response.data) {
+        // Nếu là trạng thái "Đã nộp" (vượt quỹ), tạo thông báo cho CEO
+        if (status === 'Đã nộp') {
+          await api.post('/api/recruitment-notifications', {
+            recruitmentId: response.data._id,
+            position: formData.position,
+            department: formData.department
+          }, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+        }
+
         message.success('Yêu cầu tuyển dụng đã được gửi thành công!');
         navigate('/hr/recruitment-requests');
       }
