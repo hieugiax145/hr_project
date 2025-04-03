@@ -1,6 +1,6 @@
 import React from 'react';
-import { Input, Badge, Dropdown, Space, message, Layout, Avatar } from 'antd';
-import { SearchOutlined, BellOutlined, MessageOutlined, UserOutlined, DownOutlined, LogoutOutlined } from '@ant-design/icons';
+import { Input, Badge, Dropdown, Space, message, Layout, Avatar, Button } from 'antd';
+import { SearchOutlined, BellOutlined, MessageOutlined, UserOutlined, DownOutlined, LogoutOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const { Header } = Layout;
@@ -10,17 +10,60 @@ const Topbar = () => {
   const location = useLocation();
   const navigate = useNavigate(); 
 
+  // Hàm kiểm tra xem có phải là route mới không
+  const isNewRoute = (pathname) => {
+    const newRoutes = [
+      '/hr/other-recruitment-requests',
+      '/positions/:id/candidates',
+      '/candidates/:id',
+      '/send-email',
+      '/hr/ceo-recruitment-requests/:id',
+      '/hr/recruitment-requests/:id'
+    ];
+    
+    return newRoutes.some(route => {
+      // Xử lý các route có tham số động
+      if (route.includes(':')) {
+        const routePattern = route.replace(/:[^/]+/g, '[^/]+');
+        return new RegExp(`^${routePattern}$`).test(pathname);
+      }
+      return route === pathname;
+    });
+  };
+
   // Map routes to page titles
   const getPageTitle = (pathname) => {
     const routes = {
       '/': 'Trang chủ',
       '/hr/recruitment-requests': 'Yêu cầu tuyển dụng',
       '/hr/ceo-recruitment-requests': 'Yêu cầu tuyển dụng CEO',
+      '/hr/other-recruitment-requests': 'Yêu cầu tuyển dụng',
       '/positions': 'Vị trí tuyển dụng',
+      '/positions/:id/candidates': 'Danh sách ứng viên',
       '/candidates': 'Ứng viên',
+      '/candidates/:id': 'Chi tiết ứng viên',
       '/calendar': 'Lịch',
       '/notifications': 'Thông báo ứng viên mới',
+      '/emails': 'Email',
+      '/send-email': 'Gửi email',
+      '/hr/ceo-recruitment-requests/:id': 'Chi tiết yêu cầu tuyển dụng CEO',
+      '/hr/recruitment-requests/:id': 'Chi tiết yêu cầu tuyển dụng'
     };
+
+    // Xử lý các route có tham số động
+    if (pathname.includes('/positions/') && pathname.includes('/candidates')) {
+      return 'Danh sách ứng viên';
+    }
+    if (pathname.includes('/candidates/')) {
+      return 'Chi tiết ứng viên';
+    }
+    if (pathname.includes('/hr/ceo-recruitment-requests/')) {
+      return 'Chi tiết yêu cầu tuyển dụng CEO';
+    }
+    if (pathname.includes('/hr/recruitment-requests/')) {
+      return 'Chi tiết yêu cầu tuyển dụng';
+    }
+
     return routes[pathname] || 'Trang chủ';
   };
 
@@ -67,10 +110,22 @@ const Topbar = () => {
   return (
     <div className="fixed top-4 right-4 left-[298px] z-10">
       <div className="bg-[#FCFCFC] h-16 rounded-2xl shadow-sm px-6 flex items-center justify-between">
-        {/* Page Title */}
-        <h1 className="text-xl font-['Inter'] font-bold">
-          {getPageTitle(location.pathname)}
-        </h1>
+        {/* Page Title with Back Button */}
+        <div className="flex items-center gap-4">
+          {isNewRoute(location.pathname) && (
+            <Button 
+              type="text" 
+              icon={<ArrowLeftOutlined />} 
+              onClick={() => navigate(-1)}
+              className="flex items-center"
+            >
+              Quay lại
+            </Button>
+          )}
+          <h1 className="text-xl font-['Inter'] font-bold">
+            {getPageTitle(location.pathname)}
+          </h1>
+        </div>
 
         {/* Right Section */}
         <div className="flex items-center gap-8">

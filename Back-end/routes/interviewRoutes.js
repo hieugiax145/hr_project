@@ -6,7 +6,8 @@ const {
   getInterviewById,
   createInterview,
   updateInterview,
-  deleteInterview
+  deleteInterview,
+  getUpcomingInterviewsByCandidate
 } = require('../controllers/interviewController');
 
 router.route('/')
@@ -17,5 +18,8 @@ router.route('/:id')
   .get(protect, getInterviewById)
   .put(protect, updateInterview)
   .delete(protect, deleteInterview);
+
+// Get upcoming interviews by candidate ID
+router.get('/candidate/:candidateId', protect, getUpcomingInterviewsByCandidate);
 
 module.exports = router;

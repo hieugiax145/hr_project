@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Layout, Button, Tag, message, Modal, Form, Input, Select, Avatar } from 'antd';
+import { Layout, Button, Tag, message, Modal, Form, Input, Select, Avatar, Card } from 'antd';
 import { ArrowLeftOutlined, EditOutlined, UserOutlined, MessageOutlined, DownloadOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, BarChartOutlined, RiseOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import moment from 'moment';
+import 'moment/locale/vi';
 
 const { Content } = Layout;
 const { TextArea } = Input;
 const API_BASE_URL = 'http://localhost:8000/api';
+
+moment.locale('vi');
 
 const RecruitmentStages = ({ currentStage }) => {
   const getStageColor = (stageName, currentStage) => {
@@ -110,6 +114,7 @@ const CandidateDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [candidate, setCandidate] = useState(null);
+  const [upcomingInterview, setUpcomingInterview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [form] = Form.useForm();
@@ -123,14 +128,25 @@ const CandidateDetail = () => {
         return;
       }
 
-      const response = await axios.get(`${API_BASE_URL}/candidates/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const [candidateResponse, interviewResponse] = await Promise.all([
+        axios.get(`${API_BASE_URL}/candidates/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }),
+        axios.get(`${API_BASE_URL}/interviews/candidate/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+      ]);
 
-      if (response.status === 200) {
-        setCandidate(response.data.candidate);
+      if (candidateResponse.status === 200) {
+        setCandidate(candidateResponse.data.candidate);
+      }
+
+      if (interviewResponse.status === 200 && interviewResponse.data.length > 0) {
+        setUpcomingInterview(interviewResponse.data[0]);
       }
     } catch (error) {
       console.error('Error fetching candidate details:', error);
@@ -215,6 +231,19 @@ const CandidateDetail = () => {
     window.open(googleDocsUrl, '_blank');
   };
 
+  // Hàm chuyển đổi role sang tiếng Việt
+  const translateRole = (role) => {
+    const roleTranslations = {
+      'department_head': 'Trưởng phòng ban',
+      'business_director': 'Giám đốc kinh doanh',
+      'ceo': 'CEO',
+      'recruitment': 'Bộ phận tuyển dụng',
+      'director': 'Giám đốc',
+      'hr': 'HR'
+    };
+    return roleTranslations[role] || role;
+  };
+
   if (loading) {
     return <div>Đang tải...</div>;
   }
@@ -274,6 +303,69 @@ const CandidateDetail = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Card: Lịch sắp tới (hiển thị khi có interview) */}
+              {upcomingInterview && (
+                <Card className="mb-4">
+                  <div className="text-lg font-medium mb-4">Lịch sắp tới</div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="text-gray-600 mb-2">{upcomingInterview.title}</div>
+                    
+                    {/* Thời gian */}
+                    <div className="text-lg mb-2">
+                      {moment(upcomingInterview.date).format('D MMMM, YYYY')}
+                    </div>
+                    <div className="text-gray-600 mb-2">
+                      {moment(upcomingInterview.startTime).format('HH:mm')} - 
+                      {moment(upcomingInterview.endTime).format('HH:mm')}
+                    </div>
+
+                    {/* Loại và địa điểm */}
+                    <div className="mb-2">
+                      <Tag color={upcomingInterview.eventType === 'online' ? 'blue' : 'green'}>
+                        {upcomingInterview.eventType === 'online' ? 'Online' : 'Offline'}
+                      </Tag>
+                    </div>
+                    <div className="text-gray-600 mb-4">
+                      Địa điểm: {upcomingInterview.location}
+                    </div>
+
+                    {/* Người tham gia */}
+                    <div className="mt-4">
+                      <div className="text-gray-600 mb-2">Người tham gia:</div>
+                      <div className="flex flex-wrap gap-4">
+                        {/* Người tạo */}
+                        <div className="flex items-center gap-2">
+                          <Avatar style={{ backgroundColor: '#1890ff' }}>
+                            {upcomingInterview.createdBy.role[0].toUpperCase()}
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{upcomingInterview.createdBy.fullName}</div>
+                            <div className="text-xs text-gray-500">
+                              {translateRole(upcomingInterview.createdBy.role)}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Những người tham gia khác */}
+                        {upcomingInterview.attendees.map((attendee, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <Avatar style={{ backgroundColor: '#52c41a' }}>
+                              {attendee.role[0].toUpperCase()}
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">{attendee.fullName}</div>
+                              <div className="text-xs text-gray-500">
+                                {translateRole(attendee.role)}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              )}
 
               {/* Card 2: Thông tin ứng tuyển */}
               <div style={{ 

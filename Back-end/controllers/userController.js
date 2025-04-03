@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const asyncHandler = require('express-async-handler');
 
 // Cấu hình Nodemailer
 const transporter = nodemailer.createTransport({
@@ -277,15 +278,13 @@ const createAdminAccount = async () => {
 // Gọi hàm để tạo tài khoản admin
 createAdminAccount();
 
-// Lấy danh sách tất cả người dùng
-const getAllUsers = async (req, res) => {
-  try {
-    const users = await User.find().select('-password');
-    res.status(200).json(users);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+// @desc    Get all users
+// @route   GET /api/users/all
+// @access  Private
+const getAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find({}, 'username email fullName role');
+  res.json(users);
+});
 
 module.exports = {
   registerUser,

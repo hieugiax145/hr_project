@@ -84,10 +84,37 @@ const deleteInterview = async (req, res) => {
   }
 };
 
+// Get upcoming interviews by candidate ID
+const getUpcomingInterviewsByCandidate = async (req, res) => {
+  try {
+    const { candidateId } = req.params;
+    
+    // Tìm interview sắp tới của ứng viên
+    const interviews = await Interview.find({
+      candidate: candidateId,
+      date: { $gt: new Date() }
+    })
+    .populate('attendees', 'fullName role')
+    .populate('createdBy', 'fullName role')
+    .sort({ date: 1 })
+    .limit(1);  // Chỉ lấy 1 interview gần nhất
+
+    res.json(interviews);
+  } catch (error) {
+    console.error('Error in getUpcomingInterviewsByCandidate:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Lỗi khi lấy thông tin phỏng vấn',
+      error: error.message 
+    });
+  }
+};
+
 module.exports = {
   getInterviews,
   getInterviewById,
   createInterview,
   updateInterview,
-  deleteInterview
+  deleteInterview,
+  getUpcomingInterviewsByCandidate
 };
