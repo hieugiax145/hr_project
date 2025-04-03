@@ -8,19 +8,39 @@ const ForgotPassword = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
+    verificationCode: '',
+    newPassword: '',
+    confirmPassword: ''
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(1); // 1: Nhập email, 2: Nhập mã xác nhận và mật khẩu mới
 
   const validateForm = () => {
     const errors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!formData.email.trim()) {
-      errors.email = 'Vui lòng nhập email';
-    } else if (!emailRegex.test(formData.email)) {
-      errors.email = 'Email không hợp lệ';
+    if (step === 1) {
+      if (!formData.email.trim()) {
+        errors.email = 'Vui lòng nhập email';
+      } else if (!emailRegex.test(formData.email)) {
+        errors.email = 'Email không hợp lệ';
+      }
+    } else {
+      if (!formData.verificationCode.trim()) {
+        errors.verificationCode = 'Vui lòng nhập mã xác nhận';
+      }
+      if (!formData.newPassword) {
+        errors.newPassword = 'Vui lòng nhập mật khẩu mới';
+      } else if (formData.newPassword.length < 6) {
+        errors.newPassword = 'Mật khẩu phải có ít nhất 6 ký tự';
+      }
+      if (!formData.confirmPassword) {
+        errors.confirmPassword = 'Vui lòng xác nhận mật khẩu';
+      } else if (formData.newPassword !== formData.confirmPassword) {
+        errors.confirmPassword = 'Mật khẩu xác nhận không khớp';
+      }
     }
 
     return errors;
@@ -47,21 +67,25 @@ const ForgotPassword = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:8000/api/users/forgot-password', {
-        email: formData.email
-      });
-
-      setSuccess('Hướng dẫn đặt lại mật khẩu đã được gửi đến email của bạn!');
-      
-      setFormData({
-        email: ''
-      });
-
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
+      if (step === 1) {
+        const response = await axios.post('http://localhost:8000/api/users/forgot-password', {
+          email: formData.email
+        });
+        setSuccess('Mã xác nhận đã được gửi đến email của bạn!');
+        setStep(2);
+      } else {
+        const response = await axios.post('http://localhost:8000/api/users/reset-password', {
+          email: formData.email,
+          verificationCode: formData.verificationCode,
+          newPassword: formData.newPassword
+        });
+        setSuccess('Đặt lại mật khẩu thành công!');
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      }
     } catch (err) {
-      setError(err.response?.data?.error || 'Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại!');
+      setError(err.response?.data?.error || 'Có lỗi xảy ra. Vui lòng thử lại!');
     } finally {
       setLoading(false);
     }
@@ -80,9 +104,13 @@ const ForgotPassword = () => {
       <div className="w-1/2 flex flex-col items-center justify-center px-16">
         <div className="w-full max-w-[400px]">
           {/* Tiêu đề */}
-          <h2 className="text-center font-bold text-2xl text-[#1A1A1A] mb-4">Quên mật khẩu?</h2>
+          <h2 className="text-center font-bold text-2xl text-[#1A1A1A] mb-4">
+            {step === 1 ? 'Quên mật khẩu?' : 'Đặt lại mật khẩu'}
+          </h2>
           <p className="text-center text-gray-600 mb-8">
-            Nhập email của bạn và chúng tôi sẽ gửi hướng dẫn đặt lại mật khẩu.
+            {step === 1 
+              ? 'Nhập email của bạn và chúng tôi sẽ gửi mã xác nhận.'
+              : 'Nhập mã xác nhận và mật khẩu mới của bạn.'}
           </p>
 
           {error && <p className="text-red-500 text-center mb-4">{error}</p>}
@@ -99,10 +127,60 @@ const ForgotPassword = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full h-[40px] border border-[#656ED3] rounded-[25px] px-4 focus:outline-none bg-transparent"
+                disabled={step === 2}
+                className="w-full h-[40px] border border-[#656ED3] rounded-[25px] px-4 focus:outline-none bg-transparent disabled:bg-gray-100"
                 placeholder="Nhập email của bạn"
               />
             </div>
+
+            {step === 2 && (
+              <>
+                {/* Mã xác nhận */}
+                <div>
+                  <label className="block text-sm font-medium text-[#1A1A1A] mb-2">
+                    Mã xác nhận <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="verificationCode"
+                    value={formData.verificationCode}
+                    onChange={handleChange}
+                    className="w-full h-[40px] border border-[#656ED3] rounded-[25px] px-4 focus:outline-none bg-transparent"
+                    placeholder="Nhập mã xác nhận"
+                  />
+                </div>
+
+                {/* Mật khẩu mới */}
+                <div>
+                  <label className="block text-sm font-medium text-[#1A1A1A] mb-2">
+                    Mật khẩu mới <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    name="newPassword"
+                    value={formData.newPassword}
+                    onChange={handleChange}
+                    className="w-full h-[40px] border border-[#656ED3] rounded-[25px] px-4 focus:outline-none bg-transparent"
+                    placeholder="Nhập mật khẩu mới"
+                  />
+                </div>
+
+                {/* Xác nhận mật khẩu */}
+                <div>
+                  <label className="block text-sm font-medium text-[#1A1A1A] mb-2">
+                    Xác nhận mật khẩu <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className="w-full h-[40px] border border-[#656ED3] rounded-[25px] px-4 focus:outline-none bg-transparent"
+                    placeholder="Nhập lại mật khẩu mới"
+                  />
+                </div>
+              </>
+            )}
 
             {/* Nút gửi */}
             <button
@@ -113,7 +191,7 @@ const ForgotPassword = () => {
               {loading ? (
                 <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               ) : (
-                'Gửi hướng dẫn đặt lại mật khẩu'
+                step === 1 ? 'Gửi mã xác nhận' : 'Đặt lại mật khẩu'
               )}
             </button>
 

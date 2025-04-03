@@ -7,7 +7,8 @@ import {
   CalendarOutlined,
   BellOutlined,
   UserOutlined,
-  MailOutlined
+  MailOutlined,
+  SettingOutlined
 } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import logo from '../../assets/logo.png';
@@ -29,6 +30,12 @@ const Sidebar = () => {
       icon: <HomeOutlined />,
       label: 'Trang chủ',
     },
+    // Thêm mục Quản lý Tài khoản chỉ hiển thị cho CEO
+    ...(userRole === 'ceo' ? [{
+      key: '/account-management',
+      icon: <SettingOutlined />,
+      label: 'Quản lý Tài khoản',
+    }] : []),
     {
       key: 'recruitment-requests',
       icon: <FileSearchOutlined />,

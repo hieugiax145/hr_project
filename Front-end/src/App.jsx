@@ -27,6 +27,7 @@ import SendEmail from './components/HR/SendEmail';
 import EditNotification from './components/Notifications/EditNotification';
 import NotificationDetail from './components/Notifications/NotificationDetail';
 import EvaluationForm from './components/Notifications/EvaluationForm';
+import AccountManagement from './components/HR/AccountManagement';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -60,6 +61,15 @@ const App = () => {
         <Route path="/dashboard" element={
           <DashboardLayout>
             <Dashboard />
+          </DashboardLayout>
+        } />
+
+        {/* Account Management route - only for CEO */}
+        <Route path="/account-management" element={
+          <DashboardLayout>
+            <ProtectedRoute allowedRoles={['ceo']}>
+              <AccountManagement />
+            </ProtectedRoute>
           </DashboardLayout>
         } />
 
