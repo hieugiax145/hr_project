@@ -24,6 +24,8 @@ import EmailList from './components/Email/EmailList';
 import CreateNotification from './components/Notifications/CreateNotification';
 import SendEmail from './components/HR/SendEmail';
 import EditNotification from './components/Notifications/EditNotification';
+import NotificationDetail from './components/Notifications/NotificationDetail';
+import EvaluationForm from './components/Notifications/EvaluationForm';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -111,6 +113,8 @@ const App = () => {
             <EditNotification />
           </DashboardLayout>
         } />
+        <Route path="/notifications/:id" element={<NotificationDetail />} />
+        <Route path="/notifications/:id/evaluate" element={<EvaluationForm />} />
 
         {/* HR Routes */}
         <Route path="/hr/recruitment-requests/create" element={

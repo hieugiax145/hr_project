@@ -149,3 +149,29 @@ button:focus-visible {
 .ant-badge-count {
   background: #7152F3 !important;
 }
+
+/* Custom styles for Evaluation Table */
+.evaluation-table .ant-table-thead > tr > th {
+  background-color: #8B1C1C !important;
+  color: white !important;
+  text-align: center !important;
+  padding: 8px !important;
+}
+
+.evaluation-table .ant-table-tbody > tr > td {
+  padding: 8px !important;
+  text-align: center !important;
+}
+
+.evaluation-table .ant-table-cell {
+  vertical-align: middle !important;
+}
+
+.evaluation-table .ant-table-row:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.evaluation-table .ant-table-tbody > tr > td.completion-cell {
+  color: #8B1C1C;
+  font-weight: bold;
+}
