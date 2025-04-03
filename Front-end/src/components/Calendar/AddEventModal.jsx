@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Input, Select, DatePicker, TimePicker, Button, Checkbox, Form, message } from 'antd';
+import { Modal, Input, Select, DatePicker, TimePicker, Button, Checkbox, Form, message, InputNumber } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import locale from 'antd/es/date-picker/locale/vi_VN';
 import dayjs from 'dayjs';
@@ -22,7 +22,7 @@ const AddEventModal = ({ visible, onClose, onSave, selectedDate }) => {
         startTime: dayjs('14:00', 'HH:mm'),
         endTime: dayjs('14:30', 'HH:mm'),
         eventType: 'offline',
-        beforeEvent: '5min',
+        beforeEvent: 5,
         type: 'interview'
       });
       fetchData();
@@ -185,12 +185,13 @@ const AddEventModal = ({ visible, onClose, onSave, selectedDate }) => {
               </Select>
             </Form.Item>
 
-            <Form.Item name="beforeEvent" label="Trước 5 phút">
-              <Select>
-                <Option value="5min">5 phút</Option>
-                <Option value="10min">10 phút</Option>
-                <Option value="15min">15 phút</Option>
-              </Select>
+            <Form.Item name="beforeEvent" label="Thời gian báo trước">
+              <InputNumber
+                min={1}
+                placeholder="Nhập số phút"
+                className="w-full"
+                addonAfter="phút"
+              />
             </Form.Item>
           </div>
 

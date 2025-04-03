@@ -127,39 +127,36 @@ const Sidebar = () => {
     .map(item => item.key);
 
   return (
-    <div className="m-4">
-      <Sider
-        width={250}
-        style={{
-          background: '#FCFCFC',
-          borderRadius: '16px',
-          height: 'calc(100vh - 32px)',
-          position: 'fixed',
-          left: '16px',
-          top: '16px',
-          bottom: '16px',
-          boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-        }}
-      >
-        <div className="p-6">
-          <div className="flex items-center gap-2 mb-8">
-            <img src={logo} alt="JHR Logo" className="h-8 w-8" />
-            <span className="text-xl font-['Inter'] text-black">JHR</span>
-          </div>
-          <Menu
-            mode="inline"
-            selectedKeys={selectedKeys}
-            onClick={handleMenuClick}
-            items={menuItems}
-            style={{
-              background: '#FCFCFC',
-              border: 'none',
-            }}
-            className="custom-menu"
-          />
+    <Sider
+      width={250}
+      style={{
+        background: '#FCFCFC',
+        height: '100vh',
+        position: 'fixed',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        borderRight: '1px solid #f0f0f0',
+      }}
+    >
+      <div className="p-6">
+        <div className="flex items-center gap-2 mb-8">
+          <img src={logo} alt="JHR Logo" className="h-8 w-8" />
+          <span className="text-xl font-['Inter'] text-black">JHR</span>
         </div>
-      </Sider>
-    </div>
+        <Menu
+          mode="inline"
+          selectedKeys={selectedKeys}
+          onClick={handleMenuClick}
+          items={menuItems}
+          style={{
+            background: '#FCFCFC',
+            border: 'none',
+          }}
+          className="custom-menu"
+        />
+      </div>
+    </Sider>
   );
 };
 

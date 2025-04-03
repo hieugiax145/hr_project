@@ -5,9 +5,11 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const cloudinary = require('cloudinary').v2;
+const path = require('path');
 require('./utils/cronJobs');
 
 // Import routes
+const authRoutes = require('./routes/authRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const positionRoutes = require('./routes/positionRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -18,6 +20,7 @@ const applicationRoutes = require('./routes/applicationRoutes');
 const offerRoutes = require('./routes/offerRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const emailRoutes = require('./routes/emailRoutes');
+const evaluationRoutes = require('./routes/evaluationRoutes');
 
 // Cloudinary configuration
 cloudinary.config({
@@ -53,7 +56,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date() });
 });
 
+// Serve static files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/positions', positionRoutes);
 app.use('/api/users', userRoutes);
@@ -64,6 +71,7 @@ app.use('/api/applications', applicationRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/emails', emailRoutes);
+app.use('/api/evaluations', evaluationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

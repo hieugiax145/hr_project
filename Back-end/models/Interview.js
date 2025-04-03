@@ -52,6 +52,14 @@ const interviewSchema = mongoose.Schema(
       type: String,
       enum: ['pending', 'confirmed', 'cancelled'],
       default: 'pending',
+    },
+    beforeEvent: {
+      type: Number,
+      default: 5
+    },
+    notificationSent: {
+      type: Boolean,
+      default: false
     }
   },
   {

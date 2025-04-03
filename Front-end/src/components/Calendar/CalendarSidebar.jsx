@@ -1,52 +1,65 @@
 import React from 'react';
-import { Input } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
+import { useNavigate } from 'react-router-dom';
 
-const CalendarSidebar = () => {
+const CalendarSidebar = ({ selectedDate, selectedDateEvents, onClose }) => {
+  const navigate = useNavigate();
+
+  const handleViewEventDetail = (eventId) => {
+    navigate(`/calendar/event/${eventId}`);
+  };
+
+  if (!selectedDate) return null;
+
   return (
-    <div className="w-[280px] fixed left-0 top-0 h-screen bg-white border-r">
-      {/* Logo */}
-      <div className="h-16 flex items-center px-4 border-b">
-        <div className="text-xl font-bold">JHR</div>
+    <div className="w-[250px] bg-white border-r border-gray-200 overflow-auto">
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-medium">
+            {selectedDate.format('DD/MM/YYYY')}
+          </h3>
+          <Button 
+            type="text" 
+            icon={<CloseOutlined />} 
+            onClick={onClose}
+          />
+        </div>
       </div>
 
-      {/* Search */}
       <div className="p-4">
-        <Input
-          prefix={<SearchOutlined className="text-gray-400" />}
-          placeholder="Tìm kiếm lịch hẹn"
-          className="w-full"
-        />
-      </div>
-
-      {/* Quản lý */}
-      <div className="px-4">
-        <h3 className="text-sm font-medium mb-2">Quản lý</h3>
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F4F1FE] text-[#7B61FF]">
-            <div className="w-2 h-2 rounded-full bg-[#7B61FF]"></div>
-            <span>Duyên DTM</span>
+        {selectedDateEvents.length === 0 ? (
+          <div className="text-gray-500 text-center py-4">
+            Không có lịch trong ngày này
           </div>
-        </div>
-      </div>
-
-      {/* Đang theo dõi */}
-      <div className="px-4 mt-4">
-        <h3 className="text-sm font-medium mb-2">Đang theo dõi</h3>
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
-            <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-            <span>Nguyễn Hương Giang</span>
+        ) : (
+          <div className="space-y-3">
+            {selectedDateEvents.map((event, index) => (
+              <div 
+                key={event._id || index}
+                className="p-3 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                style={{
+                  backgroundColor: event.type === 'interview' ? '#E8EAFF' : '#E7FE50',
+                }}
+                onClick={() => handleViewEventDetail(event._id)}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium" style={{
+                    color: event.type === 'interview' ? '#7B61FF' : '#000'
+                  }}>
+                    {event.title}
+                  </h4>
+                </div>
+                <div className="text-sm text-gray-600">
+                  <p>Thời gian: {dayjs(event.startTime).format('HH:mm')}</p>
+                  <p>{event.eventType === 'online' ? 'Online' : 'Offline'}</p>
+                  {event.room && <p>Phòng: {event.room}</p>}
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
-            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-            <span>Nguyễn Viết Lâm</span>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
-            <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-            <span>Nguyễn Duy Quang</span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

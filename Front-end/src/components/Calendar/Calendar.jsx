@@ -135,7 +135,7 @@ const Calendar = () => {
               <div 
                 className="cursor-pointer rounded p-1 text-xs mb-1"
                 style={{
-                  backgroundColor: event.type === 'interview' ? '#E8EAFF' : '#E7FE50',
+                  backgroundColor: event.type === 'interview' ? '#E8EAFF' : '#EEF8C1',
                   color: event.type === 'interview' ? '#7B61FF' : '#000'
                 }}
                 onClick={() => handleViewEventDetail(event._id)}
@@ -190,7 +190,7 @@ const Calendar = () => {
         type: values.type,
         attendees: values.attendees || [],
         candidate: values.assignTo === 'no-candidates' ? null : values.assignTo,
-        beforeEvent: values.beforeEvent || '5min',
+        beforeEvent: values.beforeEvent || 5,
         allDay: values.allDay || false
       };
 
@@ -309,21 +309,39 @@ const Calendar = () => {
                     key={event._id || index}
                     className="p-3 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
                     style={{
-                      backgroundColor: event.type === 'interview' ? '#E8EAFF' : '#E7FE50',
+                      backgroundColor: event.eventType === 'offline' ? '#E8EAFF' : '#EEF8C1',
                     }}
                     onClick={() => handleViewEventDetail(event._id)}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium" style={{
-                        color: event.type === 'interview' ? '#7B61FF' : '#000'
+                        color: event.eventType === 'offline' ? '#7B61FF' : '#000'
                       }}>
                         {event.title}
                       </h4>
                     </div>
-                    <div className="text-sm text-gray-600">
-                      <p>Thời gian: {dayjs(event.startTime).format('HH:mm')}</p>
-                      <p>{event.eventType === 'online' ? 'Online' : 'Offline'}</p>
-                      {event.room && <p>Phòng: {event.room}</p>}
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <p>Thời gian: {dayjs(event.startTime).format('HH:mm')} - {dayjs(event.endTime).format('HH:mm')}</p>
+                      <p>Hình thức: {event.eventType === 'offline' ? 'Offline' : 'Online'}</p>
+                      {event.location && <p>Địa điểm: {event.location}</p>}
+                      {event.description && <p>Mô tả: {event.description}</p>}
+                      {event.candidate && (
+                        <div>
+                          <p className="font-medium">Ứng viên:</p>
+                          <p>Tên: {event.candidate.name}</p>
+                          <p>Vị trí: {event.candidate.position}</p>
+                        </div>
+                      )}
+                      {event.attendees && event.attendees.length > 0 && (
+                        <div>
+                          <p className="font-medium">Người tham gia:</p>
+                          <ul className="list-disc list-inside">
+                            {event.attendees.map((attendee, idx) => (
+                              <li key={idx}>{attendee.username}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

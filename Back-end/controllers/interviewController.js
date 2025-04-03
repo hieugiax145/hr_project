@@ -41,7 +41,8 @@ const createInterview = asyncHandler(async (req, res) => {
     location,
     description,
     candidate,
-    attendees
+    attendees,
+    beforeEvent
   } = req.body;
 
   const interview = await Interview.create({
@@ -55,7 +56,8 @@ const createInterview = asyncHandler(async (req, res) => {
     description,
     candidate,
     attendees,
-    createdBy: req.user._id
+    createdBy: req.user._id,
+    beforeEvent: beforeEvent || 5
   });
 
   const populatedInterview = await Interview.findById(interview._id)

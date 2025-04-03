@@ -156,22 +156,35 @@ button:focus-visible {
   color: white !important;
   text-align: center !important;
   padding: 8px !important;
+  border: 1px solid #d9d9d9 !important;
 }
 
 .evaluation-table .ant-table-tbody > tr > td {
   padding: 8px !important;
   text-align: center !important;
+  border: 1px solid #d9d9d9 !important;
+  background-color: white !important;
+}
+
+.evaluation-table .ant-table-tbody > tr:hover > td {
+  background-color: white !important;
 }
 
 .evaluation-table .ant-table-cell {
   vertical-align: middle !important;
 }
 
-.evaluation-table .ant-table-row:nth-child(even) {
-  background-color: #f9f9f9;
-}
-
 .evaluation-table .ant-table-tbody > tr > td.completion-cell {
   color: #8B1C1C;
   font-weight: bold;
+}
+
+/* Custom styles for dropdown arrow */
+.evaluation-table .ant-table-tbody > tr > td:nth-child(5) {
+  position: relative;
+}
+
+.evaluation-table .ant-table-tbody > tr > td:nth-child(5) > div {
+  cursor: pointer;
+  font-size: 12px;
 }
