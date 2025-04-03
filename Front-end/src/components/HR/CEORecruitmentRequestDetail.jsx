@@ -85,6 +85,16 @@ const CEORecruitmentRequestDetail = () => {
         }
       );
       
+      // Xóa thông báo khi phê duyệt
+      await axios.delete(
+        `http://localhost:8000/api/recruitment-notifications/by-recruitment/${id}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
       if (response.status === 200) {
         navigate('/hr/ceo-recruitment-requests');
       }
@@ -100,6 +110,16 @@ const CEORecruitmentRequestDetail = () => {
       const response = await axios.put(
         `http://localhost:8000/api/applications/${id}`,
         { status: 'Từ chối' },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      // Xóa thông báo khi từ chối
+      await axios.delete(
+        `http://localhost:8000/api/recruitment-notifications/by-recruitment/${id}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`

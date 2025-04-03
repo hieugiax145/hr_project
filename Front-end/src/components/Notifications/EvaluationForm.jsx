@@ -16,7 +16,8 @@ const { Option } = Select;
 const completionOptions = [
   'Chưa hoàn thành',
   'Hoàn thiện',
-  'Hoàn thành trước thời hạn'
+  'Hoàn thành trước thời hạn',
+  'Vượt chỉ tiêu'
 ];
 
 const EvaluationForm = () => {
@@ -44,6 +45,15 @@ const EvaluationForm = () => {
 
   const [result, setResult] = useState('');
   const [note, setNote] = useState('');
+  const [evaluationPeriod, setEvaluationPeriod] = useState('HĐTV - 2 tháng');
+
+  const evaluationPeriodOptions = [
+    'HĐTV - 2 tuần',
+    'HĐTV - 1 tháng',
+    'HĐTV - 2 tháng',
+    'HĐTV - Review 6 tháng',
+    'HĐTV - Review 1 năm'
+  ];
 
   // Load dữ liệu đánh giá và thông báo
   useEffect(() => {
@@ -70,6 +80,7 @@ const EvaluationForm = () => {
         setManagerEvaluation(evaluationData.managerEvaluation);
         setResult(evaluationData.result);
         setNote(evaluationData.note);
+        setEvaluationPeriod(evaluationData.evaluationPeriod || 'HĐTV - 2 tháng');
       }
     } catch (error) {
       message.error('Lỗi khi tải dữ liệu');
@@ -114,7 +125,8 @@ const EvaluationForm = () => {
         selfEvaluation,
         managerEvaluation,
         result,
-        note
+        note,
+        evaluationPeriod
       };
 
       await evaluationService.createOrUpdateEvaluation(id, evaluationData);
@@ -306,7 +318,7 @@ const EvaluationForm = () => {
         <p><strong>Team:</strong> ${notification?.department || ''}</p>
         <p><strong>Leader:</strong> ${notification?.hrInCharge?.fullName || ''}</p>
         <p><strong>Vị trí:</strong> ${notification?.position || ''}</p>
-        <p><strong>Kỳ đánh giá:</strong> HĐTV - 2 tháng</p>
+        <p><strong>Kỳ đánh giá:</strong> ${evaluationPeriod}</p>
       `;
       tempDiv.appendChild(basicInfo);
       
@@ -490,18 +502,26 @@ const EvaluationForm = () => {
 
             {/* Kỳ đánh giá */}
             <div className="bg-[#C2D5A8] p-4 mb-4">
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <div>Kỳ đánh giá</div>
-                <div>HĐTV - 2 tháng</div>
+                <Select
+                  value={evaluationPeriod}
+                  onChange={setEvaluationPeriod}
+                  style={{ width: 200 }}
+                  className="custom-evaluation-select"
+                  dropdownClassName="custom-evaluation-dropdown"
+                  bordered={false}
+                  suffixIcon={<div style={{ color: '#666' }}>▼</div>}
+                >
+                  {evaluationPeriodOptions.map(option => (
+                    <Option key={option} value={option}>{option}</Option>
+                  ))}
+                </Select>
               </div>
             </div>
 
             {/* Bảng đánh giá */}
             <div className="mb-4">
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="text-center font-medium bg-[#C2D5A8] p-2">Phần dành cho nhân viên tự đánh giá</div>
-                <div className="text-center font-medium bg-[#C2D5A8] p-2">Phần quản lý đánh giá</div>
-              </div>
               <Table 
                 columns={[...evaluationColumns, ...managementColumns]}
                 dataSource={tasks}

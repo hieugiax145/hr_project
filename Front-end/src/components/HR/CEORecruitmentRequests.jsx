@@ -132,6 +132,16 @@ const CEORecruitmentRequests = () => {
           }
         );
 
+        // Xóa thông báo khi chuyển sang trạng thái Đang duyệt
+        await axios.delete(
+          `http://localhost:8000/api/recruitment-notifications/by-recruitment/${request._id}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        );
+
         if (response.status === 200) {
           // Cập nhật state với dữ liệu mới từ response
           setRequests(prevRequests => 
