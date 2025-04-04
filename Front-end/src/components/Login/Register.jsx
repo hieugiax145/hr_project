@@ -207,21 +207,19 @@ const Register = () => {
               <label className="block text-sm font-medium text-[#1A1A1A] mb-2">
                 Vai trò <span className="text-red-500">*</span>
               </label>
-              <div className="grid grid-cols-2 gap-4">
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="w-full h-[40px] border border-[#656ED3] rounded-[25px] px-4 focus:outline-none bg-transparent"
+              >
+                <option value="">Chọn vai trò</option>
                 {roles.map(role => (
-                  <label key={role.id} className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="role"
-                      value={role.id}
-                      checked={formData.role === role.id}
-                      onChange={handleChange}
-                      className="text-[#656ED3] focus:ring-[#656ED3]"
-                    />
-                    <span className="text-sm">{role.name}</span>
-                  </label>
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
 
             {/* Department Selection - Only show when Trưởng phòng ban is selected */}
@@ -230,21 +228,19 @@ const Register = () => {
                 <label className="block text-sm font-medium text-[#1A1A1A] mb-2">
                   Phòng ban <span className="text-red-500">*</span>
                 </label>
-                <div className="grid grid-cols-2 gap-4">
+                <select
+                  name="department"
+                  value={formData.department}
+                  onChange={handleChange}
+                  className="w-full h-[40px] border border-[#656ED3] rounded-[25px] px-4 focus:outline-none bg-transparent"
+                >
+                  <option value="">Chọn phòng ban</option>
                   {departments.map(dept => (
-                    <label key={dept.id} className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="department"
-                        value={dept.id}
-                        checked={formData.department === dept.id}
-                        onChange={handleChange}
-                        className="text-[#656ED3] focus:ring-[#656ED3]"
-                      />
-                      <span className="text-sm">{dept.name}</span>
-                    </label>
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
             )}
 

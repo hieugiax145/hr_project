@@ -37,9 +37,9 @@ const Topbar = () => {
     const routes = {
       '/': 'Trang chủ',
       '/hr/recruitment-requests': 'Yêu cầu tuyển dụng',
-      '/hr/ceo-recruitment-requests': 'Yêu cầu tuyển dụng CEO',
+      '/hr/ceo-recruitment-requests': 'Danh sách yêu cầu tuyển dụng cần phê duyệt',
       '/hr/other-recruitment-requests': 'Yêu cầu tuyển dụng',
-      '/positions': 'Vị trí tuyển dụng',
+      '/positions': 'Danh sách vị trí tuyển dụng',
       '/positions/:id/candidates': 'Danh sách ứng viên',
       '/candidates': 'Ứng viên',
       '/candidates/:id': 'Chi tiết ứng viên',

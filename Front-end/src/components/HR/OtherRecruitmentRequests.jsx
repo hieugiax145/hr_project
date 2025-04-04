@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import moment from 'moment';
 import 'moment/locale/vi';
+import { IoIosArrowBack, IoIosArrowForward } from 'react-icons/io';
 
 const { Content } = Layout;
 moment.locale('vi');
@@ -103,14 +104,34 @@ const OtherRecruitmentRequests = () => {
   const endIndex = startIndex + itemsPerPage;
   const currentRequests = requests.slice(startIndex, endIndex);
 
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    if (currentPage > 2) {
+      pageNumbers.push(1);
+    }
+    if (currentPage > 3) {
+      pageNumbers.push('...');
+    }
+    for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+      pageNumbers.push(i);
+    }
+    if (currentPage < totalPages - 2) {
+      pageNumbers.push('...');
+    }
+    if (currentPage < totalPages - 1) {
+      pageNumbers.push(totalPages);
+    }
+    return pageNumbers;
+  };
+
   return (
     <Layout style={{ minHeight: '100vh', background: '#F5F5F5' }}>
       <Layout style={{ marginLeft: 282 }}>
-        <Content style={{ margin: '80px 16px 24px', minHeight: 280, maxHeight: 'calc(100vh - 104px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <Content style={{ margin: '80px 16px 24px', minHeight: 280, display: 'flex', flexDirection: 'column' }}>
           <div className="bg-white rounded-lg shadow-sm flex-1 flex flex-col">
-            {/* Table */}
-            <div className="overflow-y-auto flex-1">
-              <table className="w-full">
+            {/* Table Container */}
+            <div className="flex-1">
+              <table className="w-full min-w-[800px]">
                 <thead>
                   <tr className="bg-[#F9FAFB]">
                     <th className="p-4 text-left text-sm font-medium text-gray-600 sticky top-0 bg-[#F9FAFB]">ID phiếu</th>
@@ -149,20 +170,44 @@ const OtherRecruitmentRequests = () => {
                 </tbody>
               </table>
             </div>
-            {/* Add pagination controls */}
-            <div className="p-4 flex justify-end gap-2">
-              <Button 
+
+            {/* Pagination */}
+            <div className="flex justify-between items-center p-4 border-t bg-white">
+              <button 
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-[10px] hover:border-[#8D75F5] hover:text-[#8D75F5]"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
               >
-                Trước
-              </Button>
-              <Button 
+                <IoIosArrowBack size={16} />
+                <span>Trước</span>
+              </button>
+              <div className="flex gap-3 overflow-x-auto px-2">
+                {getPageNumbers().map((number, index) => (
+                  number === '...' ? (
+                    <span key={index} className="w-8 h-8 flex items-center justify-center text-gray-500">...</span>
+                  ) : (
+                    <button
+                      key={index}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg ${
+                        currentPage === number
+                          ? 'bg-[#F9F5FF] text-[#7F56D9]'
+                          : 'bg-white text-black'
+                      }`}
+                      onClick={() => setCurrentPage(number)}
+                    >
+                      {number}
+                    </button>
+                  )
+                ))}
+              </div>
+              <button 
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-[10px] hover:border-[#8D75F5] hover:text-[#8D75F5]"
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
               >
-                Sau
-              </Button>
+                <span>Sau</span>
+                <IoIosArrowForward size={16} />
+              </button>
             </div>
           </div>
         </Content>

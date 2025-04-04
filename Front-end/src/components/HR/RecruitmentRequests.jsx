@@ -225,7 +225,7 @@ const RecruitmentRequests = () => {
   return (
     <Layout style={{ minHeight: '100vh', background: '#F5F5F5' }}>
       <Layout style={{ marginLeft: 282 }}>
-        <Content style={{ margin: '80px 16px 24px', minHeight: 280, maxHeight: 'calc(100vh - 104px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <Content style={{ margin: '80px 16px 24px', minHeight: 280, display: 'flex', flexDirection: 'column' }}>
           {/* Header Actions - Outside of white container */}
           <div className="mb-4">
             <div className="flex justify-between items-center">
@@ -311,9 +311,9 @@ const RecruitmentRequests = () => {
           )}
 
           <div className="bg-white rounded-lg shadow-sm flex-1 flex flex-col">
-            {/* Table */}
-            <div className="overflow-y-auto flex-1">
-              <table className="w-full">
+            {/* Table Container - Removed fixed height */}
+            <div className="flex-1">
+              <table className="w-full min-w-[800px]">
                 <thead>
                   <tr className="bg-[#F9FAFB]">
                     <th className="w-12 p-4 sticky top-0 bg-[#F9FAFB]">
@@ -395,14 +395,14 @@ const RecruitmentRequests = () => {
                 <IoIosArrowBack size={16} />
                 <span>Trước</span>
               </button>
-              <div className="flex gap-3">
+              <div className="flex gap-3 overflow-x-auto px-2">
                 {getPageNumbers().map((number, index) => (
                   number === '...' ? (
-                    <span key={index} className="w-10 h-10 flex items-center justify-center text-gray-500">...</span>
+                    <span key={index} className="w-8 h-8 flex items-center justify-center text-gray-500">...</span>
                   ) : (
                     <button
                       key={index}
-                      className={`w-10 h-10 flex items-center justify-center rounded-lg ${
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg ${
                         currentPage === number
                           ? 'bg-[#F9F5FF] text-[#7F56D9]'
                           : 'bg-white text-black'

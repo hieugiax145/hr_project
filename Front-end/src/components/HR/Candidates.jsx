@@ -69,9 +69,9 @@ const Candidates = () => {
   const getStatusText = (stage) => {
     const texts = {
       'new': 'Mới',
-      'reviewing': 'Đang xem xét',
-      'interview1': 'Phỏng vấn vòng 1',
-      'interview2': 'Phỏng vấn vòng 2',
+      'reviewing': 'Đang xét',
+      'interview1': 'PV 1',
+      'interview2': 'PV 2',
       'offer': 'Đề xuất',
       'hired': 'Đã tuyển',
       'rejected': 'Từ chối'
@@ -84,6 +84,8 @@ const Candidates = () => {
       title: 'Tên',
       dataIndex: 'name',
       key: 'name',
+      width: '18%',
+      ellipsis: true,
       filteredValue: [searchText],
       onFilter: (value, record) => {
         return (
@@ -100,41 +102,56 @@ const Candidates = () => {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
+      width: '20%',
+      ellipsis: true,
     },
     {
       title: 'Số điện thoại',
       dataIndex: 'phone',
       key: 'phone',
+      width: '12%',
+      ellipsis: true,
     },
     {
       title: 'Vị trí ứng tuyển',
       dataIndex: 'positionId',
       key: 'positionId',
+      width: '15%',
+      ellipsis: true,
       render: (positionId) => positionId?.title || 'N/A',
     },
     {
       title: 'Phòng ban',
       dataIndex: 'positionId',
       key: 'positionId',
+      width: '12%',
+      ellipsis: true,
       render: (positionId) => positionId?.department || 'N/A',
     },
     {
       title: 'Ngày ứng tuyển',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      width: '10%',
+      ellipsis: true,
       render: (date) => new Date(date).toLocaleDateString('vi-VN'),
     },
     {
       title: 'Tài liệu',
       key: 'documents',
+      width: '8%',
+      align: 'center',
       render: (_, record) => (
-        <Space>
+        <Space size="small">
           {record.cv && (
             <Tooltip title="Xem CV">
               <Button 
                 type="text" 
                 icon={<FileTextOutlined />} 
-                onClick={() => window.open(record.cv.url, '_blank')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(record.cv.url, '_blank');
+                }}
               />
             </Tooltip>
           )}
@@ -143,7 +160,10 @@ const Candidates = () => {
               <Button 
                 type="text" 
                 icon={<VideoCameraOutlined />} 
-                onClick={() => window.open(record.video, '_blank')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(record.video, '_blank');
+                }}
               />
             </Tooltip>
           )}
@@ -154,8 +174,10 @@ const Candidates = () => {
       title: 'Trạng thái',
       key: 'stage',
       dataIndex: 'stage',
+      width: '10%',
+      align: 'center',
       render: (stage) => (
-        <Tag color={getStatusColor(stage)}>
+        <Tag color={getStatusColor(stage)} style={{ minWidth: '70px', textAlign: 'center' }}>
           {getStatusText(stage)}
         </Tag>
       ),
@@ -176,7 +198,9 @@ const Candidates = () => {
               marginBottom: '16px',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '16px'
             }}>
               <div>
                 <h1 style={{ 
@@ -203,6 +227,7 @@ const Candidates = () => {
                 total: candidates.length,
                 pageSize: 10,
                 showTotal: (total) => `Tổng số ${total} ứng viên`,
+                showSizeChanger: false
               }}
               onRow={(record) => ({
                 onClick: () => navigate(`/candidates/${record._id}`),

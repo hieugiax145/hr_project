@@ -209,13 +209,10 @@ const CEORecruitmentRequests = () => {
   return (
     <Layout style={{ minHeight: '100vh', background: '#F5F5F5' }}>
       <Layout style={{ marginLeft: 282 }}>
-        <Content style={{ margin: '80px 16px 24px', minHeight: 280, maxHeight: 'calc(100vh - 104px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <Content style={{ margin: '80px 16px 24px', minHeight: 280, display: 'flex', flexDirection: 'column' }}>
           {/* Header Actions */}
           <div className="mb-4">
             <div className="flex justify-between items-center">
-              <h1 className="text-[20px] font-medium text-[#1A1A1A]">
-                Danh sách yêu cầu tuyển dụng cần phê duyệt
-              </h1>
               <div className="flex gap-2">
                 <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-[10px] hover:border-[#8D75F5] hover:text-[#8D75F5]">
                   <IoSettingsSharp size={16} />
@@ -226,9 +223,9 @@ const CEORecruitmentRequests = () => {
           </div>
 
           <div className="bg-white rounded-lg shadow-sm flex-1 flex flex-col">
-            {/* Table */}
-            <div className="overflow-y-auto flex-1">
-              <table className="w-full">
+            {/* Table Container */}
+            <div className="flex-1">
+              <table className="w-full min-w-[800px]">
                 <thead>
                   <tr className="bg-[#F9FAFB]">
                     <th className="p-4 text-left text-sm font-medium text-gray-600 sticky top-0 bg-[#F9FAFB]">ID phiếu</th>
@@ -278,14 +275,14 @@ const CEORecruitmentRequests = () => {
                 <IoIosArrowBack size={16} />
                 <span>Trước</span>
               </button>
-              <div className="flex gap-3">
+              <div className="flex gap-3 overflow-x-auto px-2">
                 {getPageNumbers().map((number, index) => (
                   number === '...' ? (
-                    <span key={index} className="w-10 h-10 flex items-center justify-center text-gray-500">...</span>
+                    <span key={index} className="w-8 h-8 flex items-center justify-center text-gray-500">...</span>
                   ) : (
                     <button
                       key={index}
-                      className={`w-10 h-10 flex items-center justify-center rounded-lg ${
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg ${
                         currentPage === number
                           ? 'bg-[#F9F5FF] text-[#7F56D9]'
                           : 'bg-white text-black'
