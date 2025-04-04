@@ -67,7 +67,7 @@ const App = () => {
         {/* Account Management route - only for CEO */}
         <Route path="/account-management" element={
           <DashboardLayout>
-            <ProtectedRoute allowedRoles={['admin']}>
+            <ProtectedRoute allowedRoles={['ceo']}>
               <AccountManagement />
             </ProtectedRoute>
           </DashboardLayout>
@@ -90,7 +90,7 @@ const App = () => {
         } />
         <Route path="/hr/other-recruitment-requests" element={
           <DashboardLayout>
-            <ProtectedRoute allowedRoles={['recruitment', 'applicant', 'director', 'business_director', 'admin']}>
+            <ProtectedRoute allowedRoles={['recruitment', 'applicant', 'director', 'business_director']}>
               <OtherRecruitmentRequests />
             </ProtectedRoute>
           </DashboardLayout>

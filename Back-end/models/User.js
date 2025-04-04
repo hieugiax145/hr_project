@@ -13,8 +13,7 @@ const UserSchema = new mongoose.Schema({
       'ceo',
       'recruitment',
       'applicant',
-      'director',
-      'admin'
+      'director'
     ], 
     required: true 
   },

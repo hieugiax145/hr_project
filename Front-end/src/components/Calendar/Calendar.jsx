@@ -138,6 +138,7 @@ const Calendar = () => {
 
     return (
       <div className="h-full">
+        <div className="text-right mb-1">{current.date()}</div>
         <ul className="events m-0 p-0">
           {dateEvents.map((event, index) => (
             <li key={event._id || index} className="list-none">

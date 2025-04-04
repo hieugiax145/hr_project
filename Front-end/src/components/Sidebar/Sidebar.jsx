@@ -31,7 +31,7 @@ const Sidebar = () => {
       label: 'Trang chủ',
     },
     // Thêm mục Quản lý Tài khoản chỉ hiển thị cho CEO
-    ...(userRole === 'admin' ? [{
+    ...(userRole === 'ceo' ? [{
       key: '/account-management',
       icon: <SettingOutlined />,
       label: 'Quản lý Tài khoản',

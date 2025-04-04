@@ -280,7 +280,7 @@ createAdminAccount();
 // @route   GET /api/users/all
 // @access  Private
 const getAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find({}, 'username email fullName role department');
+  const users = await User.find({}, 'username email fullName role');
   res.json(users);
 });
 

@@ -16,7 +16,6 @@ export const getAllUsers = async () => {
       }
     });
 
-    console.log('API Response:', response.data); // Debug log
     return response.data;
   } catch (error) {
     console.error('Lỗi khi lấy danh sách người dùng:', error);

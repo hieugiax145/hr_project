@@ -14,7 +14,6 @@ const AccountManagement = () => {
     const fetchUsers = async () => {
       try {
         const data = await getAllUsers();
-        console.log('Fetched users:', data); // Debug log
         setUsers(data);
         setLoading(false);
       } catch (error) {
@@ -67,42 +66,6 @@ const AccountManagement = () => {
     }
   };
 
-  // Hàm để hiển thị tên phòng ban tiếng Việt
-  const getDepartmentName = (department) => {
-    switch (department) {
-      case 'accounting':
-        return 'Kế toán';
-      case 'marketing':
-        return 'Marketing';
-      case 'it':
-        return 'IT';
-      case 'hr':
-        return 'Nhân sự';
-      case 'sales':
-        return 'Kinh doanh';
-      default:
-        return department;
-    }
-  };
-
-  // Hàm để lấy màu cho department
-  const getDepartmentColor = (department) => {
-    switch (department) {
-      case 'accounting':
-        return 'gold';
-      case 'marketing':
-        return 'lime';
-      case 'it':
-        return 'geekblue';
-      case 'hr':
-        return 'volcano';
-      case 'sales':
-        return 'cyan';
-      default:
-        return 'default';
-    }
-  };
-
   const columns = [
     {
       title: 'Tên đầy đủ',
@@ -139,32 +102,6 @@ const AccountManagement = () => {
         { text: 'Giám đốc', value: 'director' },
       ],
       onFilter: (value, record) => record.role === value,
-    },
-    {
-      title: 'Phòng ban',
-      dataIndex: 'department',
-      key: 'department',
-      render: (department, record) => {
-        console.log('Record:', record); // Debug log
-        if (record.role === 'department_head') {
-          return department ? (
-            <Tag color={getDepartmentColor(department)}>
-              {getDepartmentName(department)}
-            </Tag>
-          ) : (
-            <Tag color="default">Chưa phân công</Tag>
-          );
-        }
-        return null;
-      },
-      filters: [
-        { text: 'Kế toán', value: 'accounting' },
-        { text: 'Marketing', value: 'marketing' },
-        { text: 'IT', value: 'it' },
-        { text: 'Nhân sự', value: 'hr' },
-        { text: 'Kinh doanh', value: 'sales' },
-      ],
-      onFilter: (value, record) => record.department === value,
     },
   ];
 
