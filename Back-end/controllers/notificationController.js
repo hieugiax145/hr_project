@@ -114,7 +114,13 @@ exports.createNotification = async (req, res) => {
       expectedSalary: notificationData.expectedSalary,
       contractType: notificationData.contractType,
       documents: notificationData.documents || [],
-      preparationTasks: notificationData.preparationTasks || []
+      preparationTasks: notificationData.preparationTasks || [],
+      cv: candidate.cv ? candidate.cv.filter(cv => cv.url && cv.public_id && cv.fileName).map(cv => ({
+        url: cv.url,
+        public_id: cv.public_id,
+        fileName: cv.fileName,
+        uploadDate: cv.uploadDate || new Date()
+      })) : []
     });
 
     // Log để kiểm tra dữ liệu trước khi lưu
@@ -123,8 +129,8 @@ exports.createNotification = async (req, res) => {
     try {
       await notification.save();
       
-      // Update candidate status
-      candidate.status = 'notified';
+      // Update candidate stage
+      candidate.stage = 'hired';
       await candidate.save();
 
       // Populate thông tin creator và hrInCharge trước khi trả về

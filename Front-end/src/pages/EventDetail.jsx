@@ -53,10 +53,9 @@ const EventDetail = () => {
 
       if (response.data) {
         setEvent(response.data);
-        if (response.data.date) {
-          setSelectedDate(dayjs(response.data.date));
-        }
+        setSelectedDate(dayjs(response.data.date));
       }
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching event detail:', error);
       if (error.response?.status === 404) {
@@ -68,7 +67,6 @@ const EventDetail = () => {
       } else {
         message.error('Không thể tải thông tin chi tiết lịch');
       }
-    } finally {
       setLoading(false);
     }
   };
@@ -112,6 +110,13 @@ const EventDetail = () => {
   };
 
   const getDaysInWeek = () => {
+    // Nếu đang xem chi tiết sự kiện, hiển thị tuần chứa ngày của sự kiện
+    if (event) {
+      const eventDate = dayjs(event.date);
+      const startOfWeek = eventDate.startOf('week');
+      return Array.from({ length: 7 }, (_, i) => startOfWeek.add(i, 'day'));
+    }
+    // Nếu không có sự kiện, hiển thị tuần chứa ngày được chọn
     const startOfWeek = selectedDate.startOf('week');
     return Array.from({ length: 7 }, (_, i) => startOfWeek.add(i, 'day'));
   };
@@ -217,10 +222,20 @@ const EventDetail = () => {
               <div className="mb-8">
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="text-lg font-medium">Tháng 2, 2025</div>
+                    <div className="text-lg font-medium">{selectedDate.format('MMMM')}, {selectedDate.format('YYYY')}</div>
                     <div className="flex gap-2">
-                      <button className="text-gray-500 hover:text-gray-700">&lt;</button>
-                      <button className="text-gray-500 hover:text-gray-700">&gt;</button>
+                      <button 
+                        className="text-gray-500 hover:text-gray-700"
+                        onClick={() => setSelectedDate(prev => prev.subtract(1, 'month'))}
+                      >
+                        &lt;
+                      </button>
+                      <button 
+                        className="text-gray-500 hover:text-gray-700"
+                        onClick={() => setSelectedDate(prev => prev.add(1, 'month'))}
+                      >
+                        &gt;
+                      </button>
                     </div>
                   </div>
                   <div className="grid grid-cols-7 gap-1">
@@ -231,17 +246,43 @@ const EventDetail = () => {
                     <div className="text-center text-xs text-gray-500">T6</div>
                     <div className="text-center text-xs text-gray-500">T7</div>
                     <div className="text-center text-xs text-gray-500">CN</div>
-                    {Array.from({ length: 28 }, (_, i) => (
-                      <div 
-                        key={i} 
-                        className={`text-center text-sm p-1 rounded-full ${
-                          i + 1 === 18 ? 'bg-[#7B61FF] text-white' : 
-                          'hover:bg-gray-100 cursor-pointer'
-                        }`}
-                      >
-                        {i + 1}
-                      </div>
-                    ))}
+                    {Array.from({ length: 42 }, (_, i) => {
+                      const firstDayOfMonth = selectedDate.startOf('month');
+                      const dayOfWeek = firstDayOfMonth.day();
+                      const adjustedDayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Điều chỉnh để thứ 2 là ngày đầu tuần
+                      const day = i - adjustedDayOfWeek + 1;
+                      const currentDate = firstDayOfMonth.add(day - 1, 'day');
+                      const isCurrentMonth = currentDate.month() === selectedDate.month();
+                      const isSelected = currentDate.format('YYYY-MM-DD') === selectedDate.format('YYYY-MM-DD');
+                      const isToday = currentDate.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD');
+                      
+                      return (
+                        <div 
+                          key={i} 
+                          className={`text-center text-sm p-1 rounded-full ${
+                            isSelected ? 'bg-[#F4F1FE]' : 
+                            isToday ? 'bg-[#F4F1FE]' : 
+                            !isCurrentMonth ? 'text-gray-300' : 'hover:bg-gray-100 cursor-pointer'
+                          }`}
+                          onClick={() => {
+                            if (isCurrentMonth) {
+                              // Kiểm tra xem ngày được chọn có thuộc tuần hiện tại không
+                              const currentWeekStart = selectedDate.startOf('week');
+                              const newWeekStart = currentDate.startOf('week');
+                              
+                              // Nếu khác tuần, cập nhật selectedDate để chuyển sang tuần mới
+                              if (!currentWeekStart.isSame(newWeekStart)) {
+                                setSelectedDate(currentDate);
+                              } else {
+                                setSelectedDate(currentDate);
+                              }
+                            }
+                          }}
+                        >
+                          {day > 0 && day <= selectedDate.daysInMonth() ? day : ''}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -350,19 +391,26 @@ const EventDetail = () => {
               {/* Header */}
               <div className="grid grid-cols-8 border-b sticky top-0 bg-white z-10">
                 <div className="p-4 border-r"></div>
-                {getDaysInWeek().map((date, index) => (
-                  <div 
-                    key={index}
-                    className={`p-4 text-center border-r ${
-                      date.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD') 
-                        ? 'bg-[#F4F1FE]' 
-                        : ''
-                    }`}
-                  >
-                    <div className="font-medium">T{date.format('d')}</div>
-                    <div className="text-lg">{date.format('D')}</div>
-                  </div>
-                ))}
+                {getDaysInWeek().map((date, index) => {
+                  const dayOfWeek = date.day(); // 0 = CN, 1 = T2, ..., 6 = T7
+                  const dayLabel = dayOfWeek === 0 ? 'CN' : `T${dayOfWeek + 1}`;
+                  const isSelectedDate = date.format('YYYY-MM-DD') === selectedDate.format('YYYY-MM-DD');
+                  return (
+                    <div 
+                      key={index}
+                      className={`p-4 text-center border-r ${
+                        isSelectedDate
+                          ? 'bg-[#F4F1FE]'
+                          : date.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD') 
+                            ? 'bg-[#F4F1FE]' 
+                            : ''
+                      }`}
+                    >
+                      <div className="font-medium">{dayLabel}</div>
+                      <div className="text-lg">{date.format('D')}</div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Time slots */}
@@ -372,13 +420,16 @@ const EventDetail = () => {
                     <div className="p-2 border-r text-sm text-gray-500 sticky left-0 bg-white">{time}</div>
                     {getDaysInWeek().map((date, dayIndex) => {
                       const dayEvents = getEventsForDay(date);
+                      const isSelectedDate = date.format('YYYY-MM-DD') === selectedDate.format('YYYY-MM-DD');
                       return (
                         <div 
                           key={dayIndex}
                           className={`border-r relative ${
-                            date.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD')
+                            isSelectedDate
                               ? 'bg-[#F4F1FE]'
-                              : ''
+                              : date.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD')
+                                ? 'bg-[#F4F1FE]'
+                                : ''
                           }`}
                         >
                           {dayEvents.map((event, eventIndex) => {
@@ -387,7 +438,11 @@ const EventDetail = () => {
                               return (
                                 <div
                                   key={eventIndex}
-                                  className="absolute left-0 right-0 mx-1 p-1 bg-[#E7F6EC] text-[#12B76A] text-xs rounded"
+                                  className={`absolute left-0 right-0 mx-1 p-1 text-xs rounded ${
+                                    event._id === eventId 
+                                      ? 'bg-[#F4F1FE]' 
+                                      : 'bg-[#E7F6EC] text-[#12B76A]'
+                                  }`}
                                   style={{
                                     top: '0',
                                     zIndex: 10

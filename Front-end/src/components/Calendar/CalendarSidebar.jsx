@@ -2,7 +2,11 @@ import React from 'react';
 import { Button } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import 'dayjs/locale/vi';
 import { useNavigate } from 'react-router-dom';
+
+// Cấu hình locale cho dayjs
+dayjs.locale('vi');
 
 const CalendarSidebar = ({ selectedDate, selectedDateEvents, onClose }) => {
   const navigate = useNavigate();
@@ -13,12 +17,17 @@ const CalendarSidebar = ({ selectedDate, selectedDateEvents, onClose }) => {
 
   if (!selectedDate) return null;
 
+  const formatDate = (date) => {
+    const weekDay = date.format('dddd');
+    return `${weekDay}, ${date.format('DD/MM/YYYY')}`;
+  };
+
   return (
     <div className="w-[250px] bg-white border-r border-gray-200 overflow-auto">
       <div className="p-4 border-b border-gray-200">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-medium">
-            {selectedDate.format('DD/MM/YYYY')}
+            {formatDate(selectedDate)}
           </h3>
           <Button 
             type="text" 

@@ -3,10 +3,34 @@ import { Calendar as AntCalendar, Badge, Button, message, Input } from 'antd';
 import locale from 'antd/es/calendar/locale/vi_VN';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
+import 'dayjs/plugin/weekday';
+import 'dayjs/plugin/localeData';
+import 'dayjs/plugin/updateLocale';
 import AddEventModal from './AddEventModal';
 import axios from 'axios';
 import { PlusOutlined, CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+
+// Cấu hình locale cho dayjs
+dayjs.locale('vi');
+
+// Tùy chỉnh locale cho tiếng Việt
+const viLocale = {
+  ...locale,
+  lang: {
+    ...locale.lang,
+    shortWeekDays: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'],
+    shortMonths: ['Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6', 'Th7', 'Th8', 'Th9', 'Th10', 'Th11', 'Th12'],
+    months: ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'],
+    weekDays: ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'],
+    today: 'Hôm nay',
+    now: 'Bây giờ',
+    dayFormat: 'DD',
+    dateFormat: 'DD/MM/YYYY',
+    dateTimeFormat: 'DD/MM/YYYY HH:mm:ss',
+    monthFormat: 'MMMM YYYY'
+  }
+};
 
 const Calendar = () => {
   const [selectedDate, setSelectedDate] = useState(dayjs());
@@ -70,7 +94,7 @@ const Calendar = () => {
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-4">
           <div className="text-base">
-            Tháng {currentDate.format('M')}, {currentDate.format('YYYY')}
+            {currentDate.format('MMMM')} {currentDate.format('YYYY')}
           </div>
           <div className="flex gap-1">
             <Button type="text" size="small" onClick={handlePrevMonth}>&lt;</Button>
@@ -236,7 +260,7 @@ const Calendar = () => {
         {renderHeader()}
         <div className="calendar-container">
           <AntCalendar
-            locale={locale}
+            locale={viLocale}
             fullscreen={true}
             cellRender={customCellRender}
             onSelect={handleDateSelect}

@@ -102,6 +102,26 @@ const notificationSchema = new mongoose.Schema({
     ]
   }],
 
+  // CV của ứng viên
+  cv: [{
+    url: {
+      type: String,
+      required: true
+    },
+    public_id: {
+      type: String,
+      required: true
+    },
+    fileName: {
+      type: String,
+      required: true
+    },
+    uploadDate: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+
   // CÔNG VIỆC CHUẨN BỊ
   preparationTasks: [preparationTaskSchema]
 }, {
