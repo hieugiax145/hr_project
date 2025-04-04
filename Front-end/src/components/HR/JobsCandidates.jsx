@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Input, Select, Button, Dropdown, Menu, Badge, message, Modal, Form, Upload } from 'antd';
-import { SearchOutlined, MoreOutlined, PlusOutlined, InboxOutlined } from '@ant-design/icons';
+import { SearchOutlined, MoreOutlined, PlusOutlined, InboxOutlined, UploadOutlined } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Sidebar from '../Sidebar/Sidebar';
@@ -23,6 +23,8 @@ const JobsCandidates = () => {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingCandidate, setEditingCandidate] = useState(null);
   const [editForm] = Form.useForm();
+  const [fileList, setFileList] = useState([]);
+  const [editFileList, setEditFileList] = useState([]);
 
   // Fetch position và candidates
   useEffect(() => {
@@ -67,7 +69,8 @@ const JobsCandidates = () => {
             { title: 'Phỏng vấn lần 2', key: 'interview2', count: stageCounts['interview2'] || 0 },
             { title: 'Offer', key: 'offer', count: stageCounts['offer'] || 0 },
             { title: 'Tuyển', key: 'hired', count: stageCounts['hired'] || 0 },
-            { title: 'Từ chối', key: 'rejected', count: stageCounts['rejected'] || 0 }
+            { title: 'Từ chối', key: 'rejected', count: stageCounts['rejected'] || 0 },
+            { title: 'Lưu trữ', key: 'archived', count: stageCounts['archived'] || 0 }
           ];
           setStages(updatedStages);
         }
@@ -98,8 +101,8 @@ const JobsCandidates = () => {
       }
 
       // Kiểm tra xem có file CV được chọn không
-      if (!values.cv?.fileList?.[0]?.originFileObj) {
-        message.error('Vui lòng upload CV');
+      if (!values.cv?.fileList?.length) {
+        message.error('Vui lòng upload ít nhất một CV');
         return;
       }
 
@@ -109,20 +112,26 @@ const JobsCandidates = () => {
       formData.append('email', values.email);
       formData.append('phone', values.phone);
       formData.append('source', values.source);
+      formData.append('location', values.location);
       if (values.source === 'Khác') {
         formData.append('customSource', values.customSource);
       }
 
-      // Lấy file từ fileList và kiểm tra kích thước
-      const file = values.cv.fileList[0].originFileObj;
-      if (file.size > 5 * 1024 * 1024) { // 5MB
-        message.error('File không được vượt quá 5MB');
-        return;
+      // Lấy tất cả các file từ fileList và kiểm tra kích thước
+      for (const file of values.cv.fileList) {
+        if (file.originFileObj.size > 5 * 1024 * 1024) { // 5MB
+          message.error('File không được vượt quá 5MB');
+          return;
+        }
+        formData.append('cv', file.originFileObj);
       }
-      formData.append('cv', file);
 
       if (values.notes) {
         formData.append('notes', values.notes);
+      }
+
+      if (values.link) {
+        formData.append('link', values.link);
       }
 
       const response = await axios.post(
@@ -140,6 +149,7 @@ const JobsCandidates = () => {
         message.success('Thêm ứng viên thành công');
         setIsAddModalVisible(false);
         form.resetFields();
+        setFileList([]);
         
         // Refresh candidates list
         const candidatesResponse = await axios.get(`${API_BASE_URL}/positions/${id}/candidates`, {
@@ -171,6 +181,13 @@ const JobsCandidates = () => {
       const token = localStorage.getItem('token');
       if (!token) {
         message.error('Vui lòng đăng nhập lại');
+        return;
+      }
+
+      // Kiểm tra giá trị newStage có hợp lệ không
+      const validStages = ['new', 'reviewing', 'interview1', 'interview2', 'offer', 'hired', 'rejected', 'archived'];
+      if (!validStages.includes(newStage)) {
+        message.error('Trạng thái không hợp lệ');
         return;
       }
 
@@ -265,13 +282,44 @@ const JobsCandidates = () => {
         return;
       }
 
+      const formData = new FormData();
+      formData.append('name', values.name);
+      formData.append('email', values.email);
+      formData.append('phone', values.phone);
+      formData.append('source', values.source);
+      formData.append('location', values.location);
+      if (values.source === 'Khác') {
+        formData.append('customSource', values.customSource);
+      }
+
+      // Thêm các file CV mới nếu có
+      if (values.cv?.fileList?.length) {
+        for (const file of values.cv.fileList) {
+          if (file.originFileObj) {
+            if (file.originFileObj.size > 5 * 1024 * 1024) {
+              message.error('File không được vượt quá 5MB');
+              return;
+            }
+            formData.append('cv', file.originFileObj);
+          }
+        }
+      }
+
+      if (values.notes) {
+        formData.append('notes', values.notes);
+      }
+
+      if (values.link) {
+        formData.append('link', values.link);
+      }
+
       const response = await axios.patch(
         `${API_BASE_URL}/candidates/${editingCandidate._id}`,
-        values,
+        formData,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'multipart/form-data'
           }
         }
       );
@@ -280,6 +328,7 @@ const JobsCandidates = () => {
         message.success('Cập nhật thông tin ứng viên thành công');
         setIsEditModalVisible(false);
         editForm.resetFields();
+        setEditFileList([]);
         
         // Refresh candidates list
         const candidatesResponse = await axios.get(`${API_BASE_URL}/positions/${id}/candidates`, {
@@ -348,7 +397,7 @@ const JobsCandidates = () => {
               className="bg-[#DAF374] text-black border-none hover:bg-[#c5dd60]"
               onClick={() => setIsAddModalVisible(true)}
             >
-              Thêm mới
+              Thêm ứng viên
             </Button>
           </div>
 
@@ -451,24 +500,26 @@ const JobsCandidates = () => {
 
           {/* Add Candidate Modal */}
           <Modal
-            title="Thêm thông tin ứng viên mới"
+            title="Thêm ứng viên mới"
             open={isAddModalVisible}
-            onCancel={() => setIsAddModalVisible(false)}
+            onCancel={() => {
+              setIsAddModalVisible(false);
+              form.resetFields();
+              setFileList([]);
+            }}
             footer={null}
-            width={500}
           >
             <Form
               form={form}
               layout="vertical"
               onFinish={handleAddCandidate}
-              className="mt-4"
             >
               <Form.Item
                 name="name"
-                label="Tên ứng viên"
+                label="Họ và tên"
                 rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
               >
-                <Input placeholder="Nhập họ và tên" />
+                <Input />
               </Form.Item>
 
               <Form.Item
@@ -479,7 +530,7 @@ const JobsCandidates = () => {
                   { type: 'email', message: 'Email không hợp lệ' }
                 ]}
               >
-                <Input placeholder="Nhập địa chỉ email" />
+                <Input />
               </Form.Item>
 
               <Form.Item
@@ -487,130 +538,15 @@ const JobsCandidates = () => {
                 label="Số điện thoại"
                 rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }]}
               >
-                <Input placeholder="Nhập số điện thoại" />
+                <Input />
               </Form.Item>
 
               <Form.Item
-                name="source"
-                label="Nguồn"
-                rules={[{ required: true, message: 'Vui lòng chọn nguồn' }]}
+                name="location"
+                label="Địa điểm"
+                rules={[{ required: true, message: 'Vui lòng nhập địa điểm' }]}
               >
-                <Select placeholder="Chọn nguồn CV">
-                  <Select.Option value="Facebook">Facebook</Select.Option>
-                  <Select.Option value="Email">Email</Select.Option>
-                  <Select.Option value="JobsGo">JobsGo</Select.Option>
-                  <Select.Option value="Khác">Khác</Select.Option>
-                </Select>
-              </Form.Item>
-
-              <Form.Item
-                noStyle
-                shouldUpdate={(prevValues, currentValues) => prevValues.source !== currentValues.source}
-              >
-                {({ getFieldValue }) => 
-                  getFieldValue('source') === 'Khác' ? (
-                    <Form.Item
-                      name="customSource"
-                      label="Nguồn khác"
-                      rules={[{ required: true, message: 'Vui lòng nhập nguồn' }]}
-                    >
-                      <Input placeholder="Nhập nguồn" />
-                    </Form.Item>
-                  ) : null
-                }
-              </Form.Item>
-
-              <Form.Item
-                name="cv"
-                label="CV ứng viên"
-                valuePropName="file"
-                getValueFromEvent={(e) => ({
-                  fileList: Array.isArray(e) ? e : e && e.fileList,
-                })}
-                rules={[{ required: true, message: 'Vui lòng upload CV' }]}
-              >
-                <Upload.Dragger
-                  name="cv"
-                  maxCount={1}
-                  beforeUpload={(file) => {
-                    const isLt5M = file.size / 1024 / 1024 < 5;
-                    if (!isLt5M) {
-                      message.error('File phải nhỏ hơn 5MB');
-                      return Upload.LIST_IGNORE;
-                    }
-                    return false; // Prevent auto upload
-                  }}
-                  onChange={(info) => {
-                    if (info.file.status === 'removed') {
-                      form.setFieldValue('cv', undefined);
-                    }
-                  }}
-                >
-                  <p className="ant-upload-drag-icon">
-                    <InboxOutlined />
-                  </p>
-                  <p className="ant-upload-text">Click hoặc kéo thả file vào đây</p>
-                  <p className="ant-upload-hint">Tối đa 5MB</p>
-                </Upload.Dragger>
-              </Form.Item>
-
-              <Form.Item
-                name="notes"
-                label="Ghi chú"
-              >
-                <TextArea rows={4} placeholder="Nhập ghi chú" />
-              </Form.Item>
-
-              <div className="flex justify-end gap-2">
-                <Button onClick={() => setIsAddModalVisible(false)}>
-                  Hủy
-                </Button>
-                <Button type="primary" htmlType="submit" className="bg-[#7B61FF] text-white">
-                  Thêm
-                </Button>
-              </div>
-            </Form>
-          </Modal>
-
-          {/* Edit Candidate Modal */}
-          <Modal
-            title="Chỉnh sửa thông tin ứng viên"
-            open={isEditModalVisible}
-            onCancel={() => setIsEditModalVisible(false)}
-            footer={null}
-            width={500}
-          >
-            <Form
-              form={editForm}
-              layout="vertical"
-              onFinish={handleUpdateCandidate}
-              className="mt-4"
-            >
-              <Form.Item
-                name="name"
-                label="Tên ứng viên"
-                rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
-              >
-                <Input placeholder="Nhập họ và tên" />
-              </Form.Item>
-
-              <Form.Item
-                name="email"
-                label="Email"
-                rules={[
-                  { required: true, message: 'Vui lòng nhập email' },
-                  { type: 'email', message: 'Email không hợp lệ' }
-                ]}
-              >
-                <Input placeholder="Nhập địa chỉ email" />
-              </Form.Item>
-
-              <Form.Item
-                name="phone"
-                label="Số điện thoại"
-                rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }]}
-              >
-                <Input placeholder="Nhập số điện thoại" />
+                <Input />
               </Form.Item>
 
               <Form.Item
@@ -618,10 +554,10 @@ const JobsCandidates = () => {
                 label="Nguồn ứng viên"
                 rules={[{ required: true, message: 'Vui lòng chọn nguồn ứng viên' }]}
               >
-                <Select placeholder="Chọn nguồn ứng viên">
+                <Select>
+                  <Select.Option value="LinkedIn">LinkedIn</Select.Option>
                   <Select.Option value="Facebook">Facebook</Select.Option>
-                  <Select.Option value="Email">Email</Select.Option>
-                  <Select.Option value="JobsGo">JobsGo</Select.Option>
+                  <Select.Option value="Website">Website</Select.Option>
                   <Select.Option value="Khác">Khác</Select.Option>
                 </Select>
               </Form.Item>
@@ -635,29 +571,167 @@ const JobsCandidates = () => {
                     <Form.Item
                       name="customSource"
                       label="Nguồn khác"
-                      rules={[{ required: true, message: 'Vui lòng nhập nguồn khác' }]}
+                      rules={[{ required: true, message: 'Vui lòng nhập nguồn ứng viên' }]}
                     >
-                      <Input placeholder="Nhập nguồn khác" />
+                      <Input />
                     </Form.Item>
                   ) : null
                 }
               </Form.Item>
 
               <Form.Item
+                name="cv"
+                label="CV"
+                rules={[{ required: true, message: 'Vui lòng upload CV' }]}
+              >
+                <Upload
+                  multiple
+                  fileList={fileList}
+                  onChange={({ fileList }) => setFileList(fileList)}
+                  beforeUpload={() => false}
+                  accept=".doc,.docx,.pdf"
+                >
+                  <Button icon={<UploadOutlined />}>Chọn file</Button>
+                </Upload>
+              </Form.Item>
+
+              <Form.Item
+                name="link"
+                label="Link CV (tùy chọn)"
+              >
+                <Input />
+              </Form.Item>
+
+              <Form.Item
                 name="notes"
                 label="Ghi chú"
               >
-                <TextArea placeholder="Nhập ghi chú" rows={4} />
+                <TextArea rows={4} />
               </Form.Item>
 
-              <div className="flex justify-end gap-2">
-                <Button onClick={() => setIsEditModalVisible(false)}>
-                  Hủy
+              <Form.Item>
+                <Button type="primary" htmlType="submit" className="bg-[#7B61FF]">
+                  Thêm ứng viên
                 </Button>
-                <Button type="primary" htmlType="submit" className="bg-[#7B61FF] text-white">
+              </Form.Item>
+            </Form>
+          </Modal>
+
+          {/* Edit Candidate Modal */}
+          <Modal
+            title="Chỉnh sửa thông tin ứng viên"
+            open={isEditModalVisible}
+            onCancel={() => {
+              setIsEditModalVisible(false);
+              editForm.resetFields();
+              setEditFileList([]);
+            }}
+            footer={null}
+          >
+            <Form
+              form={editForm}
+              layout="vertical"
+              onFinish={handleUpdateCandidate}
+            >
+              <Form.Item
+                name="name"
+                label="Họ và tên"
+                rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
+              >
+                <Input />
+              </Form.Item>
+
+              <Form.Item
+                name="email"
+                label="Email"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập email' },
+                  { type: 'email', message: 'Email không hợp lệ' }
+                ]}
+              >
+                <Input />
+              </Form.Item>
+
+              <Form.Item
+                name="phone"
+                label="Số điện thoại"
+                rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }]}
+              >
+                <Input />
+              </Form.Item>
+
+              <Form.Item
+                name="location"
+                label="Địa điểm"
+                rules={[{ required: true, message: 'Vui lòng nhập địa điểm' }]}
+              >
+                <Input />
+              </Form.Item>
+
+              <Form.Item
+                name="source"
+                label="Nguồn ứng viên"
+                rules={[{ required: true, message: 'Vui lòng chọn nguồn ứng viên' }]}
+              >
+                <Select>
+                  <Select.Option value="LinkedIn">LinkedIn</Select.Option>
+                  <Select.Option value="Facebook">Facebook</Select.Option>
+                  <Select.Option value="Website">Website</Select.Option>
+                  <Select.Option value="Khác">Khác</Select.Option>
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) => prevValues.source !== currentValues.source}
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue('source') === 'Khác' ? (
+                    <Form.Item
+                      name="customSource"
+                      label="Nguồn khác"
+                      rules={[{ required: true, message: 'Vui lòng nhập nguồn ứng viên' }]}
+                    >
+                      <Input />
+                    </Form.Item>
+                  ) : null
+                }
+              </Form.Item>
+
+              <Form.Item
+                name="cv"
+                label="CV"
+              >
+                <Upload
+                  multiple
+                  fileList={editFileList}
+                  onChange={({ fileList }) => setEditFileList(fileList)}
+                  beforeUpload={() => false}
+                  accept=".doc,.docx,.pdf"
+                >
+                  <Button icon={<UploadOutlined />}>Chọn file</Button>
+                </Upload>
+              </Form.Item>
+
+              <Form.Item
+                name="link"
+                label="Link CV (tùy chọn)"
+              >
+                <Input />
+              </Form.Item>
+
+              <Form.Item
+                name="notes"
+                label="Ghi chú"
+              >
+                <TextArea rows={4} />
+              </Form.Item>
+
+              <Form.Item>
+                <Button type="primary" htmlType="submit" className="bg-[#7B61FF]">
                   Cập nhật
                 </Button>
-              </div>
+              </Form.Item>
             </Form>
           </Modal>
         </Content>

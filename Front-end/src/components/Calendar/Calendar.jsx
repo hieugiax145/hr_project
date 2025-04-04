@@ -8,6 +8,16 @@ import axios from 'axios';
 import { PlusOutlined, CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
+// Cấu hình locale cho dayjs
+dayjs.locale('vi');
+
+// Tùy chỉnh locale cho calendar
+const customLocale = {
+  ...locale,
+  shortWeekDays: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'],
+  weekDays: ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'],
+};
+
 const Calendar = () => {
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [currentDate, setCurrentDate] = useState(dayjs());
@@ -236,7 +246,7 @@ const Calendar = () => {
         {renderHeader()}
         <div className="calendar-container">
           <AntCalendar
-            locale={locale}
+            locale={customLocale}
             fullscreen={true}
             cellRender={customCellRender}
             onSelect={handleDateSelect}

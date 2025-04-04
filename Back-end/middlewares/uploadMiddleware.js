@@ -48,11 +48,12 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // Giới hạn 5MB
   },
   fileFilter: function (req, file, cb) {
-    // Chấp nhận cả file ảnh và PDF
-    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+    // Chấp nhận file DOCX và PDF
+    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+        file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
-      cb(new Error('Chỉ chấp nhận file ảnh hoặc PDF!'));
+      cb(new Error('Chỉ chấp nhận file DOCX hoặc PDF!'));
     }
   }
 });
@@ -90,7 +91,7 @@ const handleUpload = (req, res, next) => {
 const handleCVUpload = (req, res, next) => {
   console.log('Starting CV upload process...');
   
-  const uploadCV = upload.single('cv');
+  const uploadCV = upload.array('cvFiles', 5); // Cho phép upload tối đa 5 file
 
   uploadCV(req, res, function (err) {
     if (err instanceof multer.MulterError) {
@@ -101,15 +102,16 @@ const handleCVUpload = (req, res, next) => {
       return res.status(400).json({ message: err.message });
     }
 
-    // Log thông tin về file CV đã upload
-    console.log('Uploaded CV:', req.file);
+    // Log thông tin về files CV đã upload
+    console.log('Uploaded CVs:', req.files);
     
-    // Lưu thông tin file vào req.uploadedFile để controller có thể sử dụng
-    if (req.file) {
-      req.uploadedFile = {
-        url: req.file.path,
-        public_id: req.file.filename
-      };
+    // Lưu thông tin files vào req.uploadedFiles để controller có thể sử dụng
+    if (req.files && req.files.length > 0) {
+      req.uploadedFiles = req.files.map(file => ({
+        url: file.path,
+        public_id: file.filename,
+        fileName: file.originalname
+      }));
     }
 
     next();

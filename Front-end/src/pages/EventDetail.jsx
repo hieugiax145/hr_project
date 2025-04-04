@@ -9,6 +9,15 @@ import CalendarSidebar from '../components/Calendar/CalendarSidebar';
 import Sidebar from '../components/Sidebar/Sidebar';
 import AddEventModal from '../components/Calendar/AddEventModal';
 
+// Cấu hình locale cho dayjs
+dayjs.locale('vi');
+
+// Tùy chỉnh locale cho calendar
+const customLocale = {
+  shortWeekDays: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'],
+  weekDays: ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'],
+};
+
 const EventDetail = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
@@ -112,7 +121,8 @@ const EventDetail = () => {
   };
 
   const getDaysInWeek = () => {
-    const startOfWeek = selectedDate.startOf('week');
+    // Bắt đầu từ Thứ 2 (1) thay vì Chủ nhật (0)
+    const startOfWeek = selectedDate.startOf('week').add(1, 'day');
     return Array.from({ length: 7 }, (_, i) => startOfWeek.add(i, 'day'));
   };
 
@@ -217,10 +227,22 @@ const EventDetail = () => {
               <div className="mb-8">
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="text-lg font-medium">Tháng 2, 2025</div>
+                    <div className="text-lg font-medium">
+                      Tháng {selectedDate.format('M')}, {selectedDate.format('YYYY')}
+                    </div>
                     <div className="flex gap-2">
-                      <button className="text-gray-500 hover:text-gray-700">&lt;</button>
-                      <button className="text-gray-500 hover:text-gray-700">&gt;</button>
+                      <button 
+                        className="text-gray-500 hover:text-gray-700"
+                        onClick={() => setSelectedDate(prev => prev.subtract(1, 'month'))}
+                      >
+                        &lt;
+                      </button>
+                      <button 
+                        className="text-gray-500 hover:text-gray-700"
+                        onClick={() => setSelectedDate(prev => prev.add(1, 'month'))}
+                      >
+                        &gt;
+                      </button>
                     </div>
                   </div>
                   <div className="grid grid-cols-7 gap-1">
@@ -231,17 +253,27 @@ const EventDetail = () => {
                     <div className="text-center text-xs text-gray-500">T6</div>
                     <div className="text-center text-xs text-gray-500">T7</div>
                     <div className="text-center text-xs text-gray-500">CN</div>
-                    {Array.from({ length: 28 }, (_, i) => (
-                      <div 
-                        key={i} 
-                        className={`text-center text-sm p-1 rounded-full ${
-                          i + 1 === 18 ? 'bg-[#7B61FF] text-white' : 
-                          'hover:bg-gray-100 cursor-pointer'
-                        }`}
-                      >
-                        {i + 1}
-                      </div>
-                    ))}
+                    {Array.from({ length: 42 }, (_, i) => {
+                      const currentDate = selectedDate.startOf('month').startOf('week').add(1, 'day').add(i, 'day');
+                      const isCurrentMonth = currentDate.month() === selectedDate.month();
+                      const isToday = currentDate.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD');
+                      const isSelected = currentDate.format('YYYY-MM-DD') === selectedDate.format('YYYY-MM-DD');
+                      
+                      return (
+                        <div 
+                          key={i} 
+                          className={`text-center text-sm p-1 rounded-full ${
+                            !isCurrentMonth ? 'text-gray-300' :
+                            isSelected ? 'bg-[#7B61FF] text-white' :
+                            isToday ? 'bg-gray-100 font-bold' :
+                            'hover:bg-gray-100 cursor-pointer'
+                          }`}
+                          onClick={() => setSelectedDate(currentDate)}
+                        >
+                          {currentDate.format('D')}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -354,12 +386,16 @@ const EventDetail = () => {
                   <div 
                     key={index}
                     className={`p-4 text-center border-r ${
-                      date.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD') 
+                      date.format('YYYY-MM-DD') === selectedDate.format('YYYY-MM-DD') 
                         ? 'bg-[#F4F1FE]' 
-                        : ''
+                        : date.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD')
+                          ? 'bg-gray-100'
+                          : ''
                     }`}
                   >
-                    <div className="font-medium">T{date.format('d')}</div>
+                    <div className="font-medium">
+                      {customLocale.shortWeekDays[index]}
+                    </div>
                     <div className="text-lg">{date.format('D')}</div>
                   </div>
                 ))}
@@ -376,9 +412,11 @@ const EventDetail = () => {
                         <div 
                           key={dayIndex}
                           className={`border-r relative ${
-                            date.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD')
+                            date.format('YYYY-MM-DD') === selectedDate.format('YYYY-MM-DD')
                               ? 'bg-[#F4F1FE]'
-                              : ''
+                              : date.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD')
+                                ? 'bg-gray-100'
+                                : ''
                           }`}
                         >
                           {dayEvents.map((event, eventIndex) => {

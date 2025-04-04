@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Layout, Button, Tag, message, Modal, Form, Input, Select, Avatar, Card } from 'antd';
-import { ArrowLeftOutlined, EditOutlined, UserOutlined, MessageOutlined, DownloadOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, BarChartOutlined, RiseOutlined, CommentOutlined } from '@ant-design/icons';
+import { Layout, Button, Tag, message, Modal, Form, Input, Select, Avatar, Card, Tabs, Timeline } from 'antd';
+import { ArrowLeftOutlined, EditOutlined, UserOutlined, MessageOutlined, DownloadOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, BarChartOutlined, RiseOutlined, CommentOutlined, EyeOutlined, UploadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
 import 'moment/locale/vi';
 
 const { Content } = Layout;
 const { TextArea } = Input;
+const { TabPane } = Tabs;
 const API_BASE_URL = 'http://localhost:8000/api';
 
 moment.locale('vi');
@@ -130,6 +131,7 @@ const CandidateDetail = () => {
   const [comments, setComments] = useState([]);
   const [form] = Form.useForm();
   const [commentForm] = Form.useForm();
+  const [fileList, setFileList] = useState([]);
 
   const fetchCandidateDetail = useCallback(async () => {
     try {
@@ -155,6 +157,17 @@ const CandidateDetail = () => {
 
       if (candidateResponse.status === 200) {
         setCandidate(candidateResponse.data.candidate);
+        // Set initial form values
+        form.setFieldsValue({
+          name: candidateResponse.data.candidate.name,
+          email: candidateResponse.data.candidate.email,
+          phone: candidateResponse.data.candidate.phone,
+          location: candidateResponse.data.candidate.location,
+          source: candidateResponse.data.candidate.source,
+          customSource: candidateResponse.data.candidate.customSource,
+          notes: candidateResponse.data.candidate.notes,
+          link: candidateResponse.data.candidate.link
+        });
       }
 
       if (interviewResponse.status === 200 && interviewResponse.data.length > 0) {
@@ -302,6 +315,69 @@ const CandidateDetail = () => {
     } catch (error) {
       console.error('Error adding comment:', error);
       message.error('Có lỗi xảy ra khi thêm nhận xét');
+    }
+  };
+
+  const handleUpdateCandidate = async (values) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('Vui lòng đăng nhập lại');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('name', values.name);
+      formData.append('email', values.email);
+      formData.append('phone', values.phone);
+      formData.append('location', values.location);
+      formData.append('source', values.source);
+      if (values.source === 'Khác') {
+        formData.append('customSource', values.customSource);
+      }
+
+      // Thêm các file CV mới nếu có
+      if (values.cv?.fileList?.length) {
+        for (const file of values.cv.fileList) {
+          if (file.originFileObj) {
+            if (file.originFileObj.size > 5 * 1024 * 1024) {
+              message.error('File không được vượt quá 5MB');
+              return;
+            }
+            formData.append('cv', file.originFileObj);
+          }
+        }
+      }
+
+      if (values.notes) {
+        formData.append('notes', values.notes);
+      }
+
+      if (values.link) {
+        formData.append('link', values.link);
+      }
+
+      const response = await axios.patch(
+        `${API_BASE_URL}/candidates/${id}`,
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      if (response.status === 200) {
+        message.success('Cập nhật thông tin ứng viên thành công');
+        setIsEditModalVisible(false);
+        form.resetFields();
+        setFileList([]);
+        fetchCandidateDetail();
+      }
+    } catch (error) {
+      console.error('Error updating candidate:', error);
+      message.error('Có lỗi xảy ra khi cập nhật thông tin ứng viên');
     }
   };
 
@@ -646,17 +722,21 @@ const CandidateDetail = () => {
       <Modal
         title="Chỉnh sửa thông tin ứng viên"
         open={isEditModalVisible}
-        onCancel={() => setIsEditModalVisible(false)}
+        onCancel={() => {
+          setIsEditModalVisible(false);
+          form.resetFields();
+          setFileList([]);
+        }}
         footer={null}
       >
         <Form
           form={form}
           layout="vertical"
-          onFinish={handleUpdate}
+          onFinish={handleUpdateCandidate}
         >
           <Form.Item
             name="name"
-            label="Họ tên"
+            label="Họ và tên"
             rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
           >
             <Input />
@@ -682,19 +762,63 @@ const CandidateDetail = () => {
           </Form.Item>
 
           <Form.Item
-            name="stage"
-            label="Trạng thái"
-            rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
+            name="location"
+            label="Địa điểm"
+            rules={[{ required: true, message: 'Vui lòng nhập địa điểm' }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="source"
+            label="Nguồn ứng viên"
+            rules={[{ required: true, message: 'Vui lòng chọn nguồn ứng viên' }]}
           >
             <Select>
-              <Select.Option value="new">Mới</Select.Option>
-              <Select.Option value="reviewing">Đang xem xét</Select.Option>
-              <Select.Option value="interview1">Phỏng vấn vòng 1</Select.Option>
-              <Select.Option value="interview2">Phỏng vấn vòng 2</Select.Option>
-              <Select.Option value="offer">Đề xuất</Select.Option>
-              <Select.Option value="hired">Đã tuyển</Select.Option>
-              <Select.Option value="rejected">Từ chối</Select.Option>
+              <Select.Option value="LinkedIn">LinkedIn</Select.Option>
+              <Select.Option value="Facebook">Facebook</Select.Option>
+              <Select.Option value="Website">Website</Select.Option>
+              <Select.Option value="Khác">Khác</Select.Option>
             </Select>
+          </Form.Item>
+
+          <Form.Item
+            noStyle
+            shouldUpdate={(prevValues, currentValues) => prevValues.source !== currentValues.source}
+          >
+            {({ getFieldValue }) =>
+              getFieldValue('source') === 'Khác' ? (
+                <Form.Item
+                  name="customSource"
+                  label="Nguồn khác"
+                  rules={[{ required: true, message: 'Vui lòng nhập nguồn ứng viên' }]}
+                >
+                  <Input />
+                </Form.Item>
+              ) : null
+            }
+          </Form.Item>
+
+          <Form.Item
+            name="cv"
+            label="CV"
+          >
+            <Upload
+              multiple
+              fileList={fileList}
+              onChange={({ fileList }) => setFileList(fileList)}
+              beforeUpload={() => false}
+              accept=".doc,.docx,.pdf"
+            >
+              <Button icon={<UploadOutlined />}>Chọn file</Button>
+            </Upload>
+          </Form.Item>
+
+          <Form.Item
+            name="link"
+            label="Link CV (tùy chọn)"
+          >
+            <Input />
           </Form.Item>
 
           <Form.Item
@@ -704,11 +828,8 @@ const CandidateDetail = () => {
             <TextArea rows={4} />
           </Form.Item>
 
-          <Form.Item className="text-right">
-            <Button onClick={() => setIsEditModalVisible(false)} style={{ marginRight: 8 }}>
-              Hủy
-            </Button>
-            <Button type="primary" htmlType="submit">
+          <Form.Item>
+            <Button type="primary" htmlType="submit" className="bg-[#7B61FF]">
               Cập nhật
             </Button>
           </Form.Item>

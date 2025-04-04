@@ -45,6 +45,8 @@ const EditNotification = () => {
       // Chuyển đổi dữ liệu cho form
       const formValues = {
         ...notification,
+        candidateId: notification?.candidateId?._id,
+        candidateName: notification?.candidateId?.name,
         // Chuyển đổi các trường ngày tháng
         birthDate: notification.birthDate ? dayjs(notification.birthDate) : null,
         'idCard.issueDate': notification.idCard?.issueDate ? dayjs(notification.idCard.issueDate) : null,
@@ -398,10 +400,9 @@ const EditNotification = () => {
             <div className="grid grid-cols-2 gap-4">
               <Form.Item
                 label={<span>Họ và tên <span className="text-red-500">*</span></span>}
-                name="candidateId"
-                rules={[{ required: true, message: 'Vui lòng chọn ứng viên' }]}
+                name="candidateName"
               >
-                <Input disabled value={notification?.candidateId?.name || ''} />
+                <Input disabled />
               </Form.Item>
 
               <Form.Item

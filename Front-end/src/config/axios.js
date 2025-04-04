@@ -1,10 +1,23 @@
 import axios from 'axios';
+import axiosRetry from 'axios-retry';
 
 const instance = axios.create({
   baseURL: 'http://localhost:8000/api', // Sửa port từ 5000 thành 8000
-  timeout: 10000,
+  timeout: 20000, // Giảm timeout xuống 20 giây
+  maxContentLength: Infinity,
+  maxBodyLength: Infinity,
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
+});
+
+// Thêm retry logic
+axiosRetry(instance, { 
+  retries: 3,
+  retryDelay: axiosRetry.exponentialDelay,
+  retryCondition: (error) => {
+    return axiosRetry.isNetworkOrIdempotentRequestError(error) || error.code === 'ECONNABORTED';
   }
 });
 
@@ -15,6 +28,16 @@ instance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Nếu là FormData, không set Content-Type để browser tự set
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+    
+    // Loại bỏ các header không cần thiết gây lỗi CORS
+    // config.headers['Cache-Control'] = 'no-cache';
+    // config.headers['Pragma'] = 'no-cache';
+    
     return config;
   },
   (error) => {

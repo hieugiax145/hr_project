@@ -1,4 +1,5 @@
 const Position = require('../models/Position');
+const Application = require('../models/Application');
 
 // Tạo vị trí mới
 exports.createPosition = async (req, res) => {
@@ -110,5 +111,35 @@ exports.deletePosition = async (req, res) => {
   } catch (error) {
     console.error('Error in deletePosition:', error);
     res.status(500).json({ message: 'Lỗi khi xóa vị trí' });
+  }
+};
+
+// Lấy danh sách vị trí chưa được thêm vào hệ thống vị trí tuyển dụng
+exports.getAvailablePositions = async (req, res) => {
+  try {
+    // Lấy danh sách tất cả các vị trí đã được thêm vào hệ thống
+    const existingPositions = await Position.find({}, 'title department');
+    
+    // Lấy danh sách các yêu cầu tuyển dụng đã được duyệt
+    const approvedApplications = await Application.find(
+      { status: 'Đã duyệt' },
+      'position department'
+    );
+    
+    // Lọc ra những vị trí chưa được thêm vào hệ thống
+    const availablePositions = approvedApplications.filter(application => {
+      return !existingPositions.some(existingPosition => 
+        existingPosition.title.toLowerCase() === application.position.toLowerCase() &&
+        existingPosition.department.toLowerCase() === application.department.toLowerCase()
+      );
+    });
+    
+    res.json({
+      message: 'Lấy danh sách vị trí có sẵn thành công',
+      data: availablePositions
+    });
+  } catch (error) {
+    console.error('Error in getAvailablePositions:', error);
+    res.status(500).json({ message: 'Lỗi khi lấy danh sách vị trí có sẵn' });
   }
 }; 

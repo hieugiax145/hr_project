@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Input, Select, Button, message, Modal } from 'antd';
-import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaSearch } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const { Content } = Layout;
@@ -9,15 +9,15 @@ const { TextArea } = Input;
 
 const CreatePosition = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [approvedPositions, setApprovedPositions] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [isPositionModalVisible, setIsPositionModalVisible] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [availablePositions, setAvailablePositions] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     department: '',
-    level: '',
-    experience: '',
+    branch: 'Hà Nội',
+    level: 'Thực tập sinh',
+    experience: 'Dưới 1 năm',
     type: 'Full-time',
     mode: 'On-site',
     salary: '',
@@ -26,59 +26,69 @@ const CreatePosition = () => {
     benefits: ''
   });
 
+  // Fetch available positions
   useEffect(() => {
-    const fetchApprovedPositions = async () => {
+    const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) {
+          message.error('Vui lòng đăng nhập lại');
           navigate('/login');
           return;
         }
 
-        const response = await axios.get('http://localhost:8000/api/applications', {
+        // Fetch available positions (positions that haven't been added to the system yet)
+        const availableResponse = await axios.get('http://localhost:8000/api/positions/available', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
-
-        // Lọc các yêu cầu đã được duyệt
-        const approved = response.data.filter(app => app.status === 'Đã duyệt');
-        setApprovedPositions(approved);
+        setAvailablePositions(availableResponse.data.data || []);
+        
+        console.log('Danh sách vị trí có sẵn:', availableResponse.data.data);
       } catch (error) {
-        console.error('Error fetching approved positions:', error);
-        message.error('Có lỗi xảy ra khi tải danh sách vị trí');
+        console.error('Error fetching data:', error);
+        message.error('Không thể tải dữ liệu. Vui lòng thử lại sau.');
+        setAvailablePositions([]);
       }
     };
 
-    fetchApprovedPositions();
+    fetchData();
   }, [navigate]);
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+  // Filter positions based on search term
+  const filteredPositions = availablePositions.filter(position =>
+    position.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    position.department.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handlePositionSelect = (position) => {
     setFormData(prev => ({
       ...prev,
       title: position.position,
-      department: position.department,
-      description: position.jobDescription,
-      requirements: position.requirements,
-      benefits: position.benefits
+      department: position.department
     }));
     setIsPositionModalVisible(false);
   };
 
-  const filteredPositions = approvedPositions.filter(position =>
-    `${position.position} - ${position.department}`.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
-  const handleSubmit = async () => {
+  const handleSelectChange = (name, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
-      setLoading(true);
       const token = localStorage.getItem('token');
       if (!token) {
         message.error('Vui lòng đăng nhập lại');
@@ -86,28 +96,16 @@ const CreatePosition = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:8000/api/positions', {
-        method: 'POST',
+      await axios.post('http://localhost:8000/api/positions', formData, {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
+        }
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        message.success('Tạo vị trí thành công!');
-        navigate('/positions');
-      } else {
-        message.error(data.error || 'Có lỗi xảy ra khi tạo vị trí');
-      }
+      message.success('Tạo vị trí tuyển dụng thành công');
+      navigate('/positions');
     } catch (error) {
-      message.error('Có lỗi xảy ra khi tạo vị trí');
       console.error('Error creating position:', error);
-    } finally {
-      setLoading(false);
+      message.error('Có lỗi xảy ra khi tạo vị trí tuyển dụng');
     }
   };
 
@@ -151,22 +149,38 @@ const CreatePosition = () => {
                     Phòng ban
                   </label>
                   <Input
+                    name="department"
                     value={formData.department}
-                    readOnly
-                    className="w-full bg-gray-50"
+                    onChange={handleInputChange}
+                    placeholder="Nhập phòng ban"
+                    className="w-full"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Level
+                    Chi nhánh
+                  </label>
+                  <Select
+                    value={formData.branch}
+                    onChange={(value) => handleSelectChange('branch', value)}
+                    className="w-full"
+                    options={[
+                      { value: 'Hà Nội', label: 'Hà Nội' },
+                      { value: 'Hồ Chí Minh', label: 'Hồ Chí Minh' },
+                      { value: 'Đà Nẵng', label: 'Đà Nẵng' }
+                    ]}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Cấp bậc
                   </label>
                   <Select
                     value={formData.level}
-                    onChange={(value) => handleInputChange('level', value)}
-                    placeholder="Chọn level"
+                    onChange={(value) => handleSelectChange('level', value)}
                     className="w-full"
-                    variant="outlined"
                     options={[
                       { value: 'Thực tập sinh', label: 'Thực tập sinh' },
                       { value: 'Junior', label: 'Junior' },
@@ -183,10 +197,8 @@ const CreatePosition = () => {
                   </label>
                   <Select
                     value={formData.experience}
-                    onChange={(value) => handleInputChange('experience', value)}
-                    placeholder="Chọn kinh nghiệm"
+                    onChange={(value) => handleSelectChange('experience', value)}
                     className="w-full"
-                    variant="outlined"
                     options={[
                       { value: 'Dưới 1 năm', label: 'Dưới 1 năm' },
                       { value: '1-2 năm', label: '1-2 năm' },
@@ -196,76 +208,82 @@ const CreatePosition = () => {
                     ]}
                   />
                 </div>
+              </div>
+
+              {/* Right Column */}
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold mb-4">Thông tin chi tiết</h2>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Loại hình
+                  </label>
+                  <Select
+                    value={formData.type}
+                    onChange={(value) => handleSelectChange('type', value)}
+                    className="w-full"
+                    options={[
+                      { value: 'Full-time', label: 'Full-time' },
+                      { value: 'Part-time', label: 'Part-time' },
+                      { value: 'Contract', label: 'Contract' }
+                    ]}
+                  />
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Hình thức làm việc
                   </label>
-                  <div className="flex gap-4">
-                    <Select
-                      value={formData.type}
-                      onChange={(value) => handleInputChange('type', value)}
-                      className="w-1/2"
-                      variant="outlined"
-                      options={[
-                        { value: 'Full-time', label: 'Full-time' },
-                        { value: 'Part-time', label: 'Part-time' },
-                        { value: 'Contract', label: 'Contract' }
-                      ]}
-                    />
-                    <Select
-                      value={formData.mode}
-                      onChange={(value) => handleInputChange('mode', value)}
-                      className="w-1/2"
-                      options={[
-                        { value: 'On-site', label: 'On-site' },
-                        { value: 'Remote', label: 'Remote' },
-                        { value: 'Hybrid', label: 'Hybrid' }
-                      ]}
-                    />
-                  </div>
+                  <Select
+                    value={formData.mode}
+                    onChange={(value) => handleSelectChange('mode', value)}
+                    className="w-full"
+                    options={[
+                      { value: 'On-site', label: 'On-site' },
+                      { value: 'Remote', label: 'Remote' },
+                      { value: 'Hybrid', label: 'Hybrid' }
+                    ]}
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Mức lương (VNĐ)
+                    Mức lương
                   </label>
                   <Input
+                    name="salary"
                     value={formData.salary}
-                    onChange={(e) => handleInputChange('salary', e.target.value)}
+                    onChange={handleInputChange}
                     placeholder="Nhập mức lương"
                     className="w-full"
                   />
                 </div>
-              </div>
 
-              {/* Right Column */}
-              <div className="space-y-4">
-                <h2 className="text-lg font-semibold mb-4">Mô tả công việc</h2>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Mô tả công việc
                   </label>
                   <TextArea
+                    name="description"
                     value={formData.description}
-                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    onChange={handleInputChange}
                     placeholder="Nhập mô tả công việc"
-                    rows={4}
                     className="w-full"
+                    rows={4}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Yêu cầu ứng viên
+                    Yêu cầu
                   </label>
                   <TextArea
+                    name="requirements"
                     value={formData.requirements}
-                    onChange={(e) => handleInputChange('requirements', e.target.value)}
-                    placeholder="Nhập yêu cầu ứng viên"
-                    rows={4}
+                    onChange={handleInputChange}
+                    placeholder="Nhập yêu cầu"
                     className="w-full"
+                    rows={4}
                   />
                 </div>
 
@@ -274,30 +292,23 @@ const CreatePosition = () => {
                     Quyền lợi
                   </label>
                   <TextArea
+                    name="benefits"
                     value={formData.benefits}
-                    onChange={(e) => handleInputChange('benefits', e.target.value)}
+                    onChange={handleInputChange}
                     placeholder="Nhập quyền lợi"
-                    rows={4}
                     className="w-full"
+                    rows={4}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-4 mt-6">
-              <Button
-                onClick={() => navigate('/positions')}
-                className="px-6 hover:bg-gray-100"
-                disabled={loading}
-              >
-                Hủy
-              </Button>
+            {/* Submit Button */}
+            <div className="mt-6 flex justify-end">
               <Button
                 type="primary"
                 onClick={handleSubmit}
-                className="px-6 bg-[#DAF374] text-black border-none hover:bg-[#c5dd60]"
-                loading={loading}
+                className="bg-blue-600 hover:bg-blue-700"
               >
                 Tạo vị trí
               </Button>
@@ -324,26 +335,32 @@ const CreatePosition = () => {
               </div>
             </div>
             <div className="max-h-[400px] overflow-y-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Vị trí tuyển dụng</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredPositions.map((position, index) => (
-                    <tr
-                      key={index}
-                      className="border-b hover:bg-gray-50 cursor-pointer"
-                      onClick={() => handlePositionSelect(position)}
-                    >
-                      <td className="px-4 py-2 text-sm">
-                        {position.position} - {position.department}
-                      </td>
+              {filteredPositions.length > 0 ? (
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Vị trí tuyển dụng</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filteredPositions.map((position, index) => (
+                      <tr
+                        key={index}
+                        className="border-b hover:bg-gray-50 cursor-pointer"
+                        onClick={() => handlePositionSelect(position)}
+                      >
+                        <td className="px-4 py-2 text-sm">
+                          {position.position} - {position.department}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  Không có Yêu cầu tuyển dụng nào
+                </div>
+              )}
             </div>
           </Modal>
         </Content>

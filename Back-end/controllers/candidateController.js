@@ -34,8 +34,7 @@ exports.createCandidate = async (req, res) => {
 
     // Log để debug
     console.log('Request body:', req.body);
-    console.log('File:', req.file);
-    console.log('Uploaded file:', req.uploadedFile);
+    console.log('Files:', req.files);
 
     // Kiểm tra vị trí có tồn tại không
     const position = await Position.findById(positionId);
@@ -43,19 +42,33 @@ exports.createCandidate = async (req, res) => {
       return res.status(404).json({ message: 'Không tìm thấy vị trí tuyển dụng' });
     }
 
-    // Kiểm tra file CV có được upload không
-    if (!req.uploadedFile || !req.uploadedFile.url || !req.uploadedFile.public_id) {
-      return res.status(400).json({ message: 'Vui lòng upload CV' });
-    }
-
     // Kiểm tra các trường bắt buộc
-    if (!candidateData.name || !candidateData.email || !candidateData.phone || !candidateData.source) {
+    if (!candidateData.name || !candidateData.email || !candidateData.phone || !candidateData.source || !candidateData.location) {
       return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin bắt buộc' });
     }
 
     // Kiểm tra customSource khi source là 'Khác'
     if (candidateData.source === 'Khác' && !candidateData.customSource) {
       return res.status(400).json({ message: 'Vui lòng nhập nguồn khác' });
+    }
+
+    // Xử lý upload nhiều file CV
+    const cvFiles = [];
+    if (req.files && req.files.cvFiles) {
+      const files = Array.isArray(req.files.cvFiles) ? req.files.cvFiles : [req.files.cvFiles];
+      
+      for (const file of files) {
+        const result = await cloudinary.uploader.upload(file.tempFilePath, {
+          folder: 'candidates/cv',
+          resource_type: 'raw'
+        });
+        
+        cvFiles.push({
+          url: result.secure_url,
+          public_id: result.public_id,
+          fileName: file.originalname
+        });
+      }
     }
 
     // Tạo ứng viên mới
@@ -65,13 +78,12 @@ exports.createCandidate = async (req, res) => {
       phone: candidateData.phone,
       source: candidateData.source,
       customSource: candidateData.customSource,
+      location: candidateData.location,
+      cvLink: candidateData.cvLink,
+      cvFiles: cvFiles,
       notes: candidateData.notes,
       positionId,
-      stage: 'new',
-      cv: {
-        url: req.uploadedFile.url,
-        public_id: req.uploadedFile.public_id
-      }
+      stage: 'new'
     });
 
     console.log('Candidate to save:', candidate);
@@ -79,7 +91,7 @@ exports.createCandidate = async (req, res) => {
     await candidate.save();
 
     // Cập nhật số lượng ứng viên của vị trí
-    position.applicants = (position.applicants || 0) + 1;
+    position.currentQuantity = (position.currentQuantity || 0) + 1;
     await position.save();
 
     res.status(201).json({
@@ -198,15 +210,22 @@ exports.deleteCandidate = async (req, res) => {
       return res.status(404).json({ message: 'Không tìm thấy ứng viên' });
     }
 
-    // Xóa file trên Cloudinary
-    if (candidate.cv.public_id) {
-      await cloudinary.uploader.destroy(candidate.cv.public_id);
+    // Kiểm tra nếu ứng viên đang ở giai đoạn "Lưu trữ"
+    if (candidate.stage === 'archived') {
+      return res.status(403).json({ message: 'Không thể xóa ứng viên trong giai đoạn Lưu trữ' });
+    }
+
+    // Xóa các file CV trên Cloudinary
+    for (const cvFile of candidate.cvFiles) {
+      if (cvFile.public_id) {
+        await cloudinary.uploader.destroy(cvFile.public_id);
+      }
     }
 
     // Cập nhật số lượng ứng viên của vị trí
     const position = await Position.findById(candidate.positionId);
     if (position) {
-      position.applicants = Math.max(0, (position.applicants || 0) - 1);
+      position.currentQuantity = Math.max(0, (position.currentQuantity || 0) - 1);
       await position.save();
     }
 
@@ -232,12 +251,32 @@ exports.updateCandidate = async (req, res) => {
       return res.status(404).json({ message: 'Không tìm thấy ứng viên' });
     }
 
+    // Xử lý upload file CV mới nếu có
+    if (req.files && req.files.cvFiles) {
+      const files = Array.isArray(req.files.cvFiles) ? req.files.cvFiles : [req.files.cvFiles];
+      
+      for (const file of files) {
+        const result = await cloudinary.uploader.upload(file.tempFilePath, {
+          folder: 'candidates/cv',
+          resource_type: 'raw'
+        });
+        
+        candidate.cvFiles.push({
+          url: result.secure_url,
+          public_id: result.public_id,
+          fileName: file.originalname
+        });
+      }
+    }
+
     // Cập nhật các trường thông tin
     candidate.name = updateData.name || candidate.name;
     candidate.email = updateData.email || candidate.email;
     candidate.phone = updateData.phone || candidate.phone;
     candidate.source = updateData.source || candidate.source;
     candidate.customSource = updateData.customSource || candidate.customSource;
+    candidate.location = updateData.location || candidate.location;
+    candidate.cvLink = updateData.cvLink || candidate.cvLink;
     candidate.notes = updateData.notes || candidate.notes;
 
     await candidate.save();

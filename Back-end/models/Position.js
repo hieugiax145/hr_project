@@ -59,10 +59,15 @@ const positionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Còn tuyển', 'Nhập', 'Tạm dừng'],
+    enum: ['Còn tuyển', 'Tạm dừng', 'Đã đủ'],
     default: 'Còn tuyển'
   },
-  applicants: {
+  requiredQuantity: {
+    type: Number,
+    required: true,
+    default: 1
+  },
+  currentQuantity: {
     type: Number,
     default: 0
   },
@@ -72,6 +77,14 @@ const positionSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true
+});
+
+// Middleware để tự động cập nhật trạng thái dựa trên số lượng ứng viên
+positionSchema.pre('save', function(next) {
+  if (this.currentQuantity >= this.requiredQuantity) {
+    this.status = 'Đã đủ';
+  }
+  next();
 });
 
 module.exports = mongoose.model('Position', positionSchema); 

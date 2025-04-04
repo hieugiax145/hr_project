@@ -20,7 +20,7 @@ const candidateSchema = new mongoose.Schema({
   },
   stage: {
     type: String,
-    enum: ['new', 'reviewing', 'interview1', 'interview2', 'offer', 'hired', 'rejected'],
+    enum: ['new', 'reviewing', 'interview1', 'interview2', 'offer', 'hired', 'rejected', 'archived'],
     default: 'new'
   },
   source: {
@@ -34,7 +34,7 @@ const candidateSchema = new mongoose.Schema({
       return this.source === 'Khác';
     }
   },
-  cv: {
+  cvFiles: [{
     url: {
       type: String,
       required: true
@@ -42,7 +42,18 @@ const candidateSchema = new mongoose.Schema({
     public_id: {
       type: String,
       required: true
+    },
+    fileName: {
+      type: String,
+      required: true
     }
+  }],
+  cvLink: {
+    type: String
+  },
+  location: {
+    type: String,
+    required: true
   },
   notes: {
     type: String

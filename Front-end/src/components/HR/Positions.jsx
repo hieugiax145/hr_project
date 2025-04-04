@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Input, Select, message, Dropdown, Modal } from 'antd';
-import { SearchOutlined, MoreOutlined, UserOutlined, BarChartOutlined, RiseOutlined } from '@ant-design/icons';
+import { Layout, Input, Select, message, Dropdown, Modal, Button } from 'antd';
+import { SearchOutlined, MoreOutlined, UserOutlined, BarChartOutlined, RiseOutlined, DownloadOutlined } from '@ant-design/icons';
 import { FaPlus } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle } from 'docx';
+import html2pdf from 'html2pdf.js';
 
 const { Content } = Layout;
 const API_BASE_URL = 'http://localhost:8000/api';
@@ -98,8 +100,8 @@ const Positions = () => {
     switch (status) {
       case 'Còn tuyển':
         return 'bg-[#E7F6EC] text-[#12B76A] border border-[#12B76A]';
-      case 'Nhập':
-        return 'bg-[#FFF3E8] text-[#F79009] border border-[#F79009]';
+      case 'Đã đủ':
+        return 'bg-[#EFF4FF] text-[#3E63DD] border border-[#3E63DD]';
       case 'Tạm dừng':
         return 'bg-[#FEE4E2] text-[#F04438] border border-[#F04438]';
       default:
@@ -142,6 +144,35 @@ const Positions = () => {
     }
   };
 
+  const handleUpdateStatus = async (positionId, newStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('Vui lòng đăng nhập lại');
+        return;
+      }
+
+      const response = await axios.patch(
+        `${API_BASE_URL}/positions/${positionId}/status`,
+        { status: newStatus },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.status === 200) {
+        message.success('Cập nhật trạng thái thành công');
+        fetchPositions();
+      }
+    } catch (error) {
+      console.error('Error updating position status:', error);
+      message.error('Có lỗi xảy ra khi cập nhật trạng thái');
+    }
+  };
+
   const getDropdownItems = (position) => ({
     items: [
       {
@@ -151,6 +182,27 @@ const Positions = () => {
       },
       {
         key: '2',
+        label: 'Cập nhật trạng thái',
+        children: [
+          {
+            key: '2-1',
+            label: 'Còn tuyển',
+            onClick: () => handleUpdateStatus(position._id, 'Còn tuyển')
+          },
+          {
+            key: '2-2',
+            label: 'Tạm dừng',
+            onClick: () => handleUpdateStatus(position._id, 'Tạm dừng')
+          },
+          {
+            key: '2-3',
+            label: 'Đã đủ',
+            onClick: () => handleUpdateStatus(position._id, 'Đã đủ')
+          }
+        ]
+      },
+      {
+        key: '3',
         label: 'Xóa vị trí',
         danger: true,
         onClick: () => {
@@ -193,6 +245,293 @@ const Positions = () => {
       });
     }
     return addresses;
+  };
+
+  // Sửa lại hàm tải xuống JD
+  const handleDownloadJD = async (format) => {
+    try {
+      if (!selectedPosition) {
+        message.error('Không tìm thấy thông tin vị trí');
+        return;
+      }
+
+      if (format === 'docx') {
+        // Tạo document DOCX
+        const doc = new Document({
+          sections: [{
+            properties: {},
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: "MÔ TẢ CÔNG VIỆC",
+                    bold: true,
+                    size: 28
+                  })
+                ]
+              }),
+              new Paragraph({}),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "Vị trí: ",
+                    bold: true
+                  }),
+                  new TextRun({
+                    text: selectedPosition.title
+                  })
+                ]
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "Phòng ban: ",
+                    bold: true
+                  }),
+                  new TextRun({
+                    text: selectedPosition.department
+                  })
+                ]
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "Cấp bậc: ",
+                    bold: true
+                  }),
+                  new TextRun({
+                    text: selectedPosition.level
+                  })
+                ]
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "Kinh nghiệm: ",
+                    bold: true
+                  }),
+                  new TextRun({
+                    text: selectedPosition.experience
+                  })
+                ]
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "Hình thức làm việc: ",
+                    bold: true
+                  }),
+                  new TextRun({
+                    text: selectedPosition.type
+                  })
+                ]
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "Mô hình làm việc: ",
+                    bold: true
+                  }),
+                  new TextRun({
+                    text: selectedPosition.mode
+                  })
+                ]
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "Mức lương: ",
+                    bold: true
+                  }),
+                  new TextRun({
+                    text: `đ ${selectedPosition.salary}`
+                  })
+                ]
+              }),
+              new Paragraph({}),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "MÔ TẢ CÔNG VIỆC",
+                    bold: true,
+                    size: 24
+                  })
+                ]
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: selectedPosition.description
+                  })
+                ]
+              }),
+              new Paragraph({}),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "YÊU CẦU ỨNG VIÊN",
+                    bold: true,
+                    size: 24
+                  })
+                ]
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: selectedPosition.requirements
+                  })
+                ]
+              }),
+              new Paragraph({}),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "QUYỀN LỢI",
+                    bold: true,
+                    size: 24
+                  })
+                ]
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: selectedPosition.benefits
+                  })
+                ]
+              })
+            ]
+          }]
+        });
+
+        // Tạo và tải xuống file
+        const blob = await Packer.toBlob(doc);
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${selectedPosition.title.replace(/\s+/g, '_')}_JD.docx`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } else if (format === 'pdf') {
+        // Tạo HTML tạm thời cho PDF
+        const tempDiv = document.createElement('div');
+        tempDiv.style.padding = '20px';
+        tempDiv.style.fontFamily = 'Arial, sans-serif';
+        
+        // Tiêu đề
+        const title = document.createElement('h1');
+        title.style.textAlign = 'center';
+        title.style.color = '#333';
+        title.style.marginBottom = '20px';
+        title.innerHTML = 'MÔ TẢ CÔNG VIỆC';
+        tempDiv.appendChild(title);
+        
+        // Thông tin vị trí
+        const infoTable = document.createElement('table');
+        infoTable.style.width = '100%';
+        infoTable.style.marginBottom = '20px';
+        infoTable.style.borderCollapse = 'collapse';
+        
+        const infoRows = [
+          { label: 'Vị trí:', value: selectedPosition.title },
+          { label: 'Phòng ban:', value: selectedPosition.department },
+          { label: 'Cấp bậc:', value: selectedPosition.level },
+          { label: 'Kinh nghiệm:', value: selectedPosition.experience },
+          { label: 'Hình thức làm việc:', value: selectedPosition.type },
+          { label: 'Mô hình làm việc:', value: selectedPosition.mode },
+          { label: 'Mức lương:', value: `đ ${selectedPosition.salary}` }
+        ];
+        
+        infoRows.forEach(row => {
+          const tr = document.createElement('tr');
+          
+          const labelCell = document.createElement('td');
+          labelCell.style.padding = '8px';
+          labelCell.style.borderBottom = '1px solid #ddd';
+          labelCell.style.width = '30%';
+          labelCell.style.fontWeight = 'bold';
+          labelCell.innerHTML = row.label;
+          
+          const valueCell = document.createElement('td');
+          valueCell.style.padding = '8px';
+          valueCell.style.borderBottom = '1px solid #ddd';
+          valueCell.innerHTML = row.value;
+          
+          tr.appendChild(labelCell);
+          tr.appendChild(valueCell);
+          infoTable.appendChild(tr);
+        });
+        
+        tempDiv.appendChild(infoTable);
+        
+        // Mô tả công việc
+        const descTitle = document.createElement('h2');
+        descTitle.style.color = '#333';
+        descTitle.style.marginTop = '20px';
+        descTitle.style.marginBottom = '10px';
+        descTitle.innerHTML = 'MÔ TẢ CÔNG VIỆC';
+        tempDiv.appendChild(descTitle);
+        
+        const descContent = document.createElement('div');
+        descContent.style.marginBottom = '20px';
+        descContent.style.whiteSpace = 'pre-line';
+        descContent.innerHTML = selectedPosition.description;
+        tempDiv.appendChild(descContent);
+        
+        // Yêu cầu ứng viên
+        const reqTitle = document.createElement('h2');
+        reqTitle.style.color = '#333';
+        reqTitle.style.marginTop = '20px';
+        reqTitle.style.marginBottom = '10px';
+        reqTitle.innerHTML = 'YÊU CẦU ỨNG VIÊN';
+        tempDiv.appendChild(reqTitle);
+        
+        const reqContent = document.createElement('div');
+        reqContent.style.marginBottom = '20px';
+        reqContent.style.whiteSpace = 'pre-line';
+        reqContent.innerHTML = selectedPosition.requirements;
+        tempDiv.appendChild(reqContent);
+        
+        // Quyền lợi
+        const benefitsTitle = document.createElement('h2');
+        benefitsTitle.style.color = '#333';
+        benefitsTitle.style.marginTop = '20px';
+        benefitsTitle.style.marginBottom = '10px';
+        benefitsTitle.innerHTML = 'QUYỀN LỢI';
+        tempDiv.appendChild(benefitsTitle);
+        
+        const benefitsContent = document.createElement('div');
+        benefitsContent.style.marginBottom = '20px';
+        benefitsContent.style.whiteSpace = 'pre-line';
+        benefitsContent.innerHTML = selectedPosition.benefits;
+        tempDiv.appendChild(benefitsContent);
+        
+        // Thêm div tạm thời vào body
+        document.body.appendChild(tempDiv);
+        
+        // Cấu hình cho html2pdf
+        const options = {
+          margin: 10,
+          filename: `${selectedPosition.title.replace(/\s+/g, '_')}_JD.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        // Tạo PDF
+        html2pdf().from(tempDiv).set(options).save().then(() => {
+          // Xóa div tạm thời sau khi tạo PDF
+          document.body.removeChild(tempDiv);
+        });
+      }
+
+      message.success(`Đã tải xuống JD định dạng ${format.toUpperCase()}`);
+    } catch (error) {
+      console.error('Error downloading JD:', error);
+      message.error('Có lỗi xảy ra khi tải xuống JD');
+    }
   };
 
   return (
@@ -261,7 +600,7 @@ const Positions = () => {
                     <div
                       key={position._id}
                       className={`bg-white rounded-[10px] p-4 border transition-colors cursor-pointer relative ${
-                        selectedPosition ? 'border-[#7B61FF]' : 'border-gray-200 hover:border-gray-300'
+                        selectedPosition?._id === position._id ? 'border-[#7B61FF]' : 'border-gray-200 hover:border-gray-300'
                       }`}
                       onClick={(e) => handleCardClick(e, position)}
                     >
@@ -272,7 +611,7 @@ const Positions = () => {
                         </span>
                       </div>
 
-                      {selectedPosition ? (
+                      {selectedPosition?._id === position._id ? (
                         // Layout khi có position được chọn - áp dụng cho tất cả card
                         <>
                           {/* Avatar and Info */}
@@ -299,7 +638,7 @@ const Positions = () => {
                               placement="bottomRight"
                             >
                               <button 
-                                className="text-gray-400 hover:text-gray-600 p-1 bg-white"
+                                className="text-gray-400 hover:text-gray-600 p-1 bg-white action-button"
                                 onClick={(e) => e.stopPropagation()} 
                               >
                                 <MoreOutlined />
@@ -349,7 +688,7 @@ const Positions = () => {
                               placement="bottomRight"
                             >
                               <button 
-                                className="text-gray-400 hover:text-gray-600 p-1 bg-white"
+                                className="text-gray-400 hover:text-gray-600 p-1 bg-white action-button"
                                 onClick={(e) => e.stopPropagation()} 
                               >
                                 <MoreOutlined />
@@ -412,9 +751,60 @@ const Positions = () => {
                     </div>
                     <h2 className="text-xl font-semibold mb-1">{selectedPosition.title}</h2>
                   </div>
-                  <button className="px-3 py-1 bg-[#DAF374] text-black rounded-lg text-sm">
-                    Còn tuyển
-                  </button>
+                  <div className="flex gap-2">
+                    <Dropdown
+                      menu={{
+                        items: [
+                          {
+                            key: '1',
+                            label: 'Còn tuyển',
+                            onClick: () => handleUpdateStatus(selectedPosition._id, 'Còn tuyển')
+                          },
+                          {
+                            key: '2',
+                            label: 'Tạm dừng',
+                            onClick: () => handleUpdateStatus(selectedPosition._id, 'Tạm dừng')
+                          },
+                          {
+                            key: '3',
+                            label: 'Đã đủ',
+                            onClick: () => handleUpdateStatus(selectedPosition._id, 'Đã đủ')
+                          }
+                        ]
+                      }}
+                      trigger={['click']}
+                      placement="bottomRight"
+                    >
+                      <button className="px-3 py-1 bg-[#DAF374] text-black rounded-lg text-sm">
+                        {selectedPosition.status}
+                      </button>
+                    </Dropdown>
+                    <Dropdown
+                      menu={{
+                        items: [
+                          {
+                            key: '1',
+                            label: 'Tải xuống DOCX',
+                            onClick: () => handleDownloadJD('docx')
+                          },
+                          {
+                            key: '2',
+                            label: 'Tải xuống PDF',
+                            onClick: () => handleDownloadJD('pdf')
+                          }
+                        ]
+                      }}
+                      trigger={['click']}
+                      placement="bottomRight"
+                    >
+                      <Button 
+                        icon={<DownloadOutlined />} 
+                        className="bg-[#7B61FF] text-white hover:bg-[#6A50E0]"
+                      >
+                        Tải xuống JD
+                      </Button>
+                    </Dropdown>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
