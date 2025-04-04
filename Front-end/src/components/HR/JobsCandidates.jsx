@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Input, Select, Button, Dropdown, Menu, Badge, message, Modal, Form, Upload } from 'antd';
-import { SearchOutlined, MoreOutlined, PlusOutlined, InboxOutlined } from '@ant-design/icons';
+import { SearchOutlined, MoreOutlined, PlusOutlined, InboxOutlined, LinkOutlined } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Sidebar from '../Sidebar/Sidebar';
@@ -23,6 +23,7 @@ const JobsCandidates = () => {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingCandidate, setEditingCandidate] = useState(null);
   const [editForm] = Form.useForm();
+  const [fileList, setFileList] = useState([]);
 
   // Fetch position và candidates
   useEffect(() => {
@@ -67,7 +68,8 @@ const JobsCandidates = () => {
             { title: 'Phỏng vấn lần 2', key: 'interview2', count: stageCounts['interview2'] || 0 },
             { title: 'Offer', key: 'offer', count: stageCounts['offer'] || 0 },
             { title: 'Tuyển', key: 'hired', count: stageCounts['hired'] || 0 },
-            { title: 'Từ chối', key: 'rejected', count: stageCounts['rejected'] || 0 }
+            { title: 'Từ chối', key: 'rejected', count: stageCounts['rejected'] || 0 },
+            { title: 'Lưu trữ', key: 'archived', count: stageCounts['archived'] || 0 }
           ];
           setStages(updatedStages);
         }
@@ -97,9 +99,9 @@ const JobsCandidates = () => {
         return;
       }
 
-      // Kiểm tra xem có file CV được chọn không
-      if (!values.cv?.fileList?.[0]?.originFileObj) {
-        message.error('Vui lòng upload CV');
+      // Kiểm tra xem có file CV được chọn hoặc link CV được nhập không
+      if ((!values.cv?.fileList || values.cv.fileList.length === 0) && !values.cvLink) {
+        message.error('Vui lòng upload ít nhất một CV hoặc nhập link CV');
         return;
       }
 
@@ -112,14 +114,18 @@ const JobsCandidates = () => {
       if (values.source === 'Khác') {
         formData.append('customSource', values.customSource);
       }
-
-      // Lấy file từ fileList và kiểm tra kích thước
-      const file = values.cv.fileList[0].originFileObj;
-      if (file.size > 5 * 1024 * 1024) { // 5MB
-        message.error('File không được vượt quá 5MB');
-        return;
+      if (values.cvLink) {
+        formData.append('cvLink', values.cvLink);
       }
-      formData.append('cv', file);
+
+      // Lấy tất cả các file từ fileList
+      if (values.cv?.fileList && values.cv.fileList.length > 0) {
+        values.cv.fileList.forEach((file) => {
+          if (file.originFileObj) {
+            formData.append('cv', file.originFileObj);
+          }
+        });
+      }
 
       if (values.notes) {
         formData.append('notes', values.notes);
@@ -140,6 +146,7 @@ const JobsCandidates = () => {
         message.success('Thêm ứng viên thành công');
         setIsAddModalVisible(false);
         form.resetFields();
+        setFileList([]);
         
         // Refresh candidates list
         const candidatesResponse = await axios.get(`${API_BASE_URL}/positions/${id}/candidates`, {
@@ -252,7 +259,8 @@ const JobsCandidates = () => {
       phone: candidate.phone,
       source: candidate.source,
       customSource: candidate.customSource,
-      notes: candidate.notes
+      notes: candidate.notes,
+      cvLink: candidate.cvLink
     });
     setIsEditModalVisible(true);
   };
@@ -395,11 +403,22 @@ const JobsCandidates = () => {
                                 <span>📱</span>
                                 <span>{candidate.phone}</span>
                               </div>
-                              {candidate.cv && (
+                              {candidate.cv && candidate.cv.length > 0 && (
                                 <div className="flex items-center gap-1">
                                   <span>📄</span>
-                                  <a href={candidate.cv.url} target="_blank" rel="noopener noreferrer" className="text-[#7B61FF] hover:underline">
+                                  <a href={candidate.cv[0].url} target="_blank" rel="noopener noreferrer" className="text-[#7B61FF] hover:underline">
                                     Xem CV
+                                  </a>
+                                  {candidate.cv.length > 1 && (
+                                    <span className="text-xs text-gray-400">(+{candidate.cv.length - 1})</span>
+                                  )}
+                                </div>
+                              )}
+                              {candidate.cvLink && (
+                                <div className="flex items-center gap-1">
+                                  <span>🔗</span>
+                                  <a href={candidate.cvLink} target="_blank" rel="noopener noreferrer" className="text-[#7B61FF] hover:underline">
+                                    Link CV
                                   </a>
                                 </div>
                               )}
@@ -453,7 +472,10 @@ const JobsCandidates = () => {
           <Modal
             title="Thêm thông tin ứng viên mới"
             open={isAddModalVisible}
-            onCancel={() => setIsAddModalVisible(false)}
+            onCancel={() => {
+              setIsAddModalVisible(false);
+              setFileList([]);
+            }}
             footer={null}
             width={500}
           >
@@ -527,11 +549,13 @@ const JobsCandidates = () => {
                 getValueFromEvent={(e) => ({
                   fileList: Array.isArray(e) ? e : e && e.fileList,
                 })}
-                rules={[{ required: true, message: 'Vui lòng upload CV' }]}
+                rules={[{ required: true, message: 'Vui lòng upload CV hoặc nhập link CV' }]}
               >
                 <Upload.Dragger
                   name="cv"
-                  maxCount={1}
+                  multiple={true}
+                  maxCount={5}
+                  fileList={fileList}
                   beforeUpload={(file) => {
                     const isLt5M = file.size / 1024 / 1024 < 5;
                     if (!isLt5M) {
@@ -541,17 +565,25 @@ const JobsCandidates = () => {
                     return false; // Prevent auto upload
                   }}
                   onChange={(info) => {
-                    if (info.file.status === 'removed') {
-                      form.setFieldValue('cv', undefined);
-                    }
+                    setFileList(info.fileList);
                   }}
                 >
                   <p className="ant-upload-drag-icon">
                     <InboxOutlined />
                   </p>
                   <p className="ant-upload-text">Click hoặc kéo thả file vào đây</p>
-                  <p className="ant-upload-hint">Tối đa 5MB</p>
+                  <p className="ant-upload-hint">Tối đa 5 file, mỗi file không quá 5MB</p>
                 </Upload.Dragger>
+              </Form.Item>
+
+              <Form.Item
+                name="cvLink"
+                label="Link CV (tùy chọn)"
+              >
+                <Input 
+                  prefix={<LinkOutlined />} 
+                  placeholder="Nhập link CV" 
+                />
               </Form.Item>
 
               <Form.Item
@@ -562,7 +594,10 @@ const JobsCandidates = () => {
               </Form.Item>
 
               <div className="flex justify-end gap-2">
-                <Button onClick={() => setIsAddModalVisible(false)}>
+                <Button onClick={() => {
+                  setIsAddModalVisible(false);
+                  setFileList([]);
+                }}>
                   Hủy
                 </Button>
                 <Button type="primary" htmlType="submit" className="bg-[#7B61FF] text-white">
@@ -641,6 +676,16 @@ const JobsCandidates = () => {
                     </Form.Item>
                   ) : null
                 }
+              </Form.Item>
+
+              <Form.Item
+                name="cvLink"
+                label="Link CV (tùy chọn)"
+              >
+                <Input 
+                  prefix={<LinkOutlined />} 
+                  placeholder="Nhập link CV" 
+                />
               </Form.Item>
 
               <Form.Item

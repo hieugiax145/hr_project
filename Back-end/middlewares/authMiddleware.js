@@ -5,8 +5,13 @@ const protect = async (req, res, next) => {
   try {
     let token;
 
+    // Kiểm tra token từ header Authorization
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
+    }
+    // Kiểm tra token từ query parameter
+    else if (req.query.token) {
+      token = req.query.token;
     }
 
     if (!token) {

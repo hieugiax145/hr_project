@@ -45,53 +45,41 @@ const EditNotification = () => {
       // Chuyển đổi dữ liệu cho form
       const formValues = {
         ...notification,
+        candidateId: notification.candidateId?._id || notification.candidateId,
+        candidateName: notification.candidateId?.name || '',
         // Chuyển đổi các trường ngày tháng
         birthDate: notification.birthDate ? dayjs(notification.birthDate) : null,
-        'idCard.issueDate': notification.idCard?.issueDate ? dayjs(notification.idCard.issueDate) : null,
         startDate: notification.startDate ? dayjs(notification.startDate) : null,
         
-        // Chuyển đổi ảnh cá nhân
-        personalPhoto: notification.personalPhoto ? {
-          fileList: [{
-            uid: '-1',
-            name: 'personalPhoto',
-            status: 'done',
-            url: notification.personalPhoto,
-            thumbUrl: notification.personalPhoto
-          }]
-        } : { fileList: [] },
-        
-        // Chuyển đổi ảnh CCCD
-        'idCard.photos': notification.idCard?.photos ? {
-          fileList: notification.idCard.photos.map((url, index) => ({
-            uid: `-${index + 1}`,
-            name: `idCardPhoto${index + 1}`,
-            status: 'done',
-            url: url,
-            thumbUrl: url
-          }))
-        } : { fileList: [] },
-
-        // Đảm bảo các trường có giá trị mặc định
-        gender: notification.gender || 'male',
+        // Xử lý dữ liệu CMND/CCCD
         'idCard.number': notification.idCard?.number || '',
+        'idCard.issueDate': notification.idCard?.issueDate ? dayjs(notification.idCard.issueDate) : null,
         'idCard.issuePlace': notification.idCard?.issuePlace || '',
-        insuranceNumber: notification.insuranceNumber || '',
-        taxCode: notification.taxCode || '',
+        
+        // Xử lý dữ liệu tài khoản ngân hàng
         'bankAccount.number': notification.bankAccount?.number || '',
         'bankAccount.bank': notification.bankAccount?.bank || '',
-        phone: notification.phone || '',
-        email: notification.email || '',
-        permanentAddress: notification.permanentAddress || '',
+        
+        // Xử lý dữ liệu liên hệ khẩn cấp
         'emergencyContact.name': notification.emergencyContact?.name || '',
         'emergencyContact.relationship': notification.emergencyContact?.relationship || '',
         'emergencyContact.phone': notification.emergencyContact?.phone || '',
         'emergencyContact.email': notification.emergencyContact?.email || '',
         'emergencyContact.address': notification.emergencyContact?.address || '',
+        
+        // Xử lý dữ liệu học vấn
         'education.level': notification.education?.level || 'other',
         'education.schoolName': notification.education?.schoolName || '',
         'education.major': notification.education?.major || '',
         'education.graduationYear': notification.education?.graduationYear || '',
+        
+        // Các trường còn lại
+        gender: notification.gender || 'male',
+        insuranceNumber: notification.insuranceNumber || '',
+        taxCode: notification.taxCode || '',
+        phone: notification.phone || '',
+        email: notification.email || '',
+        permanentAddress: notification.permanentAddress || '',
         expectedSalary: notification.expectedSalary || '',
         contractType: notification.contractType || '',
         documents: notification.documents || [],
@@ -102,7 +90,7 @@ const EditNotification = () => {
       setTrainingCourses(notification.trainingCourses || []);
       setPreparationTasks(notification.preparationTasks || []);
 
-      // Cập nhật fileList cho ảnh
+      // Xử lý ảnh
       if (notification.personalPhoto) {
         setFileList(prev => ({
           ...prev,
@@ -146,89 +134,63 @@ const EditNotification = () => {
 
   const onFinish = async (values) => {
     try {
-      // Log chi tiết các giá trị form
-      console.log('Form values:', JSON.stringify(values, null, 2));
-
-      // Kiểm tra các trường bắt buộc
-      const requiredFields = [
-        'candidateId', 
-        'hrInCharge', 
-        'position', 
-        'department', 
-        'branch',
-        'gender',
-        'birthDate',
-        'idCard.number',
-        'idCard.issueDate',
-        'idCard.issuePlace',
-        'startDate',
-        'insuranceNumber',
-        'taxCode',
-        'bankAccount.number',
-        'bankAccount.bank'
-      ];
+      // Lấy dữ liệu hiện tại từ form
+      const currentFormData = form.getFieldsValue();
       
-      const missingFields = requiredFields.filter(field => {
-        const value = field.split('.').reduce((obj, key) => obj?.[key], values);
-        console.log(`Checking field ${field}:`, value); // Log từng trường
-        return !value;
-      });
-      
-      if (missingFields.length > 0) {
-        console.log('Missing fields:', missingFields); // Log các trường thiếu
-        message.error(`Vui lòng điền đầy đủ thông tin: ${missingFields.join(', ')}`);
-        return;
-      }
-
-      // Tạo object chứa tất cả dữ liệu
-      const notificationData = {
+      // Kết hợp dữ liệu hiện tại với dữ liệu mới
+      const updatedValues = {
+        ...notification,
+        ...currentFormData,
         ...values,
-        trainingCourses,
-        preparationTasks,
-        birthDate: values.birthDate?.format('YYYY-MM-DD'),
-        'idCard.issueDate': values.idCard?.issueDate?.format('YYYY-MM-DD'),
-        startDate: values.startDate?.format('YYYY-MM-DD'),
-        emergencyContact: {
-          name: values.emergencyContact?.name || '',
-          relationship: values.emergencyContact?.relationship || '',
-          phone: values.emergencyContact?.phone || '',
-          email: values.emergencyContact?.email || '',
-          address: values.emergencyContact?.address || ''
+        candidateId: notification.candidateId?._id || notification.candidateId,
+        
+        // Đảm bảo cấu trúc dữ liệu đúng
+        idCard: {
+          number: values['idCard.number'] || notification.idCard?.number,
+          issueDate: values['idCard.issueDate']?.format('YYYY-MM-DD') || notification.idCard?.issueDate,
+          issuePlace: values['idCard.issuePlace'] || notification.idCard?.issuePlace,
+          photos: notification.idCard?.photos || []
         },
+        
+        bankAccount: {
+          number: values['bankAccount.number'] || notification.bankAccount?.number,
+          bank: values['bankAccount.bank'] || notification.bankAccount?.bank
+        },
+        
+        birthDate: values.birthDate?.format('YYYY-MM-DD') || notification.birthDate,
+        startDate: values.startDate?.format('YYYY-MM-DD') || notification.startDate,
+        
+        emergencyContact: {
+          name: values['emergencyContact.name'] || notification.emergencyContact?.name,
+          relationship: values['emergencyContact.relationship'] || notification.emergencyContact?.relationship,
+          phone: values['emergencyContact.phone'] || notification.emergencyContact?.phone,
+          email: values['emergencyContact.email'] || notification.emergencyContact?.email,
+          address: values['emergencyContact.address'] || notification.emergencyContact?.address
+        },
+        
         education: {
-          level: values.education?.level || 'other',
-          schoolName: values.education?.schoolName || '',
-          major: values.education?.major || '',
-          graduationYear: values.education?.graduationYear || ''
+          level: values['education.level'] || notification.education?.level,
+          schoolName: values['education.schoolName'] || notification.education?.schoolName,
+          major: values['education.major'] || notification.education?.major,
+          graduationYear: values['education.graduationYear'] || notification.education?.graduationYear
         }
       };
 
-      // Log để kiểm tra dữ liệu
-      console.log('Notification data:', JSON.stringify(notificationData, null, 2));
-
       // Tạo FormData và thêm dữ liệu
       const formData = new FormData();
-      formData.append('data', JSON.stringify(notificationData));
+      formData.append('data', JSON.stringify(updatedValues));
 
       // Thêm file mới nếu có
       if (values.personalPhoto?.fileList?.[0]?.originFileObj) {
         formData.append('personalPhoto', values.personalPhoto.fileList[0].originFileObj);
-        console.log('Adding personal photo:', values.personalPhoto.fileList[0].originFileObj);
       }
 
       if (values.idCard?.photos?.fileList) {
         values.idCard.photos.fileList.forEach((file, index) => {
           if (file.originFileObj) {
             formData.append('idCardPhotos', file.originFileObj);
-            console.log(`Adding ID card photo ${index + 1}:`, file.originFileObj);
           }
         });
-      }
-
-      // Log FormData contents for debugging
-      console.log('FormData contents:');
-      for (let pair of formData.entries()) {
-        console.log(pair[0] + ': ' + (pair[1] instanceof File ? pair[1].name : pair[1]));
       }
 
       await notificationService.updateNotification(id, formData);
@@ -398,10 +360,17 @@ const EditNotification = () => {
             <div className="grid grid-cols-2 gap-4">
               <Form.Item
                 label={<span>Họ và tên <span className="text-red-500">*</span></span>}
-                name="candidateId"
-                rules={[{ required: true, message: 'Vui lòng chọn ứng viên' }]}
+                name="candidateName"
+                rules={[{ required: false }]}
               >
-                <Input disabled value={notification?.candidateId?.name || ''} />
+                <Input disabled />
+              </Form.Item>
+
+              <Form.Item
+                name="candidateId"
+                hidden
+              >
+                <Input />
               </Form.Item>
 
               <Form.Item

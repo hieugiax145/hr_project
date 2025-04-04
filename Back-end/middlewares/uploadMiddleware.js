@@ -90,7 +90,7 @@ const handleUpload = (req, res, next) => {
 const handleCVUpload = (req, res, next) => {
   console.log('Starting CV upload process...');
   
-  const uploadCV = upload.single('cv');
+  const uploadCV = upload.array('cv', 5); // Cho phép upload tối đa 5 CV
 
   uploadCV(req, res, function (err) {
     if (err instanceof multer.MulterError) {
@@ -101,15 +101,16 @@ const handleCVUpload = (req, res, next) => {
       return res.status(400).json({ message: err.message });
     }
 
-    // Log thông tin về file CV đã upload
-    console.log('Uploaded CV:', req.file);
+    // Log thông tin về files CV đã upload
+    console.log('Uploaded CVs:', req.files);
     
-    // Lưu thông tin file vào req.uploadedFile để controller có thể sử dụng
-    if (req.file) {
-      req.uploadedFile = {
-        url: req.file.path,
-        public_id: req.file.filename
-      };
+    // Lưu thông tin files vào req.uploadedFiles để controller có thể sử dụng
+    if (req.files && req.files.length > 0) {
+      req.uploadedFiles = req.files.map(file => ({
+        url: file.path,
+        public_id: file.filename,
+        fileName: file.originalname
+      }));
     }
 
     next();

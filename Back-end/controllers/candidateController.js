@@ -1,6 +1,7 @@
 const Candidate = require('../models/Candidate');
 const Position = require('../models/Position');
 const cloudinary = require('cloudinary');
+const Application = require('../models/Application');
 
 // Lấy danh sách ứng viên theo vị trí
 exports.getCandidatesByPosition = async (req, res) => {
@@ -34,18 +35,13 @@ exports.createCandidate = async (req, res) => {
 
     // Log để debug
     console.log('Request body:', req.body);
-    console.log('File:', req.file);
-    console.log('Uploaded file:', req.uploadedFile);
+    console.log('Files:', req.files);
+    console.log('Uploaded files:', req.uploadedFiles);
 
     // Kiểm tra vị trí có tồn tại không
     const position = await Position.findById(positionId);
     if (!position) {
       return res.status(404).json({ message: 'Không tìm thấy vị trí tuyển dụng' });
-    }
-
-    // Kiểm tra file CV có được upload không
-    if (!req.uploadedFile || !req.uploadedFile.url || !req.uploadedFile.public_id) {
-      return res.status(400).json({ message: 'Vui lòng upload CV' });
     }
 
     // Kiểm tra các trường bắt buộc
@@ -58,6 +54,24 @@ exports.createCandidate = async (req, res) => {
       return res.status(400).json({ message: 'Vui lòng nhập nguồn khác' });
     }
 
+    // Kiểm tra xem có ít nhất một CV được upload hoặc link CV được cung cấp
+    if ((!req.uploadedFiles || req.uploadedFiles.length === 0) && !candidateData.cvLink) {
+      return res.status(400).json({ message: 'Vui lòng upload ít nhất một CV hoặc cung cấp link CV' });
+    }
+
+    // Tạo mảng CV từ các file đã upload
+    const cvArray = [];
+    if (req.uploadedFiles && req.uploadedFiles.length > 0) {
+      req.uploadedFiles.forEach(file => {
+        cvArray.push({
+          url: file.url,
+          public_id: file.public_id,
+          fileName: file.fileName,
+          uploadDate: new Date()
+        });
+      });
+    }
+
     // Tạo ứng viên mới
     const candidate = new Candidate({
       name: candidateData.name,
@@ -68,10 +82,8 @@ exports.createCandidate = async (req, res) => {
       notes: candidateData.notes,
       positionId,
       stage: 'new',
-      cv: {
-        url: req.uploadedFile.url,
-        public_id: req.uploadedFile.public_id
-      }
+      cv: cvArray,
+      cvLink: candidateData.cvLink || ''
     });
 
     console.log('Candidate to save:', candidate);
@@ -81,6 +93,13 @@ exports.createCandidate = async (req, res) => {
     // Cập nhật số lượng ứng viên của vị trí
     position.applicants = (position.applicants || 0) + 1;
     await position.save();
+
+    // Kiểm tra và cập nhật trạng thái vị trí nếu đã đủ số lượng
+    const application = await Application.findOne({ position: position.title, department: position.department });
+    if (application && position.applicants >= application.quantity) {
+      position.status = 'Đã đủ';
+      await position.save();
+    }
 
     res.status(201).json({
       message: 'Thêm ứng viên thành công',
@@ -131,7 +150,7 @@ exports.updateCandidateStatus = async (req, res) => {
     });
 
     // Kiểm tra giá trị stage có hợp lệ không
-    const validStages = ['new', 'reviewing', 'interview1', 'interview2', 'offer', 'hired', 'rejected'];
+    const validStages = ['new', 'reviewing', 'interview1', 'interview2', 'offer', 'hired', 'rejected', 'archived'];
     if (!stage) {
       return res.status(400).json({ 
         message: 'Trường stage là bắt buộc',

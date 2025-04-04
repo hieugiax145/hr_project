@@ -195,6 +195,52 @@ const Positions = () => {
     return addresses;
   };
 
+  const handleDownloadJD = async (format) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('Vui lòng đăng nhập lại');
+        return;
+      }
+
+      // Hiển thị thông báo đang tải
+      const loadingMessage = message.loading(`Đang tải xuống JD định dạng ${format.toUpperCase()}...`, 0);
+
+      try {
+        // Tạo URL với token trong query parameter thay vì header
+        const url = `${API_BASE_URL}/positions/${selectedPosition._id}/download-jd?format=${format}&token=${token}`;
+        
+        // Tạo thẻ a để tải xuống
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${selectedPosition.title.replace(/\s+/g, '_')}_JD.${format}`);
+        
+        // Thêm vào DOM, click và xóa
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Hiển thị thông báo thành công
+        loadingMessage();
+        message.success(`Đã tải xuống JD định dạng ${format.toUpperCase()}`);
+      } catch (fetchError) {
+        // Xử lý lỗi fetch
+        loadingMessage();
+        console.error('Error downloading JD:', fetchError);
+        
+        // Hiển thị thông báo lỗi cụ thể cho DOCX
+        if (format === 'docx') {
+          message.error('Không thể tải xuống file DOCX. Vui lòng thử lại sau hoặc liên hệ quản trị viên.');
+        } else {
+          message.error('Có lỗi xảy ra khi tải xuống JD');
+        }
+      }
+    } catch (error) {
+      console.error('Error in handleDownloadJD:', error);
+      message.error('Có lỗi xảy ra khi tải xuống JD');
+    }
+  };
+
   return (
     <Layout style={{ minHeight: '100vh', background: '#F5F5F5' }}>
       <Layout style={{ marginLeft: 282 }}>
@@ -412,9 +458,29 @@ const Positions = () => {
                     </div>
                     <h2 className="text-xl font-semibold mb-1">{selectedPosition.title}</h2>
                   </div>
-                  <button className="px-3 py-1 bg-[#DAF374] text-black rounded-lg text-sm">
-                    Còn tuyển
-                  </button>
+                  <div className="flex gap-2">
+                    <button 
+                      className="px-3 py-1 bg-[#F4F1FE] text-[#7B61FF] rounded-lg text-sm flex items-center gap-1"
+                      onClick={() => handleDownloadJD('docx')}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      DOCX
+                    </button>
+                    <button 
+                      className="px-3 py-1 bg-[#F4F1FE] text-[#7B61FF] rounded-lg text-sm flex items-center gap-1"
+                      onClick={() => handleDownloadJD('pdf')}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      PDF
+                    </button>
+                    <button className="px-3 py-1 bg-[#DAF374] text-black rounded-lg text-sm">
+                      Còn tuyển
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-6">

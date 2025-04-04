@@ -1,4 +1,8 @@
 const Position = require('../models/Position');
+const Application = require('../models/Application');
+const { generateDocx, generatePdf } = require('../utils/jdGenerator');
+const fs = require('fs');
+const path = require('path');
 
 // Tạo vị trí mới
 exports.createPosition = async (req, res) => {
@@ -110,5 +114,97 @@ exports.deletePosition = async (req, res) => {
   } catch (error) {
     console.error('Error in deletePosition:', error);
     res.status(500).json({ message: 'Lỗi khi xóa vị trí' });
+  }
+};
+
+// Tự động cập nhật trạng thái vị trí dựa trên số lượng ứng viên
+exports.updatePositionStatus = async (positionId) => {
+  try {
+    const position = await Position.findById(positionId);
+    if (!position) {
+      console.error(`Không tìm thấy vị trí với ID: ${positionId}`);
+      return;
+    }
+
+    // Tìm application tương ứng
+    const application = await Application.findOne({ 
+      position: position.title, 
+      department: position.department 
+    });
+
+    if (application) {
+      // Cập nhật trạng thái dựa trên số lượng ứng viên
+      if (position.applicants >= application.quantity) {
+        position.status = 'Đã đủ';
+      } else if (position.status === 'Đã đủ' && position.applicants < application.quantity) {
+        position.status = 'Còn tuyển';
+      }
+      
+      await position.save();
+      console.log(`Đã cập nhật trạng thái vị trí ${position.title} thành ${position.status}`);
+    }
+  } catch (error) {
+    console.error('Lỗi khi cập nhật trạng thái vị trí:', error);
+  }
+};
+
+// Tải xuống JD theo định dạng
+exports.downloadJD = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { format } = req.query;
+    
+    // Validate format
+    if (!format || !['docx', 'pdf'].includes(format.toLowerCase())) {
+      return res.status(400).json({ message: 'Định dạng không hợp lệ. Vui lòng chọn docx hoặc pdf' });
+    }
+    
+    // Find the position
+    const position = await Position.findById(id);
+    if (!position) {
+      return res.status(404).json({ message: 'Không tìm thấy vị trí' });
+    }
+    
+    try {
+      // Generate the file based on format
+      let filePath;
+      if (format.toLowerCase() === 'docx') {
+        filePath = await generateDocx(position);
+        // Set headers for DOCX file download
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        res.setHeader('Content-Disposition', `attachment; filename=${encodeURIComponent(position.title.replace(/\s+/g, '_') + '_JD.docx')}`);
+      } else {
+        filePath = await generatePdf(position);
+        // Set headers for PDF file download
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=${encodeURIComponent(position.title.replace(/\s+/g, '_') + '_JD.pdf')}`);
+      }
+      
+      // Stream the file to the client
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.on('error', (error) => {
+        console.error('Error streaming file:', error);
+        res.status(500).json({ message: 'Lỗi khi tải xuống file' });
+      });
+      
+      fileStream.pipe(res);
+      
+      // Clean up the file after streaming
+      fileStream.on('end', () => {
+        fs.unlink(filePath, (err) => {
+          if (err) console.error('Error deleting temporary file:', err);
+        });
+      });
+    } catch (genError) {
+      console.error('Error generating file:', genError);
+      if (format.toLowerCase() === 'docx') {
+        return res.status(500).json({ message: 'Lỗi khi tạo file DOCX. Vui lòng thử lại sau.' });
+      } else {
+        return res.status(500).json({ message: 'Lỗi khi tạo file PDF. Vui lòng thử lại sau.' });
+      }
+    }
+  } catch (error) {
+    console.error('Error in downloadJD:', error);
+    res.status(500).json({ message: 'Lỗi khi tải xuống JD' });
   }
 }; 

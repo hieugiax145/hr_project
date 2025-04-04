@@ -59,7 +59,7 @@ const positionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Còn tuyển', 'Nhập', 'Tạm dừng'],
+    enum: ['Còn tuyển', 'Tạm dừng', 'Đã đủ'],
     default: 'Còn tuyển'
   },
   applicants: {
@@ -69,6 +69,10 @@ const positionSchema = new mongoose.Schema({
   creator: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  },
+  requiredQuantity: {
+    type: Number,
+    default: 1
   }
 }, {
   timestamps: true

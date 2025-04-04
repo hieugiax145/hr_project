@@ -6,6 +6,7 @@ import axios from 'axios';
 
 const { Content } = Layout;
 const { TextArea } = Input;
+const API_BASE_URL = 'http://localhost:8000/api';
 
 const CreatePosition = () => {
   const navigate = useNavigate();
@@ -31,19 +32,41 @@ const CreatePosition = () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) {
-          navigate('/login');
+          message.error('Vui lòng đăng nhập lại');
           return;
         }
 
-        const response = await axios.get('http://localhost:8000/api/applications', {
+        // Lấy danh sách applications đã duyệt
+        const applicationsResponse = await axios.get(`${API_BASE_URL}/applications`, {
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         });
 
-        // Lọc các yêu cầu đã được duyệt
-        const approved = response.data.filter(app => app.status === 'Đã duyệt');
-        setApprovedPositions(approved);
+        // Lấy danh sách positions hiện có
+        const positionsResponse = await axios.get(`${API_BASE_URL}/positions`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (applicationsResponse.status === 200 && positionsResponse.status === 200) {
+          const applications = applicationsResponse.data || [];
+          const positions = positionsResponse.data.data || [];
+
+          // Lọc ra các application đã duyệt và chưa được tạo thành position
+          const approvedApplications = applications.filter(app => 
+            app.status === 'Đã duyệt' && 
+            !positions.some(pos => 
+              pos.title === app.position && 
+              pos.department === app.department
+            )
+          );
+
+          setApprovedPositions(approvedApplications);
+        }
       } catch (error) {
         console.error('Error fetching approved positions:', error);
         message.error('Có lỗi xảy ra khi tải danh sách vị trí');

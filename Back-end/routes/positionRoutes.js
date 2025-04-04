@@ -6,7 +6,8 @@ const {
   getPositionById,
   createPosition,
   updatePosition,
-  deletePosition
+  deletePosition,
+  downloadJD
 } = require('../controllers/positionController');
 const { handleCVUpload } = require('../middlewares/uploadMiddleware');
 const candidateController = require('../controllers/candidateController');
@@ -14,6 +15,7 @@ const candidateController = require('../controllers/candidateController');
 // Public routes
 router.get('/', protect, getPositions);
 router.get('/:id', protect, getPositionById);
+router.get('/:id/download-jd', protect, downloadJD);
 
 // Protected routes
 router.post('/', protect, createPosition);

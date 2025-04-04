@@ -34,7 +34,7 @@ const candidateSchema = new mongoose.Schema({
       return this.source === 'Khác';
     }
   },
-  cv: {
+  cv: [{
     url: {
       type: String,
       required: true
@@ -42,7 +42,19 @@ const candidateSchema = new mongoose.Schema({
     public_id: {
       type: String,
       required: true
+    },
+    fileName: {
+      type: String,
+      required: true
+    },
+    uploadDate: {
+      type: Date,
+      default: Date.now
     }
+  }],
+  cvLink: {
+    type: String,
+    required: false
   },
   notes: {
     type: String
