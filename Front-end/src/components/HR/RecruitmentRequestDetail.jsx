@@ -281,8 +281,13 @@ const RecruitmentRequestDetail = () => {
               </div>
               <div>
                 <label className="block text-sm mb-1 text-[#1A1A1A]">Trạng thái phê duyệt</label>
-                <div className="h-[116px] flex items-center justify-center border border-[#E0E0E0] rounded-lg">
+                <div className="h-auto min-h-[116px] flex flex-col items-center justify-center border border-[#E0E0E0] rounded-lg p-3">
                   <span className="text-sm">{formData.status}</span>
+                  {formData.status === 'Từ chối' && formData.rejectReason && (
+                    <div className="mt-2 text-sm text-[#D42A2A] text-center">
+                      Lý do: {formData.rejectReason}
+                    </div>
+                  )}
                 </div>
               </div>
               <div>

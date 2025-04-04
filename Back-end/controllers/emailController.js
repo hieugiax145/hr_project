@@ -176,8 +176,14 @@ exports.getSentEmails = async (req, res) => {
 // Gửi email
 exports.sendEmail = async (req, res) => {
   try {
-    const { to, subject, content } = req.body;
+    const { to, cc, bcc, subject, content } = req.body;
+    const files = req.files;
     
+    // Validate email
+    if (!to) {
+      return res.status(400).json({ message: 'Vui lòng nhập email người nhận' });
+    }
+
     // Tạo transporter
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -187,13 +193,33 @@ exports.sendEmail = async (req, res) => {
       }
     });
     
+    // Chuẩn bị file đính kèm
+    let attachments = [];
+    if (files && files.length > 0) {
+      attachments = files.map(file => ({
+        filename: file.originalname,
+        content: file.buffer
+      }));
+    }
+    
     // Cấu hình email
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: to,
+      cc: cc,
+      bcc: bcc,
       subject: subject,
-      text: content
+      html: content,
+      attachments: attachments
     };
+
+    console.log('Sending email with options:', {
+      to,
+      cc,
+      bcc,
+      subject,
+      attachmentsCount: attachments.length
+    });
     
     // Gửi email
     await transporter.sendMail(mailOptions);
@@ -201,7 +227,10 @@ exports.sendEmail = async (req, res) => {
     res.status(200).json({ message: 'Email đã được gửi thành công' });
   } catch (error) {
     console.error('Error sending email:', error);
-    res.status(500).json({ message: 'Có lỗi xảy ra khi gửi email' });
+    res.status(500).json({ 
+      message: 'Có lỗi xảy ra khi gửi email',
+      error: error.message 
+    });
   }
 };
 

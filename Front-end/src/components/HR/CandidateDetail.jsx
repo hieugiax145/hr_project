@@ -51,6 +51,15 @@ const RecruitmentStages = ({ currentStage }) => {
     return '#F3F3FE';
   };
 
+  const getFinalStageText = (currentStage) => {
+    if (currentStage === 'hired') {
+      return 'Tuyển';
+    } else if (currentStage === 'rejected') {
+      return 'Từ chối';
+    }
+    return 'Tuyển/Từ chối';
+  };
+
   return (
     <div style={{ 
       background: 'white',
@@ -103,7 +112,7 @@ const RecruitmentStages = ({ currentStage }) => {
           fontSize: '14px',
           color: '#1A1A1A'
         }}>
-          Tuyển/Từ chối
+          {getFinalStageText(currentStage)}
         </div>
       </div>
     </div>

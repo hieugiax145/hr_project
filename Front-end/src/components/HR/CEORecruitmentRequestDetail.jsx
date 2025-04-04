@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Input } from 'antd';
+import { Layout, Input, Modal, message } from 'antd';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MdKeyboardArrowRight } from 'react-icons/md';
 import axios from 'axios';
@@ -21,10 +21,21 @@ const CEORecruitmentRequestDetail = () => {
     requirements: '',
     benefits: '',
     status: '',
-    date: ''
+    date: '',
+    currentSalary: '',
+    overflowSalary: ''
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+
+  // Mapping cho các địa điểm
+  const locationMapping = {
+    'hochiminh': 'Hồ Chí Minh',
+    'hanoi': 'Hà Nội',
+    'danang': 'Đà Nẵng'
+  };
 
   useEffect(() => {
     const fetchRequestDetail = async () => {
@@ -109,7 +120,10 @@ const CEORecruitmentRequestDetail = () => {
       const token = localStorage.getItem('token');
       const response = await axios.put(
         `http://localhost:8000/api/applications/${id}`,
-        { status: 'Từ chối' },
+        { 
+          status: 'Từ chối',
+          rejectReason: rejectReason 
+        },
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -118,22 +132,38 @@ const CEORecruitmentRequestDetail = () => {
       );
       
       // Xóa thông báo khi từ chối
-      await axios.delete(
-        `http://localhost:8000/api/recruitment-notifications/by-recruitment/${id}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
+      try {
+        await axios.delete(
+          `http://localhost:8000/api/recruitment-notifications/by-recruitment/${id}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
           }
-        }
-      );
+        );
+      } catch (notificationError) {
+        console.log('Notification might have been deleted already:', notificationError);
+        // Continue with the rejection process even if notification deletion fails
+      }
       
       if (response.status === 200) {
+        message.success('Đã từ chối yêu cầu tuyển dụng');
+        setRejectModalVisible(false);
         navigate('/hr/ceo-recruitment-requests');
       }
     } catch (error) {
       console.error('Error rejecting request:', error);
-      setError('Có lỗi xảy ra khi từ chối yêu cầu');
+      message.error('Có lỗi xảy ra khi từ chối yêu cầu');
     }
+  };
+
+  const showRejectModal = () => {
+    setRejectModalVisible(true);
+  };
+
+  const handleRejectModalCancel = () => {
+    setRejectModalVisible(false);
+    setRejectReason('');
   };
 
   if (loading) {
@@ -163,7 +193,7 @@ const CEORecruitmentRequestDetail = () => {
             <div className="flex gap-2 w-full md:w-auto">
               <button 
                 className="h-[36px] px-4 bg-[#D42A2A] text-white rounded-[6px] text-sm font-medium hover:bg-[#BB0000] flex items-center gap-2"
-                onClick={handleReject}
+                onClick={showRejectModal}
               >
                 Từ chối
               </button>
@@ -255,9 +285,14 @@ const CEORecruitmentRequestDetail = () => {
                 </label>
                 <div className="inline-block">
                   <div className="flex gap-4">
-                    <span className="text-sm">{formData.mainLocation}</span>
+                    {formData.mainLocation && (
+                      <span className="text-sm">{locationMapping[formData.mainLocation] || formData.mainLocation}</span>
+                    )}
                     {formData.otherLocations && formData.otherLocations.length > 0 && (
-                      <span className="text-sm">, {formData.otherLocations.join(', ')}</span>
+                      <span className="text-sm">, {formData.otherLocations.map(loc => locationMapping[loc] || loc).join(', ')}</span>
+                    )}
+                    {!formData.mainLocation && (!formData.otherLocations || formData.otherLocations.length === 0) && (
+                      <span className="text-sm">Chưa cập nhật</span>
                     )}
                   </div>
                 </div>
@@ -274,6 +309,26 @@ const CEORecruitmentRequestDetail = () => {
                 </label>
                 <span className="text-sm">{formData.budget}</span>
               </div>
+              {formData.budget === 'Vượt quỹ' && (
+                <>
+                  <div>
+                    <label className="text-sm text-[#1A1A1A] inline-block w-[120px] align-top">
+                      Lương hiện tại
+                    </label>
+                    <div className="inline-block">
+                      <span className="text-sm">{formData.currentSalary || 'N/A'}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm text-[#1A1A1A] inline-block w-[120px] align-top">
+                      Lương vượt quỹ
+                    </label>
+                    <div className="inline-block">
+                      <span className="text-sm">{formData.overflowSalary || 'N/A'}</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -328,8 +383,13 @@ const CEORecruitmentRequestDetail = () => {
               </div>
               <div>
                 <label className="block text-sm mb-1 text-[#1A1A1A]">Trạng thái phê duyệt</label>
-                <div className="h-[116px] flex items-center justify-center border border-[#E0E0E0] rounded-lg">
+                <div className="h-auto min-h-[116px] flex flex-col items-center justify-center border border-[#E0E0E0] rounded-lg p-3">
                   <span className="text-sm">{formData.status}</span>
+                  {formData.status === 'Từ chối' && formData.rejectReason && (
+                    <div className="mt-2 text-sm text-[#D42A2A] text-center">
+                      Lý do: {formData.rejectReason}
+                    </div>
+                  )}
                 </div>
               </div>
               <div>
@@ -342,6 +402,32 @@ const CEORecruitmentRequestDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal Từ chối */}
+      <Modal
+        title="Từ chối yêu cầu tuyển dụng"
+        open={rejectModalVisible}
+        onOk={handleReject}
+        onCancel={handleRejectModalCancel}
+        okText="Xác nhận"
+        cancelText="Hủy"
+        okButtonProps={{ 
+          className: 'bg-[#D42A2A] text-white hover:bg-[#BB0000]'
+        }}
+      >
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Lý do từ chối
+          </label>
+          <Input.TextArea
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="Nhập lý do từ chối..."
+            rows={4}
+            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#D42A2A]"
+          />
+        </div>
+      </Modal>
     </div>
   );
 };

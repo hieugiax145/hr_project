@@ -1,24 +1,48 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Input, Button, message, Layout } from 'antd';
-import { ArrowLeftOutlined, SendOutlined, SaveOutlined } from '@ant-design/icons';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { Form, Input, Button, message, Select, Upload, Layout } from 'antd';
+import { SendOutlined, InboxOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import axios from 'axios';
 import moment from 'moment';
 import 'moment/locale/vi';
 
+const { Dragger } = Upload;
 const { Content } = Layout;
 moment.locale('vi');
 
 const SendEmail = () => {
-  const { id } = useParams();
+  const [form] = Form.useForm();
   const navigate = useNavigate();
+  const { id } = useParams();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
-  const [emailData, setEmailData] = useState({
-    to: '',
-    subject: '',
-    content: ''
-  });
+  const [fileList, setFileList] = useState([]);
+  const [emailContent, setEmailContent] = useState('');
   const [upcomingInterview, setUpcomingInterview] = useState(null);
+
+  // Quill modules configuration
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'align': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike',
+    'color', 'background',
+    'list', 'bullet',
+    'align',
+    'link'
+  ];
 
   // Hàm chuyển đổi trạng thái ứng viên
   const getStatusText = (stage) => {
@@ -70,7 +94,24 @@ const SendEmail = () => {
           const hrPhone = user?.phone || '[SDT]';
           
           // Tạo nội dung email mẫu
-          const emailContent = `Thân gửi ${candidate.name || '[họ tên ứng viên]'},
+          const emailContent = candidate.stage === 'rejected' 
+            ? `<div style="font-family: Arial, sans-serif;">
+<h3 style="text-align: center; margin-bottom: 20px;">THƯ CẢM ƠN ${candidate.name || '[HỌ TÊN ỨNG VIÊN]'} ỨNG TUYỂN ${candidate.position || '[VỊ TRÍ TUYỂN DỤNG]'}</h3>
+
+<p>Kính gửi: ${candidate.name || '[anh/chị] [họ tên ứng viên]'},</p>
+
+<p>Hội đồng Tuyển dụng và Ban lãnh đạo Rikkei Academy gửi lời cảm ơn đến ${candidate.name || '[Anh/Chị]'} vì đã quan tâm và dành thời gian ứng tuyển vị trí ${candidate.position || '[Tên vị trí ứng tuyển]'}.</p>
+
+<p>Sau khi xem xét, Rikkei Academy đã đối tượng với hồ sơ ứng tuyển của ${candidate.name || '[Anh/Chị]'}, tuy nhiên do một số điểm chưa phù hợp, chúng tôi rất tiếc vì chưa thể hợp tác với ${candidate.name || '[Anh/Chị]'} trong thời gian này.</p>
+
+<p>DTS xin phép lưu hồ sơ của ${candidate.name || '[Anh/Chị]'} cho những cơ hội khác trong tương lai. ${candidate.name || '[Anh/Chị]'} có thể giữ liên lạc với chúng tôi và cập nhật những thông tin nghề nghiệp mới nhất tại Tuyển dụng DTS.</p>
+
+<p>Một lần nữa rất cám ơn sự quan tâm, thời gian và nỗ lực của ${candidate.name || '[Anh/Chị]'}. Chúc ${candidate.name || '[Anh/Chị]'} gặt hái nhiều thành công trong sự nghiệp tương lai.</p>
+
+<p>Trân trọng cảm ơn,</p>
+<p>TM. HỘI ĐỒNG TUYỂN DỤNG</p>
+</div>`
+            : `Thân gửi ${candidate.name || '[họ tên ứng viên]'},
 
 Công ty TNHH Rikkei Education (Rikkei) rất cảm ơn Bạn đã quan tâm ứng tuyển vào vị trí: ${candidate.position || '[tên vị trí tuyển dụng]'}
 
@@ -89,9 +130,11 @@ Trân trọng,
 
 TM. HỘI ĐỒNG TUYỂN DỤNG`;
 
-          setEmailData({
+          form.setFieldsValue({
             to: candidate.email,
-            subject: `[RIKKEI ACADEMY] THƯ MỜI ${candidate.name} CHỨC VỤ ỨNG TUYỂN ${candidate.position} GIAI ĐOẠN ${getStatusText(candidate.stage)}`,
+            subject: candidate.stage === 'rejected'
+              ? `[RIKKEI ACADEMY] THƯ TỪ CHỐI _ ${candidate.name} _ ${candidate.position}`
+              : `[RIKKEI ACADEMY] THƯ MỜI ${candidate.name} CHỨC VỤ ỨNG TUYỂN ${candidate.position} GIAI ĐOẠN ${getStatusText(candidate.stage)}`,
             content: emailContent
           });
         }
@@ -102,146 +145,227 @@ TM. HỘI ĐỒNG TUYỂN DỤNG`;
     };
 
     fetchCandidateData();
-  }, [id]);
+  }, [id, form]);
 
-  const handleSendEmail = async () => {
-    if (!emailData.to || !emailData.subject || !emailData.content) {
-      message.error('Vui lòng điền đầy đủ thông tin email');
-      return;
-    }
+  // File upload configuration
+  const uploadProps = {
+    name: 'attachments',
+    multiple: true,
+    fileList: fileList,
+    beforeUpload: (file) => {
+      const isLt10M = file.size / 1024 / 1024 < 10;
+      if (!isLt10M) {
+        message.error('File phải nhỏ hơn 10MB!');
+        return Upload.LIST_IGNORE;
+      }
+      return false; // Prevent auto upload
+    },
+    onChange: (info) => {
+      setFileList(info.fileList);
+    },
+    onRemove: (file) => {
+      const index = fileList.indexOf(file);
+      const newFileList = fileList.slice();
+      newFileList.splice(index, 1);
+      setFileList(newFileList);
+    },
+  };
 
-    setLoading(true);
+  const handleSubmit = async (values) => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:8000/api/emails/send', emailData, {
+      
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('to', values.to);
+      
+      // Handle CC emails
+      if (values.cc && values.cc.length > 0) {
+        formData.append('cc', values.cc.join(','));
+      }
+      
+      // Handle BCC emails
+      if (values.bcc && values.bcc.length > 0) {
+        formData.append('bcc', values.bcc.join(','));
+      }
+      
+      formData.append('subject', values.subject);
+      formData.append('content', values.content || '');
+      
+      // Append files if any
+      if (fileList && fileList.length > 0) {
+        fileList.forEach((file) => {
+          formData.append('attachments', file.originFileObj);
+        });
+      }
+
+      const response = await axios.post('http://localhost:8000/api/emails/send', formData, {
         headers: {
-          Authorization: `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
         }
       });
 
-      message.success('Email đã được gửi thành công!');
-      navigate(id ? `/candidates/${id}` : '/emails');
+      if (response.status === 200) {
+        message.success('Email đã được gửi thành công!');
+        if (location.pathname.includes('/candidates/')) {
+          navigate(`/candidates/${id}`);
+        } else {
+          navigate('/emails');
+        }
+      }
     } catch (error) {
       console.error('Error sending email:', error);
-      message.error('Có lỗi xảy ra khi gửi email');
+      const errorMessage = error.response?.data?.message || 'Có lỗi xảy ra khi gửi email';
+      message.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (field) => (e) => {
-    setEmailData(prev => ({
-      ...prev,
-      [field]: e.target.value
-    }));
-  };
-
   return (
-    <Layout>
-      <Layout style={{ marginLeft: 282 }}>
-        <Content style={{ margin: '80px 16px 24px', background: '#F5F5F5', minHeight: 280 }}>
-          <div style={{ 
-            maxWidth: '1200px', 
-            margin: '0 auto',
-            height: 'calc(100vh - 120px)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px'
-          }}>
-            {/* Header */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '8px 0'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <Button 
-                  icon={<ArrowLeftOutlined />} 
-                  onClick={() => navigate(id ? `/candidates/${id}` : '/emails')}
-                  style={{ border: 'none' }}
-                >
-                  Quay lại
-                </Button>
-                <h2 style={{ margin: 0 }}>Thư mới</h2>
-              </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <Button
-                  type="primary"
-                  icon={<SendOutlined />}
-                  loading={loading}
-                  onClick={handleSendEmail}
-                >
-                  Gửi
-                </Button>
-              </div>
-            </div>
+    <div className="min-h-screen bg-[#F9FAFB] p-4 ml-[282px]">
+      <div className="max-w-[1200px] mx-auto bg-white rounded-lg p-6 mt-[80px]">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Button 
+              icon={<ArrowLeftOutlined />} 
+              onClick={() => navigate(id ? `/candidates/${id}` : '/emails')}
+              className="border-none"
+            >
+              Quay lại
+            </Button>
+            <h1 className="text-[20px] font-medium text-[#1A1A1A] m-0">Thư mới</h1>
+          </div>
+        </div>
 
-            {/* Email Form */}
-            <div style={{
-              background: 'white',
-              borderRadius: '8px',
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
-            }}>
-              {/* Recipients */}
-              <div style={{ 
-                padding: '12px 24px',
-                borderBottom: '1px solid #f0f0f0',
-                display: 'flex',
-                alignItems: 'center'
-              }}>
-                <span style={{ width: '80px', color: '#666' }}>Đến:</span>
+        {/* Email Form */}
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          className="bg-white rounded-lg"
+        >
+          {/* Recipients */}
+          <div className="border-b border-[#f0f0f0] p-4">
+            <div className="flex items-center">
+              <span className="w-20 text-[#666]">Đến:</span>
+              <Form.Item 
+                name="to" 
+                className="mb-0 flex-1"
+                rules={[{ required: true, message: 'Vui lòng nhập email người nhận' }]}
+              >
                 <Input 
-                  value={emailData.to}
-                  onChange={handleInputChange('to')}
-                  bordered={false}
-                  style={{ flex: 1 }}
+                  variant="borderless"
                   readOnly={!!id}
                   placeholder="Nhập địa chỉ email người nhận"
                 />
-              </div>
+              </Form.Item>
+            </div>
+          </div>
 
-              {/* Subject */}
-              <div style={{ 
-                padding: '12px 24px',
-                borderBottom: '1px solid #f0f0f0',
-                display: 'flex',
-                alignItems: 'center'
-              }}>
-                <span style={{ width: '80px', color: '#666' }}>Tiêu đề:</span>
+          {/* CC */}
+          <div className="border-b border-[#f0f0f0] p-4">
+            <div className="flex items-center">
+              <span className="w-20 text-[#666]">CC:</span>
+              <Form.Item name="cc" className="mb-0 flex-1">
+                <Select
+                  mode="tags"
+                  style={{ width: '100%' }}
+                  placeholder="Nhập email CC"
+                  tokenSeparators={[',']}
+                  variant="borderless"
+                />
+              </Form.Item>
+            </div>
+          </div>
+
+          {/* BCC */}
+          <div className="border-b border-[#f0f0f0] p-4">
+            <div className="flex items-center">
+              <span className="w-20 text-[#666]">BCC:</span>
+              <Form.Item name="bcc" className="mb-0 flex-1">
+                <Select
+                  mode="tags"
+                  style={{ width: '100%' }}
+                  placeholder="Nhập email BCC"
+                  tokenSeparators={[',']}
+                  variant="borderless"
+                />
+              </Form.Item>
+            </div>
+          </div>
+
+          {/* Subject */}
+          <div className="border-b border-[#f0f0f0] p-4">
+            <div className="flex items-center">
+              <span className="w-20 text-[#666]">Tiêu đề:</span>
+              <Form.Item 
+                name="subject" 
+                className="mb-0 flex-1"
+                rules={[{ required: true, message: 'Vui lòng nhập tiêu đề' }]}
+              >
                 <Input 
-                  value={emailData.subject}
-                  onChange={handleInputChange('subject')}
-                  bordered={false}
-                  style={{ flex: 1 }}
+                  variant="borderless"
                   readOnly={!!id}
                   placeholder="Nhập tiêu đề email"
                 />
-              </div>
+              </Form.Item>
+            </div>
+          </div>
 
-              {/* Content */}
-              <div style={{ flex: 1, padding: '24px' }}>
-                <Input.TextArea
-                  value={emailData.content}
-                  onChange={handleInputChange('content')}
-                  style={{ 
-                    height: '100%', 
-                    resize: 'none',
-                    border: 'none',
-                    padding: 0
-                  }}
-                  bordered={false}
-                  placeholder="Nhập nội dung email"
-                />
+          {/* File Upload */}
+          <div className="border-b border-[#f0f0f0] p-4">
+            <div className="flex items-start">
+              <span className="w-20 text-[#666] mt-2">Đính kèm:</span>
+              <div className="flex-1">
+                <Upload {...uploadProps}>
+                  <Button icon={<InboxOutlined />}>Chọn file</Button>
+                </Upload>
               </div>
             </div>
           </div>
-        </Content>
-      </Layout>
-    </Layout>
+
+          {/* Content */}
+          <div className="p-4">
+            <Form.Item
+              name="content"
+              rules={[{ required: true, message: 'Vui lòng nhập nội dung email' }]}
+            >
+              <ReactQuill 
+                theme="snow"
+                value={emailContent}
+                onChange={setEmailContent}
+                modules={modules}
+                formats={formats}
+                style={{ 
+                  height: '300px',
+                  marginBottom: '50px'
+                }}
+              />
+            </Form.Item>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-4 mt-8">
+            <Button onClick={() => navigate(-1)}>
+              Hủy
+            </Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              icon={<SendOutlined />}
+              loading={loading}
+              className="bg-[#1890ff]"
+            >
+              Gửi
+            </Button>
+          </div>
+        </Form>
+      </div>
+    </div>
   );
 };
 

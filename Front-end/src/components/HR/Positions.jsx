@@ -43,16 +43,41 @@ const Positions = () => {
         return;
       }
 
-      const response = await axios.get(`${API_BASE_URL}/positions?${queryParams}`, {
+      // Lấy danh sách positions
+      const positionsResponse = await axios.get(`${API_BASE_URL}/positions?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
-      if (response.status === 200) {
-        setPositions(response.data.data || []);
-        setTotalPages(response.data.pagination.totalPages || 1);
+      // Lấy danh sách applications đã duyệt
+      const applicationsResponse = await axios.get(`${API_BASE_URL}/applications`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (positionsResponse.status === 200) {
+        const positions = positionsResponse.data.data || [];
+        const applications = applicationsResponse.data || [];
+
+        // Map thông tin địa điểm từ applications vào positions
+        const positionsWithLocations = positions.map(position => {
+          const matchingApplication = applications.find(app => 
+            app.position === position.title && app.department === position.department
+          );
+
+          return {
+            ...position,
+            mainLocation: matchingApplication?.mainLocation || '',
+            otherLocations: matchingApplication?.otherLocations || []
+          };
+        });
+
+        setPositions(positionsWithLocations);
+        setTotalPages(positionsResponse.data.pagination.totalPages || 1);
       }
     } catch (error) {
       console.error('Error fetching positions:', error);
@@ -146,6 +171,28 @@ const Positions = () => {
   const shortenId = (id) => {
     if (!id) return '';
     return id.substring(0, 6);
+  };
+
+  // Mapping địa chỉ chi tiết
+  const getFullAddress = (mainLocation, otherLocations = []) => {
+    const addressMapping = {
+      'hanoi': 'Hà Nội - Tầng 7 tháp A tòa Sông Đà, đường Phạm Hùng, quận Nam Từ Liêm, Hà Nội',
+      'hochiminh': 'HCM - Tầng 12, Tòa nhà Đảm Bảo An Toàn Hàng Hải phía Nam Số 42 đường Tự Cường, phường 4, Tân Bình, TP. Hồ Chí Minh',
+      'danang': 'Đà Nẵng - Tầng 4, tòa nhà Ricco, số 363 Nguyễn Hữu Thọ, phường Khuê Trung, Quận Cẩm Lệ, Đà Nẵng'
+    };
+
+    const addresses = [];
+    if (mainLocation && addressMapping[mainLocation]) {
+      addresses.push(addressMapping[mainLocation]);
+    }
+    if (otherLocations && otherLocations.length > 0) {
+      otherLocations.forEach(loc => {
+        if (addressMapping[loc]) {
+          addresses.push(addressMapping[loc]);
+        }
+      });
+    }
+    return addresses;
   };
 
   return (
@@ -390,6 +437,14 @@ const Positions = () => {
                   <div>
                     <div className="text-sm text-gray-500 mb-1">Mức lương</div>
                     <div className="font-medium text-[#7B61FF]">đ {selectedPosition.salary}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500 mb-1">Địa điểm làm việc</div>
+                    <div className="font-medium">
+                      {getFullAddress(selectedPosition.mainLocation, selectedPosition.otherLocations).map((address, index) => (
+                        <div key={index} className="mb-2">{address}</div>
+                      ))}
+                    </div>
                   </div>
                 </div>
 

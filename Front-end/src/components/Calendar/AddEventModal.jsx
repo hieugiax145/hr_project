@@ -147,30 +147,15 @@ const AddEventModal = ({ visible, onClose, onSave, selectedDate }) => {
               <Input placeholder="Nhập địa điểm" />
             </Form.Item>
 
-            <Form.Item name="assignTo" label="Chọn ứng viên">
-              <Select
-                showSearch
-                placeholder="Chọn ứng viên"
-                optionFilterProp="children"
-                filterOption={(input, option) =>
-                  option?.children?.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }
-                loading={loading}
-              >
-                {candidates && candidates.length > 0 ? (
-                  candidates.map(candidate => (
-                    candidate && candidate._id && (
-                      <Option 
-                        key={candidate._id} 
-                        value={candidate._id}
-                      >
-                        {candidate.name} - {candidate.position || 'N/A'} ({candidate.stage || 'N/A'})
-                      </Option>
-                    )
-                  ))
-                ) : (
-                  <Option value="no-candidates" disabled>Không có ứng viên phù hợp</Option>
-                )}
+            <Form.Item
+              label="Loại cuộc họp"
+              name="type"
+              rules={[{ required: true, message: 'Vui lòng chọn loại cuộc họp' }]}
+            >
+              <Select placeholder="Chọn loại cuộc họp">
+                <Option value="interview">Phỏng vấn</Option>
+                <Option value="meeting">Họp nội bộ</Option>
+                <Option value="presentation">Thuyết trình</Option>
               </Select>
             </Form.Item>
 
@@ -234,8 +219,31 @@ const AddEventModal = ({ visible, onClose, onSave, selectedDate }) => {
               </Form.Item>
             </div>
 
-            <Form.Item name="allDay" valuePropName="checked">
-              <Checkbox>Cả ngày</Checkbox>
+            <Form.Item name="assignTo" label="Chọn ứng viên">
+              <Select
+                showSearch
+                placeholder="Chọn ứng viên"
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  option?.children?.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+                loading={loading}
+              >
+                {candidates && candidates.length > 0 ? (
+                  candidates.map(candidate => (
+                    candidate && candidate._id && (
+                      <Option 
+                        key={candidate._id} 
+                        value={candidate._id}
+                      >
+                        {candidate.name} ({candidate.email})
+                      </Option>
+                    )
+                  ))
+                ) : (
+                  <Option value="no-candidates" disabled>Không có ứng viên phù hợp</Option>
+                )}
+              </Select>
             </Form.Item>
 
             <Form.Item
@@ -257,21 +265,8 @@ const AddEventModal = ({ visible, onClose, onSave, selectedDate }) => {
             </Form.Item>
 
             <Form.Item
-              label="Loại cuộc họp"
-              name="type"
-              rules={[{ required: true, message: 'Vui lòng chọn loại cuộc họp' }]}
-            >
-              <Select placeholder="Chọn loại cuộc họp">
-                <Option value="interview">Phỏng vấn</Option>
-                <Option value="meeting">Họp nội bộ</Option>
-                <Option value="presentation">Thuyết trình</Option>
-              </Select>
-            </Form.Item>
-
-            <Form.Item
               label="Mô tả"
               name="description"
-              rules={[{ required: true, message: 'Vui lòng nhập mô tả' }]}
             >
               <TextArea
                 rows={6}
