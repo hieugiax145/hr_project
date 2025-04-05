@@ -10,6 +10,10 @@ const notificationSchema = Joi.object({
     'string.empty': 'Vui lòng chọn nhân sự phụ trách',
     'any.required': 'Vui lòng chọn nhân sự phụ trách'
   }),
+  position: Joi.string().allow('').optional(),
+  department: Joi.string().allow('').optional(),
+  branch: Joi.string().allow('').optional(),
+  personalPhoto: Joi.string().allow('').optional(),
 
   // THÔNG TIN CÁ NHÂN
   gender: Joi.string().valid('male', 'female').messages({
@@ -25,7 +29,8 @@ const notificationSchema = Joi.object({
     issueDate: Joi.date().messages({
       'date.base': 'Ngày cấp không hợp lệ'
     }),
-    issuePlace: Joi.string()
+    issuePlace: Joi.string(),
+    photos: Joi.array().items(Joi.string())
   }),
   startDate: Joi.date().messages({
     'date.base': 'Ngày vào làm không hợp lệ'
@@ -46,15 +51,11 @@ const notificationSchema = Joi.object({
   }),
   permanentAddress: Joi.string(),
   emergencyContact: Joi.object({
-    name: Joi.string(),
-    relationship: Joi.string(),
-    phone: Joi.string().pattern(/^[0-9]{10}$/).messages({
-      'string.pattern.base': 'Số điện thoại phải có 10 chữ số'
-    }),
-    email: Joi.string().email().messages({
-      'string.email': 'Email không hợp lệ'
-    }),
-    address: Joi.string()
+    name: Joi.string().allow('').optional(),
+    relationship: Joi.string().allow('').optional(),
+    phone: Joi.string().allow('').optional(),
+    email: Joi.string().allow('').optional(),
+    address: Joi.string().allow('').optional()
   }),
 
   // HỌC VẤN

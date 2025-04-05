@@ -195,58 +195,6 @@ exports.getNotificationById = async (req, res) => {
   }
 };
 
-exports.updateNotification = async (req, res) => {
-  try {
-    const { error } = validateNotification(req.body);
-    if (error) {
-      return res.status(400).json({ message: error.details[0].message });
-    }
-
-    // Xử lý upload ảnh mới nếu có
-    if (req.files) {
-      if (req.files.personalPhoto) {
-        const result = await cloudinary.uploader.upload(req.files.personalPhoto.tempFilePath, {
-          folder: 'notifications/personal'
-        });
-        req.body.personalPhoto = result.secure_url;
-      }
-
-      if (req.files.idCardPhotos) {
-        const files = Array.isArray(req.files.idCardPhotos) 
-          ? req.files.idCardPhotos 
-          : [req.files.idCardPhotos];
-
-        const idCardPhotos = [];
-        for (const file of files) {
-          const result = await cloudinary.uploader.upload(file.tempFilePath, {
-            folder: 'notifications/idcard'
-          });
-          idCardPhotos.push(result.secure_url);
-        }
-        req.body['idCard.photos'] = idCardPhotos;
-      }
-    }
-
-    const notification = await Notification.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-
-    if (!notification) {
-      return res.status(404).json({ message: 'Không tìm thấy thông báo' });
-    }
-
-    res.json({
-      message: 'Cập nhật thông báo thành công',
-      data: notification
-    });
-  } catch (error) {
-    console.error('Error in updateNotification:', error);
-    res.status(500).json({ message: 'Lỗi server' });
-  }
-};
-
 exports.deleteNotification = async (req, res) => {
   try {
     const notification = await Notification.findByIdAndDelete(req.params.id);
@@ -299,6 +247,165 @@ exports.getHRList = async (req, res) => {
     res.json(users);
   } catch (error) {
     console.error('Error in getHRList:', error);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+};
+
+exports.updateNotification = async (req, res) => {
+  try {
+    console.log('Received request body:', req.body);
+    console.log('Received files:', req.files);
+
+    // Parse JSON data from FormData
+    let notificationData;
+    try {
+      if (!req.body.data) {
+        console.error('No data field in request body');
+        return res.status(400).json({ message: 'Dữ liệu không hợp lệ' });
+      }
+      notificationData = JSON.parse(req.body.data);
+      console.log('Parsed notification data:', notificationData);
+    } catch (error) {
+      console.error('Error parsing notification data:', error);
+      return res.status(400).json({ message: 'Dữ liệu không hợp lệ' });
+    }
+
+    // Find existing notification
+    const existingNotification = await Notification.findById(req.params.id);
+    if (!existingNotification) {
+      console.error('Notification not found with ID:', req.params.id);
+      return res.status(404).json({ message: 'Không tìm thấy thông báo' });
+    }
+
+    console.log('Existing notification:', existingNotification);
+
+    // Handle file uploads
+    let personalPhotoUrl = existingNotification.personalPhoto;
+    let idCardPhotoUrls = existingNotification.idCard?.photos || [];
+
+    if (req.files) {
+      // Handle personal photo
+      if (req.files.personalPhoto) {
+        console.log('Processing new personal photo');
+        const result = await cloudinary.uploader.upload(req.files.personalPhoto[0].path, {
+          folder: 'notifications/personal'
+        });
+        personalPhotoUrl = result.secure_url;
+        console.log('New personal photo URL:', personalPhotoUrl);
+      } else {
+        console.log('No new personal photo, using existing:', personalPhotoUrl);
+      }
+
+      // Handle ID card photos
+      if (req.files.idCardPhotos) {
+        console.log('Processing new ID card photos');
+        const files = Array.isArray(req.files.idCardPhotos) 
+          ? req.files.idCardPhotos 
+          : [req.files.idCardPhotos];
+
+        idCardPhotoUrls = [];
+        for (const file of files) {
+          const result = await cloudinary.uploader.upload(file.path, {
+            folder: 'notifications/idcard'
+          });
+          idCardPhotoUrls.push(result.secure_url);
+        }
+        console.log('New ID card photo URLs:', idCardPhotoUrls);
+      } else {
+        console.log('No new ID card photos, using existing:', idCardPhotoUrls);
+      }
+    } else {
+      console.log('No files received in request');
+    }
+
+    // Update notification data
+    const updatedNotification = {
+      candidateId: notificationData.candidateId,
+      position: notificationData.position,
+      department: notificationData.department,
+      branch: notificationData.branch,
+      hrInCharge: notificationData.hrInCharge,
+      personalPhoto: personalPhotoUrl,
+      gender: notificationData.gender,
+      birthDate: notificationData.birthDate,
+      idCard: {
+        number: notificationData.idCard?.number || '',
+        issueDate: notificationData.idCard?.issueDate || null,
+        issuePlace: notificationData.idCard?.issuePlace || '',
+        photos: idCardPhotoUrls
+      },
+      startDate: notificationData.startDate,
+      insuranceNumber: notificationData.insuranceNumber,
+      taxCode: notificationData.taxCode,
+      bankAccount: {
+        number: notificationData.bankAccount?.number || '',
+        bank: notificationData.bankAccount?.bank || ''
+      },
+      phone: notificationData.phone,
+      email: notificationData.email,
+      permanentAddress: notificationData.permanentAddress,
+      emergencyContact: {
+        name: notificationData.emergencyContact?.name || '',
+        relationship: notificationData.emergencyContact?.relationship || '',
+        phone: notificationData.emergencyContact?.phone || '',
+        email: notificationData.emergencyContact?.email || '',
+        address: notificationData.emergencyContact?.address || ''
+      },
+      education: {
+        level: notificationData.education?.level || 'other',
+        schoolName: notificationData.education?.schoolName || '',
+        major: notificationData.education?.major || '',
+        graduationYear: notificationData.education?.graduationYear || ''
+      },
+      trainingCourses: notificationData.trainingCourses || [],
+      expectedSalary: notificationData.expectedSalary,
+      contractType: notificationData.contractType,
+      documents: notificationData.documents || [],
+      preparationTasks: notificationData.preparationTasks || []
+    };
+
+    console.log('Updated notification data:', updatedNotification);
+
+    // Validate the updated data
+    const { error } = validateNotification(updatedNotification);
+    if (error) {
+      console.error('Validation error:', error);
+      return res.status(400).json({
+        message: 'Dữ liệu không hợp lệ',
+        errors: error.details.map(err => err.message)
+      });
+    }
+
+    // Update the notification
+    console.log('Updating notification with ID:', req.params.id);
+    try {
+      const notification = await Notification.findByIdAndUpdate(
+        req.params.id,
+        updatedNotification,
+        { new: true }
+      )
+      .populate('candidateId', 'name')
+      .populate('creator', 'fullName')
+      .populate('hrInCharge', 'fullName');
+
+      console.log('Updated notification:', notification);
+
+      res.json({
+        message: 'Cập nhật thông báo thành công',
+        data: notification
+      });
+    } catch (updateError) {
+      console.error('Error during notification update:', updateError);
+      if (updateError.name === 'ValidationError') {
+        return res.status(400).json({
+          message: 'Dữ liệu không hợp lệ',
+          errors: Object.values(updateError.errors).map(err => err.message)
+        });
+      }
+      throw updateError;
+    }
+  } catch (error) {
+    console.error('Error updating notification:', error);
     res.status(500).json({ message: 'Lỗi server' });
   }
 };
