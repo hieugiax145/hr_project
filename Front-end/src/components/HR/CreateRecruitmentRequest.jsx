@@ -115,12 +115,23 @@ const CreateRecruitmentRequest = () => {
       const mainLocation = selectedMainLocations[0] || '';
       const otherLocations = selectedMainLocations.slice(1);
 
-      const response = await api.post('/api/applications', {
+      // Ensure all required fields have values
+      const submissionData = {
         ...formData,
         mainLocation,
         otherLocations,
-        status: status
-      });
+        status: status,
+        // Provide default values for required fields if they're empty
+        jobDescription: formData.jobDescription || 'Mô tả công việc mặc định',
+        requirements: formData.requirements || 'Yêu cầu ứng viên mặc định',
+        benefits: formData.benefits || 'Quyền lợi mặc định',
+        currentSalary: formData.currentSalary || 'Mức lương hiện tại mặc định',
+        overflowSalary: formData.overflowSalary || 'Mức lương vượt quỹ mặc định'
+      };
+
+      console.log('Submitting data:', submissionData);
+
+      const response = await api.post('/api/applications', submissionData);
 
       if (response.data) {
         // Nếu là trạng thái "Đã nộp" (vượt quỹ), tạo thông báo cho CEO
