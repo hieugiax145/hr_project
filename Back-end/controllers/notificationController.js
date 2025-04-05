@@ -114,13 +114,7 @@ exports.createNotification = async (req, res) => {
       expectedSalary: notificationData.expectedSalary,
       contractType: notificationData.contractType,
       documents: notificationData.documents || [],
-      preparationTasks: notificationData.preparationTasks || [],
-      cv: candidate.cv ? candidate.cv.filter(cv => cv.url && cv.public_id && cv.fileName).map(cv => ({
-        url: cv.url,
-        public_id: cv.public_id,
-        fileName: cv.fileName,
-        uploadDate: cv.uploadDate || new Date()
-      })) : []
+      preparationTasks: notificationData.preparationTasks || []
     });
 
     // Log để kiểm tra dữ liệu trước khi lưu
@@ -129,9 +123,12 @@ exports.createNotification = async (req, res) => {
     try {
       await notification.save();
       
-      // Update candidate stage
-      candidate.stage = 'hired';
-      await candidate.save();
+      // Update candidate status - FIXED: Only update the stage field to avoid validation errors
+      await Candidate.findByIdAndUpdate(
+        candidate._id,
+        { stage: 'hired' },
+        { new: true }
+      );
 
       // Populate thông tin creator và hrInCharge trước khi trả về
       const populatedNotification = await Notification.findById(notification._id)
@@ -305,3 +302,4 @@ exports.getHRList = async (req, res) => {
     res.status(500).json({ message: 'Lỗi server' });
   }
 };
+

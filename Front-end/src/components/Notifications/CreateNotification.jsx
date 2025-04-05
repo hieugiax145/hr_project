@@ -350,7 +350,15 @@ const CreateNotification = () => {
         console.error('API Error details:', error.response?.data);
         console.error('Error status:', error.response?.status);
         console.error('Error message:', error.message);
-        message.error(error.response?.data?.message || 'Lỗi khi tạo thông báo');
+        
+        // Hiển thị thông báo lỗi chi tiết
+        if (error.response?.data?.errors && error.response.data.errors.length > 0) {
+          error.response.data.errors.forEach(err => {
+            message.error(err);
+          });
+        } else {
+          message.error(error.response?.data?.message || 'Lỗi khi tạo thông báo');
+        }
       }
     } catch (error) {
       console.error('Error creating notification:', error);

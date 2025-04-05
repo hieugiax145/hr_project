@@ -45,7 +45,7 @@ const storage = new CloudinaryStorage({
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024 // Giới hạn 5MB
+    fileSize: 10 * 1024 * 1024 // Giới hạn 10MB
   },
   fileFilter: function (req, file, cb) {
     // Chấp nhận cả file ảnh và PDF
@@ -70,6 +70,9 @@ const handleUpload = (req, res, next) => {
   uploadFields(req, res, function (err) {
     if (err instanceof multer.MulterError) {
       console.error('Multer error:', err);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ message: 'File quá lớn. Kích thước tối đa là 10MB.' });
+      }
       return res.status(400).json({ message: 'Lỗi khi upload file' });
     } else if (err) {
       console.error('Upload error:', err);
