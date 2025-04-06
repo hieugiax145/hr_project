@@ -53,7 +53,7 @@ const AddEventModal = ({ visible, onClose, onSave, selectedDate }) => {
             candidate._id && 
             candidate.name && 
             candidate.stage && 
-            !['rejected', 'hired'].includes(candidate.stage)
+            ['interview1', 'interview2'].includes(candidate.stage)
           );
           setCandidates(availableCandidates);
         } else {

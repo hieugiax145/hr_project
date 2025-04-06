@@ -34,7 +34,7 @@ exports.createNotification = async (req, res) => {
       return res.status(404).json({ message: 'Không tìm thấy ứng viên' });
     }
 
-    if (candidate.stage !== 'offer') {
+    if (!['offer', 'hired'].includes(candidate.stage)) {
       return res.status(400).json({ message: 'Ứng viên không đủ điều kiện' });
     }
 

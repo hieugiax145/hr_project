@@ -2,6 +2,8 @@ const Candidate = require('../models/Candidate');
 const Position = require('../models/Position');
 const cloudinary = require('cloudinary');
 const Application = require('../models/Application');
+const path = require('path');
+const fs = require('fs');
 
 // Lấy danh sách ứng viên theo vị trí
 exports.getCandidatesByPosition = async (req, res) => {
@@ -243,47 +245,82 @@ exports.deleteCandidate = async (req, res) => {
 // Cập nhật thông tin ứng viên
 exports.updateCandidate = async (req, res) => {
   try {
-    const { candidateId } = req.params;
-    const updateData = req.body;
+    const { id } = req.params;
+    const updateData = { ...req.body };
 
-    const candidate = await Candidate.findById(candidateId);
-    if (!candidate) {
-      return res.status(404).json({ message: 'Không tìm thấy ứng viên' });
+    // Xử lý upload CV nếu có
+    if (req.files && req.files.cv) {
+      const cvFile = req.files.cv;
+      const cvFileName = `${Date.now()}-${cvFile.name}`;
+      const cvPath = path.join(__dirname, '../uploads/cv', cvFileName);
+
+      // Di chuyển file vào thư mục uploads
+      await cvFile.mv(cvPath);
+
+      // Cập nhật đường dẫn CV mới
+      updateData.cvPath = `/uploads/cv/${cvFileName}`;
     }
 
-    // Cập nhật các trường thông tin
-    candidate.name = updateData.name || candidate.name;
-    candidate.email = updateData.email || candidate.email;
-    candidate.phone = updateData.phone || candidate.phone;
-    candidate.source = updateData.source || candidate.source;
-    candidate.customSource = updateData.customSource || candidate.customSource;
-    candidate.notes = updateData.notes || candidate.notes;
+    // Xử lý xóa CV cũ nếu có yêu cầu
+    if (req.body.deleteExistingCV === 'true') {
+      const candidate = await Candidate.findById(id);
+      if (candidate && candidate.cvPath) {
+        const oldCvPath = path.join(__dirname, '..', candidate.cvPath);
+        try {
+          await fs.promises.unlink(oldCvPath);
+        } catch (error) {
+          console.error('Error deleting old CV:', error);
+        }
+      }
+      updateData.cvPath = null;
+    }
 
-    await candidate.save();
+    // Kiểm tra email trùng lặp nếu có thay đổi email
+    if (updateData.email) {
+      const existingCandidate = await Candidate.findOne({
+        email: updateData.email,
+        _id: { $ne: id }
+      });
 
-    res.json({
+      if (existingCandidate) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email đã tồn tại trong hệ thống'
+        });
+      }
+    }
+
+    const candidate = await Candidate.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!candidate) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy ứng viên'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
       message: 'Cập nhật thông tin ứng viên thành công',
-      candidate
+      data: candidate
     });
   } catch (error) {
     console.error('Error updating candidate:', error);
-    
     if (error.name === 'ValidationError') {
-      return res.status(400).json({ 
+      return res.status(400).json({
+        success: false,
         message: 'Dữ liệu không hợp lệ',
         errors: Object.values(error.errors).map(err => err.message)
       });
     }
-
-    if (error.code === 11000) {
-      return res.status(400).json({ 
-        message: 'Email đã tồn tại trong hệ thống'
-      });
-    }
-
-    res.status(500).json({ 
-      message: 'Có lỗi xảy ra khi cập nhật thông tin ứng viên',
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server',
+      error: error.message
     });
   }
 };

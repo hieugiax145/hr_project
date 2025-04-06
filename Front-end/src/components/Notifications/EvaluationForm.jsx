@@ -7,6 +7,9 @@ import Sidebar from '../Sidebar/Sidebar';
 import { evaluationService } from '../../services/evaluationService';
 import { notificationService } from '../../services/notificationService';
 import html2pdf from 'html2pdf.js';
+import axios from 'axios';
+import moment from 'moment';
+import 'moment/locale/vi';
 
 const { Title } = Typography;
 const { Content } = Layout;
@@ -103,23 +106,20 @@ const EvaluationForm = () => {
     }]);
   };
 
-  const handleDeleteRow = (key) => {
-    if (tasks.length === 1) {
-      message.warning('Phải có ít nhất một hàng đánh giá');
-      return;
-    }
-    const newTasks = tasks.filter(item => item.key !== key);
-    // Cập nhật lại key cho các hàng còn lại
-    const updatedTasks = newTasks.map((task, index) => ({
-      ...task,
-      key: String(index + 1)
-    }));
-    setTasks(updatedTasks);
-  };
-
   // Xử lý lưu đánh giá
   const handleSave = async () => {
     try {
+      console.log('Saving evaluation with notification ID:', id);
+      
+      // Check if evaluation exists
+      let existingEvaluation = null;
+      try {
+        existingEvaluation = await evaluationService.getEvaluationByNotificationId(id);
+        console.log('Existing evaluation:', existingEvaluation);
+      } catch (error) {
+        console.log('No existing evaluation found');
+      }
+
       const evaluationData = {
         tasks,
         selfEvaluation,
@@ -129,10 +129,51 @@ const EvaluationForm = () => {
         evaluationPeriod
       };
 
+      // Save the evaluation
       await evaluationService.createOrUpdateEvaluation(id, evaluationData);
       message.success('Lưu đánh giá thành công');
+
+      // If this is the first save and we have the employee's email, send notification
+      if (!existingEvaluation && notification?.candidateId?.email) {
+        try {
+          const formData = new FormData();
+          formData.append('to', notification.candidateId.email);
+          formData.append('subject', `[RIKKEI ACADEMY] THÔNG BÁO KẾT THÚC GIAI ĐOẠN THỬ VIỆC - ${notification.candidateId.name}`);
+          formData.append('content', `
+Dear ${notification.candidateId.name},
+
+Phòng Nhân sự thông báo nhắc lịch kết thúc giai đoạn thử việc của Anh/Chị như sau:
+
+Họ tên : ${notification.candidateId.name}
+Vị trí: ${notification.position} trực thuộc Phòng: ${notification.department}
+Thời gian thử việc : từ ngày ${moment(notification.startDate).format('DD/MM/YYYY')} đến hết ngày ${moment(notification.endDate).format('DD/MM/YYYY')}
+
+Theo quy trình của Công ty, Anh/Chị vui lòng thực hiện Phiếu đánh giá kết quả thử việc bằng cách truy cập vào tài khoản đã được cấp để hoàn thành đánh giá.
+
+Phiếu đánh giá cần hoàn thiện trước ngày ${moment(notification.endDate).format('DD/MM/YYYY')} để đảm bảo việc thực hiện tiếp các thủ tục nhân sự đúng Quy định Công ty.  
+Trường hợp cần hỗ trợ, Anh/Chị vui lòng liên hệ trực tiếp.
+
+Trân trọng cảm ơn!`);
+
+          const response = await axios.post('http://localhost:8000/api/emails/send', formData, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+
+          if (response.status === 200) {
+            message.success('Đã gửi email thông báo cho nhân viên');
+          }
+        } catch (error) {
+          console.error('Error sending email:', error);
+          message.error('Không thể gửi email thông báo. Vui lòng thử lại sau.');
+        }
+      }
+
       navigate(`/notifications/${id}`);
     } catch (error) {
+      console.error('Error in handleSave:', error);
       message.error('Lỗi khi lưu đánh giá');
     }
   };

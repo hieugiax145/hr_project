@@ -43,6 +43,11 @@ const Calendar = () => {
 
   useEffect(() => {
     fetchEvents();
+    // Kiểm tra và xóa sự kiện đã qua thời gian mỗi 5 phút
+    const interval = setInterval(() => {
+      fetchEvents();
+    }, 300000); // 5 phút = 300000ms
+    return () => clearInterval(interval);
   }, []);
 
   const fetchEvents = async () => {
@@ -52,9 +57,50 @@ const Calendar = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setEvents(response.data);
+      // Kiểm tra và xóa sự kiện đã qua ngay sau khi fetch
+      await checkAndDeletePastEvents(response.data);
     } catch (error) {
       console.error('Error fetching events:', error);
       message.error('Không thể tải dữ liệu lịch');
+    }
+  };
+
+  const checkAndDeletePastEvents = async (currentEvents = events) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const now = dayjs();
+      const today = now.startOf('day');
+      
+      const pastEvents = currentEvents.filter(event => {
+        const eventDate = dayjs(event.date).startOf('day');
+        const eventEndTime = dayjs(event.endTime);
+        
+        // Kiểm tra nếu ngày của sự kiện nhỏ hơn ngày hiện tại
+        // hoặc nếu cùng ngày thì kiểm tra thời gian kết thúc đã qua chưa
+        return eventDate.isBefore(today) || 
+               (eventDate.isSame(today) && eventEndTime.isBefore(now));
+      });
+
+      if (pastEvents.length > 0) {
+        console.log('Found past events to delete:', pastEvents);
+        // Xóa từng sự kiện đã qua thời gian
+        for (const event of pastEvents) {
+          try {
+            await axios.delete(`http://localhost:8000/api/interviews/${event._id}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            console.log('Successfully deleted event:', event._id);
+          } catch (error) {
+            console.error(`Error deleting past event ${event._id}:`, error);
+          }
+        }
+        // Cập nhật lại danh sách sự kiện
+        fetchEvents();
+      }
+    } catch (error) {
+      console.error('Error checking past events:', error);
     }
   };
 

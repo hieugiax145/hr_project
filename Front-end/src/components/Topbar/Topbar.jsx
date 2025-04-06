@@ -33,6 +33,17 @@ const Topbar = () => {
     });
   };
 
+  const handleBackClick = () => {
+    const state = location.state;
+    if (state?.from === 'jobs-candidates' && state?.positionId) {
+      navigate(`/positions/${state.positionId}/candidates`);
+    } else if (state?.from === 'candidates') {
+      navigate('/candidates');
+    } else {
+      navigate(-1);
+    }
+  };
+
   // Map routes to page titles
   const getPageTitle = (pathname) => {
     const routes = {
@@ -132,7 +143,7 @@ const Topbar = () => {
               <Button 
                 type="text" 
                 icon={<ArrowLeftOutlined />} 
-                onClick={() => navigate(-1)}
+                onClick={handleBackClick}
                 className="flex items-center"
               >
                 Quay lại

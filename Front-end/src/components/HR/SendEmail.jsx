@@ -21,6 +21,7 @@ const SendEmail = () => {
   const [fileList, setFileList] = useState([]);
   const [emailContent, setEmailContent] = useState('');
   const [upcomingInterview, setUpcomingInterview] = useState(null);
+  const [candidate, setCandidate] = useState(null);
 
   // Quill modules configuration
   const modules = {
@@ -137,6 +138,8 @@ TM. HỘI ĐỒNG TUYỂN DỤNG`;
               : `[RIKKEI ACADEMY] THƯ MỜI ${candidate.name} CHỨC VỤ ỨNG TUYỂN ${candidate.position} GIAI ĐOẠN ${getStatusText(candidate.stage)}`,
             content: emailContent
           });
+
+          setCandidate(candidate);
         }
       } catch (error) {
         console.error('Error fetching candidate data:', error);
@@ -146,6 +149,91 @@ TM. HỘI ĐỒNG TUYỂN DỤNG`;
 
     fetchCandidateData();
   }, [id, form]);
+
+  useEffect(() => {
+    if (candidate?.stage === 'hired') {
+      const hiredTemplate = `
+THƯ MỜI NHẬN VIỆC
+
+Kính gửi: ${candidate?.name},
+
+Hội đồng Tuyển dụng và Ban lãnh đạo Rikkei Academy chân thành cảm ơn ${candidate?.gender === 'Nam' ? 'anh' : 'chị'} đã dành thời gian quý báu đến trao đổi công việc tại công ty chúng tôi. Hội đồng tuyển dụng và Ban lãnh đạo công ty ghi nhận năng lực và lòng nhiệt thành của ${candidate?.gender === 'Nam' ? 'anh' : 'chị'}.
+
+Ban lãnh đạo Công ty trân trọng mời ${candidate?.gender === 'Nam' ? 'anh' : 'chị'} cộng tác cùng chúng tôi:
+
+<div style="border: 1px solid #000; margin: 20px 0;">
+  <div style="border-bottom: 1px solid #000;">
+    <table style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <td style="border-right: 1px solid #000; padding: 8px; width: 30%; vertical-align: top;">Chức danh:</td>
+        <td style="padding: 8px;">${candidate?.position || ''}</td>
+      </tr>
+    </table>
+  </div>
+  <div style="border-bottom: 1px solid #000;">
+    <table style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <td style="border-right: 1px solid #000; padding: 8px; width: 30%; vertical-align: top;">Bộ phận - Phòng ban:</td>
+        <td style="padding: 8px;">${candidate?.department || ''}</td>
+      </tr>
+    </table>
+  </div>
+  <div style="border-bottom: 1px solid #000;">
+    <table style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <td style="border-right: 1px solid #000; padding: 8px; width: 30%; vertical-align: top;">Thời gian làm việc:</td>
+        <td style="padding: 8px;">8h00 - 17h30 từ thứ 2 - thứ 6</td>
+      </tr>
+    </table>
+  </div>
+  <div style="border-bottom: 1px solid #000;">
+    <table style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <td style="border-right: 1px solid #000; padding: 8px; width: 30%; vertical-align: top;">Địa điểm làm việc:</td>
+        <td style="padding: 8px;">Tầng 7, Tòa nhà Sông Đà, Phạm Hùng, Nam Từ Liêm, Hà Nội</td>
+      </tr>
+    </table>
+  </div>
+  <div style="border-bottom: 1px solid #000;">
+    <table style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <td style="border-right: 1px solid #000; padding: 8px; width: 30%; vertical-align: top;">Mức lương chính thức:</td>
+        <td style="padding: 8px;">2.000.000 VNĐ/tháng lương</td>
+      </tr>
+    </table>
+  </div>
+  <div style="border-bottom: 1px solid #000;">
+    <table style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <td style="border-right: 1px solid #000; padding: 8px; width: 30%; vertical-align: top;">Phụ cấp:</td>
+        <td style="padding: 8px;">Vé xe tháng tại công ty</td>
+      </tr>
+    </table>
+  </div>
+  <div>
+    <table style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <td style="border-right: 1px solid #000; padding: 8px; width: 30%; vertical-align: top;">Ngày nhận việc:</td>
+        <td style="padding: 8px;">05-08-24</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<div style="color: red; font-style: italic; margin: 20px 0;">
+${candidate?.gender === 'Nam' ? 'Anh' : 'Chị'} vui lòng trả lời xác nhận & hoàn thành form thông tin nhân sự sau trước 23h ngày 02/08/2024 (THÔNG TIN NHÂN VIÊN MỚI - RIKKEI ACADEMY).
+</div>
+
+Chúng tôi hoan nghênh những đóng góp của ${candidate?.gender === 'Nam' ? 'anh' : 'chị'} vào sự nghiệp phát triển của Công ty. Khi tới nhận việc, đề nghị ${candidate?.gender === 'Nam' ? 'anh' : 'chị'} dành thời gian tìm hiểu thêm các thông tin về Tổ chức, mô tả công việc của mình, mặc trang phục lịch sự, phù hợp với môi trường công sở, mang laptop cá nhân để phục vụ công việc.
+
+Mọi thắc mắc vui lòng liên hệ Ms.Duyên(HR): 0385324236`;
+
+      form.setFieldsValue({
+        content: hiredTemplate,
+        subject: 'THƯ MỜI NHẬN VIỆC - RIKKEI ACADEMY'
+      });
+    }
+  }, [candidate, form]);
 
   // File upload configuration
   const uploadProps = {

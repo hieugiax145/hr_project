@@ -30,14 +30,39 @@ exports.getPositions = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 8;
     const skip = (page - 1) * limit;
+    const search = req.query.search || '';
+    const type = req.query.type;
+    const mode = req.query.mode;
 
+    // Xây dựng query
+    let query = {};
+
+    // Thêm điều kiện tìm kiếm
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { department: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Thêm điều kiện lọc theo type
+    if (type && type !== 'all') {
+      query.type = type;
+    }
+
+    // Thêm điều kiện lọc theo mode
+    if (mode && mode !== 'all') {
+      query.mode = mode;
+    }
+
+    // Thực hiện query với các điều kiện
     const [positions, total] = await Promise.all([
-      Position.find()
+      Position.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .populate('creator', 'name'),
-      Position.countDocuments()
+      Position.countDocuments(query)
     ]);
 
     res.json({

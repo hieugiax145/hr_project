@@ -262,6 +262,21 @@ const JobsCandidates = () => {
       notes: candidate.notes,
       cvLink: candidate.cvLink
     });
+    
+    // Hiển thị các file CV đã upload
+    if (candidate.cv && candidate.cv.length > 0) {
+      const existingFiles = candidate.cv.map(file => ({
+        uid: file._id || file.public_id,
+        name: file.fileName || file.originalname || 'CV',
+        status: 'done',
+        url: file.url,
+        public_id: file.public_id
+      }));
+      setFileList(existingFiles);
+    } else {
+      setFileList([]);
+    }
+    
     setIsEditModalVisible(true);
   };
 
@@ -273,13 +288,50 @@ const JobsCandidates = () => {
         return;
       }
 
+      // Tạo FormData để gửi file
+      const formData = new FormData();
+      formData.append('name', values.name);
+      formData.append('email', values.email);
+      formData.append('phone', values.phone);
+      formData.append('source', values.source);
+      if (values.source === 'Khác') {
+        formData.append('customSource', values.customSource);
+      }
+      if (values.cvLink) {
+        formData.append('cvLink', values.cvLink);
+      }
+      if (values.notes) {
+        formData.append('notes', values.notes);
+      }
+
+      // Xử lý file CV
+      if (values.cv?.fileList) {
+        // Kiểm tra xem có file nào bị xóa không
+        const hasDeletedFiles = editingCandidate.cv?.some(oldFile => 
+          !values.cv.fileList.some(newFile => 
+            newFile.uid === oldFile._id || newFile.uid === oldFile.public_id
+          )
+        );
+
+        if (hasDeletedFiles) {
+          formData.append('deleteExistingCV', 'true');
+        }
+
+        // Thêm các file mới
+        values.cv.fileList.forEach((file) => {
+          if (file.originFileObj) {
+            formData.append('cv', file.originFileObj);
+          }
+        });
+      }
+
       const response = await axios.patch(
         `${API_BASE_URL}/candidates/${editingCandidate._id}`,
-        values,
+        formData,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'multipart/form-data'
           }
         }
       );
@@ -288,6 +340,7 @@ const JobsCandidates = () => {
         message.success('Cập nhật thông tin ứng viên thành công');
         setIsEditModalVisible(false);
         editForm.resetFields();
+        setFileList([]);
         
         // Refresh candidates list
         const candidatesResponse = await axios.get(`${API_BASE_URL}/positions/${id}/candidates`, {
@@ -303,7 +356,11 @@ const JobsCandidates = () => {
       }
     } catch (error) {
       console.error('Error updating candidate:', error);
-      message.error('Có lỗi xảy ra khi cập nhật thông tin ứng viên');
+      if (error.response?.status === 404) {
+        message.error('Không tìm thấy ứng viên');
+      } else {
+        message.error('Có lỗi xảy ra khi cập nhật thông tin ứng viên');
+      }
     }
   };
 
@@ -390,6 +447,7 @@ const JobsCandidates = () => {
                       <div
                         key={candidate._id}
                         className="bg-[#F4F2FF] rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => navigate(`/candidates/${candidate._id}`, { state: { from: 'jobs-candidates', positionId: id } })}
                       >
                         <div className="flex justify-between items-start mb-2">
                           <div>
@@ -406,9 +464,15 @@ const JobsCandidates = () => {
                               {candidate.cv && candidate.cv.length > 0 && (
                                 <div className="flex items-center gap-1">
                                   <span>📄</span>
-                                  <a href={candidate.cv[0].url} target="_blank" rel="noopener noreferrer" className="text-[#7B61FF] hover:underline">
+                                  <span 
+                                    className="text-[#7B61FF] hover:underline cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/candidates/${candidate._id}`, { state: { from: 'jobs-candidates', positionId: id } });
+                                    }}
+                                  >
                                     Xem CV
-                                  </a>
+                                  </span>
                                   {candidate.cv.length > 1 && (
                                     <span className="text-xs text-gray-400">(+{candidate.cv.length - 1})</span>
                                   )}
@@ -611,7 +675,10 @@ const JobsCandidates = () => {
           <Modal
             title="Chỉnh sửa thông tin ứng viên"
             open={isEditModalVisible}
-            onCancel={() => setIsEditModalVisible(false)}
+            onCancel={() => {
+              setIsEditModalVisible(false);
+              setFileList([]);
+            }}
             footer={null}
             width={500}
           >
@@ -679,6 +746,39 @@ const JobsCandidates = () => {
               </Form.Item>
 
               <Form.Item
+                name="cv"
+                label="CV ứng viên"
+                valuePropName="file"
+                getValueFromEvent={(e) => ({
+                  fileList: Array.isArray(e) ? e : e && e.fileList,
+                })}
+              >
+                <Upload.Dragger
+                  name="cv"
+                  multiple={true}
+                  maxCount={5}
+                  fileList={fileList}
+                  beforeUpload={(file) => {
+                    const isLt5M = file.size / 1024 / 1024 < 5;
+                    if (!isLt5M) {
+                      message.error('File phải nhỏ hơn 5MB');
+                      return Upload.LIST_IGNORE;
+                    }
+                    return false; // Prevent auto upload
+                  }}
+                  onChange={(info) => {
+                    setFileList(info.fileList);
+                  }}
+                >
+                  <p className="ant-upload-drag-icon">
+                    <InboxOutlined />
+                  </p>
+                  <p className="ant-upload-text">Click hoặc kéo thả file vào đây</p>
+                  <p className="ant-upload-hint">Tối đa 5 file, mỗi file không quá 5MB</p>
+                </Upload.Dragger>
+              </Form.Item>
+
+              <Form.Item
                 name="cvLink"
                 label="Link CV (tùy chọn)"
               >
@@ -696,7 +796,10 @@ const JobsCandidates = () => {
               </Form.Item>
 
               <div className="flex justify-end gap-2">
-                <Button onClick={() => setIsEditModalVisible(false)}>
+                <Button onClick={() => {
+                  setIsEditModalVisible(false);
+                  setFileList([]);
+                }}>
                   Hủy
                 </Button>
                 <Button type="primary" htmlType="submit" className="bg-[#7B61FF] text-white">

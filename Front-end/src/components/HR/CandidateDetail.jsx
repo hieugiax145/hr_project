@@ -248,9 +248,15 @@ const CandidateDetail = () => {
 
   const handleDownloadCV = async () => {
     try {
+      // Kiểm tra xem có CV nào không
+      if (!candidate.cv || candidate.cv.length === 0) {
+        message.error('Không có CV để tải');
+        return;
+      }
+      
       // Tạo link tải trực tiếp từ Cloudinary
       const link = document.createElement('a');
-      link.href = candidate.cv.url;
+      link.href = candidate.cv[0].url; // Lấy URL của CV đầu tiên
       link.setAttribute('download', `CV-${candidate.name}.pdf`);
       document.body.appendChild(link);
       link.click();
@@ -262,8 +268,14 @@ const CandidateDetail = () => {
   };
 
   const handleViewCV = () => {
+    // Kiểm tra xem có CV nào không
+    if (!candidate.cv || candidate.cv.length === 0) {
+      message.error('Không có CV để xem');
+      return;
+    }
+    
     // Sử dụng Google Docs Viewer để xem PDF
-    const googleDocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(candidate.cv.url)}&embedded=true`;
+    const googleDocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(candidate.cv[0].url)}&embedded=true`;
     window.open(googleDocsUrl, '_blank');
   };
 
@@ -622,18 +634,15 @@ const CandidateDetail = () => {
                   </div>
                 </div>
                 <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
-                  {candidate.cv && (
-                    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                      <iframe
-                        src={`https://docs.google.com/viewer?url=${encodeURIComponent(candidate.cv.url)}&embedded=true`}
-                        style={{ 
-                          width: '100%', 
-                          height: '100%', 
-                          border: 'none',
-                          backgroundColor: '#f5f5f5'
-                        }}
-                        title="CV Viewer"
-                      />
+                  {candidate.cv && candidate.cv.length > 0 ? (
+                    <iframe
+                      style={{ width: '100%', height: '500px', border: 'none' }}
+                      src={`https://docs.google.com/viewer?url=${encodeURIComponent(candidate.cv[0].url)}&embedded=true`}
+                      title="CV Preview"
+                    />
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '20px' }}>
+                      Không có CV để xem
                     </div>
                   )}
                 </div>

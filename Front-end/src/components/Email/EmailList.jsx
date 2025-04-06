@@ -345,8 +345,6 @@ const EmailList = () => {
                     }}>
                       <h2 style={{ margin: 0 }}>{selectedEmail.subject}</h2>
                       <Space>
-                        <Button icon={<DeleteOutlined />}>Xóa</Button>
-                        <Button icon={<StarOutlined />}>Đánh dấu</Button>
                         <Button icon={<CloseOutlined />} onClick={handleCloseDetail}>Đóng</Button>
                       </Space>
                     </div>
