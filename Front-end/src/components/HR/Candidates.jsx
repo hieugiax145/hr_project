@@ -17,6 +17,30 @@ const Candidates = () => {
     fetchCandidates();
   }, []);
 
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchCandidates();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchCandidates();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const fetchCandidates = async () => {
     try {
       setLoading(true);
@@ -179,6 +203,18 @@ const Candidates = () => {
       render: (stage) => (
         <Tag color={getStatusColor(stage)} style={{ minWidth: '70px', textAlign: 'center' }}>
           {getStatusText(stage)}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Trạng thái email',
+      key: 'emailStatus',
+      dataIndex: 'emailStatus',
+      width: '10%',
+      align: 'center',
+      render: (emailStatus) => (
+        <Tag color={emailStatus === 'Đã gửi' ? 'success' : 'default'} style={{ minWidth: '70px', textAlign: 'center' }}>
+          {emailStatus || ''}
         </Tag>
       ),
     },

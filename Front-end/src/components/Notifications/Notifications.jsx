@@ -9,12 +9,73 @@ const Notifications = () => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedFilters, setSelectedFilters] = useState([]);
+  const [selectedFilter, setSelectedFilter] = useState('');
+  const [filterValue, setFilterValue] = useState('');
   const [searchText, setSearchText] = useState('');
+  const [filteredNotifications, setFilteredNotifications] = useState([]);
 
   useEffect(() => {
     fetchNotifications();
   }, []);
+
+  useEffect(() => {
+    filterNotifications();
+  }, [notifications, searchText, selectedFilter, filterValue]);
+
+  const filterNotifications = () => {
+    let filtered = [...notifications];
+
+    // Tìm kiếm theo text
+    if (searchText) {
+      filtered = filtered.filter(notification => 
+        notification.candidateId?.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+        notification.position?.toLowerCase().includes(searchText.toLowerCase()) ||
+        notification.department?.toLowerCase().includes(searchText.toLowerCase()) ||
+        notification.branch?.toLowerCase().includes(searchText.toLowerCase()) ||
+        notification.creator?.fullName?.toLowerCase().includes(searchText.toLowerCase()) ||
+        notification.hrInCharge?.fullName?.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+
+    // Lọc theo tiêu chí đã chọn
+    if (selectedFilter && filterValue) {
+      switch (selectedFilter) {
+        case 'department':
+          filtered = filtered.filter(notification => 
+            notification.department?.toLowerCase().includes(filterValue.toLowerCase())
+          );
+          break;
+        case 'branch':
+          filtered = filtered.filter(notification => 
+            notification.branch?.toLowerCase().includes(filterValue.toLowerCase())
+          );
+          break;
+        case 'creator':
+          filtered = filtered.filter(notification => 
+            notification.creator?.fullName?.toLowerCase().includes(filterValue.toLowerCase())
+          );
+          break;
+        case 'hrInCharge':
+          filtered = filtered.filter(notification => 
+            notification.hrInCharge?.fullName?.toLowerCase().includes(filterValue.toLowerCase())
+          );
+          break;
+        default:
+          break;
+      }
+    }
+
+    setFilteredNotifications(filtered);
+  };
+
+  const handleFilterChange = (value) => {
+    setSelectedFilter(value);
+    setFilterValue(''); // Reset filter value when changing filter type
+  };
+
+  const getUniqueValues = (field) => {
+    return [...new Set(notifications.map(item => item[field]).filter(Boolean))];
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -134,33 +195,43 @@ const Notifications = () => {
             >
               + Mới
             </Button>
-            <Select
-              mode="multiple"
-              style={{ width: '200px' }}
-              placeholder={
-                <div className="flex items-center gap-2">
-                  <FilterOutlined />
-                  <span>Bộ lọc</span>
-                </div>
-              }
-              value={selectedFilters}
-              onChange={setSelectedFilters}
-              options={[
-                { value: 'department', label: 'Phòng ban' },
-                { value: 'position', label: 'Chức vụ' },
-                { value: 'date', label: 'Ngày tạo' }
-              ]}
-            />
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <FilterOutlined />
+                <span>Bộ lọc</span>
+              </div>
+              <Select
+                style={{ width: '150px' }}
+                placeholder="Chọn tiêu chí lọc"
+                value={selectedFilter}
+                onChange={handleFilterChange}
+                options={[
+                  { value: 'all', label: 'Tất cả' },
+                  { value: 'department', label: 'Theo Phòng' },
+                  { value: 'branch', label: 'Theo Chi Nhánh' },
+                  { value: 'creator', label: 'Theo Người Tạo' },
+                  { value: 'hrInCharge', label: 'Theo Nhân sự phụ trách' }
+                ]}
+              />
+              {selectedFilter && selectedFilter !== 'all' && (
+                <Input
+                  placeholder={`Nhập ${selectedFilter === 'department' ? 'phòng' : selectedFilter === 'branch' ? 'chi nhánh' : selectedFilter === 'creator' ? 'người tạo' : 'nhân sự phụ trách'}...`}
+                  value={filterValue}
+                  onChange={(e) => setFilterValue(e.target.value)}
+                  className="w-[200px]"
+                />
+              )}
+            </div>
           </div>
         </div>
 
         <Table
           columns={columns}
-          dataSource={notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))}
+          dataSource={filteredNotifications}
           rowKey="_id"
           loading={loading}
           pagination={{
-            total: notifications.length,
+            total: filteredNotifications.length,
             pageSize: 5,
             showSizeChanger: false,
             showQuickJumper: false,

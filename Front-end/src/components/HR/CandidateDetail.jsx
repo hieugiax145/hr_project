@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout, Button, Tag, message, Modal, Form, Input, Select, Avatar, Card } from 'antd';
-import { ArrowLeftOutlined, EditOutlined, UserOutlined, MessageOutlined, DownloadOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, BarChartOutlined, RiseOutlined, CommentOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, EditOutlined, UserOutlined, MessageOutlined, DownloadOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, BarChartOutlined, RiseOutlined, CommentOutlined, CalendarOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
 import 'moment/locale/vi';
+import dayjs from 'dayjs';
+import AddEventModal from '../Calendar/AddEventModal';
 
 const { Content } = Layout;
 const { TextArea } = Input;
@@ -12,7 +14,54 @@ const API_BASE_URL = 'http://localhost:8000/api';
 
 moment.locale('vi');
 
-const RecruitmentStages = ({ currentStage }) => {
+const RecruitmentStages = ({ currentStage, position }) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    console.log('Clicking recruitment stages');
+    console.log('Position:', position);
+    if (position) {
+      // Tìm vị trí tuyển dụng dựa trên tên vị trí
+      const token = localStorage.getItem('token');
+      axios.get(`${API_BASE_URL}/positions`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      .then(response => {
+        if (response.data.data && response.data.data.length > 0) {
+          // Tìm vị trí có tên gần giống nhất
+          const positions = response.data.data;
+          const normalizedSearchPosition = position.toLowerCase().trim();
+          
+          const matchedPosition = positions.find(p => {
+            const normalizedTitle = p.title.toLowerCase().trim();
+            return normalizedTitle.includes(normalizedSearchPosition) || 
+                   normalizedSearchPosition.includes(normalizedTitle);
+          });
+
+          if (matchedPosition) {
+            console.log('Found matching position:', matchedPosition);
+            navigate(`/positions/${matchedPosition._id}/candidates`);
+          } else {
+            console.log('No matching position found');
+            message.error('Không tìm thấy vị trí tuyển dụng');
+          }
+        } else {
+          console.log('No positions found');
+          message.error('Không tìm thấy vị trí tuyển dụng');
+        }
+      })
+      .catch(error => {
+        console.error('Error finding position:', error);
+        message.error('Có lỗi xảy ra khi tìm vị trí tuyển dụng');
+      });
+    } else {
+      console.log('No position found');
+      message.error('Không tìm thấy thông tin vị trí tuyển dụng');
+    }
+  };
+
   const getStageColor = (stageName, currentStage) => {
     const stageOrder = {
       'new': 0,
@@ -61,13 +110,17 @@ const RecruitmentStages = ({ currentStage }) => {
   };
 
   return (
-    <div style={{ 
-      background: 'white',
-      borderRadius: '8px',
-      padding: '24px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      marginBottom: '16px'
-    }}>
+    <div 
+      style={{ 
+        background: 'white',
+        borderRadius: '8px',
+        padding: '24px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        marginBottom: '16px',
+        cursor: 'pointer'
+      }}
+      onClick={handleClick}
+    >
       <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: 500 }}>Giai đoạn tuyển dụng</h3>
       <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
         <div style={{ 
@@ -130,6 +183,7 @@ const CandidateDetail = () => {
   const [comments, setComments] = useState([]);
   const [form] = Form.useForm();
   const [commentForm] = Form.useForm();
+  const [isAddEventModalVisible, setIsAddEventModalVisible] = useState(false);
 
   const fetchCandidateDetail = useCallback(async () => {
     try {
@@ -154,6 +208,7 @@ const CandidateDetail = () => {
       ]);
 
       if (candidateResponse.status === 200) {
+        console.log('Candidate data:', candidateResponse.data.candidate);
         setCandidate(candidateResponse.data.candidate);
       }
 
@@ -314,6 +369,79 @@ const CandidateDetail = () => {
     } catch (error) {
       console.error('Error adding comment:', error);
       message.error('Có lỗi xảy ra khi thêm nhận xét');
+    }
+  };
+
+  const handleAddEvent = async (values) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('Vui lòng đăng nhập lại');
+        return;
+      }
+
+      const eventDate = dayjs(values.date);
+      const startTime = dayjs(values.startTime);
+      const endTime = dayjs(values.endTime);
+
+      const startDateTime = eventDate
+        .hour(startTime.hour())
+        .minute(startTime.minute())
+        .second(0)
+        .millisecond(0);
+
+      const endDateTime = eventDate
+        .hour(endTime.hour())
+        .minute(endTime.minute())
+        .second(0)
+        .millisecond(0);
+
+      if (endDateTime.isBefore(startDateTime)) {
+        message.error('Thời gian kết thúc phải sau thời gian bắt đầu');
+        return;
+      }
+
+      const formattedData = {
+        title: values.title?.trim(),
+        date: eventDate.toISOString(),
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
+        eventType: values.eventType,
+        location: values.location?.trim() || '',
+        room: values.room,
+        description: values.description?.trim() || '',
+        type: 'interview',
+        attendees: values.attendees || [],
+        candidate: id,
+        beforeEvent: values.beforeEvent || 5,
+        allDay: values.allDay || false
+      };
+
+      if (!formattedData.title) {
+        message.error('Vui lòng nhập tiêu đề');
+        return;
+      }
+
+      const response = await axios.post('http://localhost:8000/api/interviews', formattedData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.status === 201 || response.status === 200) {
+        message.success('Thêm lịch phỏng vấn thành công');
+        setIsAddEventModalVisible(false);
+        fetchCandidateDetail();
+      }
+    } catch (error) {
+      console.error('Error adding event:', error);
+      if (error.response?.status === 401) {
+        message.error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại');
+      } else {
+        const errorMessage = error.response?.data?.message || 'Không thể thêm lịch phỏng vấn';
+        message.error(errorMessage);
+      }
     }
   };
 
@@ -598,7 +726,10 @@ const CandidateDetail = () => {
               overflow: 'hidden'
             }}>
               {/* Recruitment Stages */}
-              <RecruitmentStages currentStage={candidate.stage} />
+              <RecruitmentStages 
+                currentStage={candidate.stage} 
+                position={candidate.position}
+              />
 
               {/* CV Viewer */}
               <div style={{ 
@@ -628,9 +759,19 @@ const CandidateDetail = () => {
                     <Button 
                       icon={<MessageOutlined />}
                       onClick={() => navigate(`/candidates/${id}/send-email`)}
+                      style={{ marginRight: 8 }}
                     >
                       Gửi mail
                     </Button>
+                    {(candidate.stage === 'interview1' || candidate.stage === 'interview2') && (
+                      <Button
+                        type="primary"
+                        icon={<CalendarOutlined />}
+                        onClick={() => setIsAddEventModalVisible(true)}
+                      >
+                        Tạo lịch phỏng vấn
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
@@ -765,6 +906,13 @@ const CandidateDetail = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      <AddEventModal
+        visible={isAddEventModalVisible}
+        onClose={() => setIsAddEventModalVisible(false)}
+        onSave={handleAddEvent}
+        selectedDate={dayjs()}
+      />
     </Layout>
   );
 };

@@ -214,10 +214,6 @@ const CEORecruitmentRequests = () => {
           <div className="mb-4">
             <div className="flex justify-between items-center">
               <div className="flex gap-2">
-                <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-[10px] hover:border-[#8D75F5] hover:text-[#8D75F5]">
-                  <IoSettingsSharp size={16} />
-                  <span>Thực hiện</span>
-                </button>
               </div>
             </div>
           </div>

@@ -344,6 +344,7 @@ exports.getAllCandidates = async (req, res) => {
         customSource: candidate.customSource,
         cv: candidate.cv,
         notes: candidate.notes,
+        emailStatus: candidate.emailStatus,
         createdAt: candidate.createdAt
       }))
     });
@@ -423,5 +424,71 @@ exports.getCandidatesForCalendar = async (req, res) => {
   } catch (error) {
     console.error('Error fetching candidates for calendar:', error);
     res.status(500).json({ message: 'Có lỗi xảy ra khi tải danh sách ứng viên' });
+  }
+};
+
+// Cập nhật trạng thái email của ứng viên
+exports.updateCandidateEmailStatus = async (req, res) => {
+  try {
+    const { candidateId } = req.params;
+    const { emailStatus } = req.body;
+
+    console.log('Starting email status update:', {
+      candidateId,
+      emailStatus,
+      body: req.body,
+      headers: req.headers
+    });
+
+    // Kiểm tra ứng viên có tồn tại không
+    const candidate = await Candidate.findById(candidateId);
+    if (!candidate) {
+      console.log('Candidate not found:', candidateId);
+      return res.status(404).json({ message: 'Không tìm thấy ứng viên' });
+    }
+
+    console.log('Found candidate:', candidate);
+
+    // Cập nhật trạng thái email
+    const updatedCandidate = await Candidate.findByIdAndUpdate(
+      candidateId,
+      { $set: { emailStatus: emailStatus } },
+      { new: true }
+    );
+
+    console.log('Updated candidate:', updatedCandidate);
+
+    if (!updatedCandidate) {
+      console.log('Update failed - candidate not found after update');
+      return res.status(500).json({ message: 'Cập nhật thất bại' });
+    }
+
+    res.json({
+      message: 'Cập nhật trạng thái email thành công',
+      candidate: updatedCandidate
+    });
+  } catch (error) {
+    console.error('Error updating candidate email status:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      message: 'Có lỗi xảy ra khi cập nhật trạng thái email',
+      error: error.message 
+    });
+  }
+};
+
+const sendEmail = async (req, res) => {
+  try {
+    // Kiểm tra quyền gửi mail
+    if (req.user.role === 'department_head' && req.user.department !== 'hr') {
+      return res.status(403).json({ 
+        message: 'Bạn không có quyền thực hiện chức năng này'
+      });
+    }
+
+    // ... existing code for sending email ...
+  } catch (error) {
+    console.error('Error in sendEmail:', error);
+    res.status(500).json({ message: 'Lỗi khi gửi email' });
   }
 }; 

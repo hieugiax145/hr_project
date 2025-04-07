@@ -341,46 +341,54 @@ const RecruitmentRequests = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {currentRequests.map((request, index) => (
-                    <tr 
-                      key={request._id} 
-                      className="border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
-                      onClick={() => {
-                        if (request.status === 'Đã nộp') {
-                          navigate(`/hr/recruitment-requests/${request._id}/edit`);
-                        } else {
-                          navigate(`/hr/recruitment-requests/${request._id}`);
-                        }
-                      }}
-                    >
-                      <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                        <input 
-                          type="checkbox" 
-                          className="rounded border-gray-300"
-                          checked={selectedRequests.includes(request._id)}
-                          onChange={() => handleCheckboxChange(request._id)}
-                        />
-                      </td>
-                      <td className="p-4 text-sm" onClick={(e) => e.stopPropagation()}>
-                        {startIndex + index + 1}
-                      </td>
-                      <td className="p-4 text-sm">
-                        {request.userId?.fullName || request.requester?.fullName || 'N/A'}
-                      </td>
-                      <td className="p-4 text-sm">
-                        {request.userId?.fullName || request.requester?.fullName || 'N/A'}
-                      </td>
-                      <td className="p-4 text-sm">{request.position}</td>
-                      <td className="p-4 text-sm">{request.quantity}</td>
-                      <td className="p-4 text-sm">{request.department}</td>
-                      <td className="p-4 text-sm">
-                        {request.createdAt ? formatDate(request.createdAt) : 'N/A'}
-                      </td>
-                      <td className="p-4">
-                        <span className={getStatusColor(request.status)}>{request.status}</span>
+                  {currentRequests.length === 0 ? (
+                    <tr>
+                      <td colSpan="9" className="p-4 text-center text-gray-500">
+                        Không có yêu cầu tuyển dụng nào
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    currentRequests.map((request, index) => (
+                      <tr 
+                        key={request._id} 
+                        className="border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
+                        onClick={() => {
+                          if (request.status === 'Đã nộp') {
+                            navigate(`/hr/recruitment-requests/${request._id}/edit`);
+                          } else {
+                            navigate(`/hr/recruitment-requests/${request._id}`);
+                          }
+                        }}
+                      >
+                        <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                          <input 
+                            type="checkbox" 
+                            className="rounded border-gray-300"
+                            checked={selectedRequests.includes(request._id)}
+                            onChange={() => handleCheckboxChange(request._id)}
+                          />
+                        </td>
+                        <td className="p-4 text-sm" onClick={(e) => e.stopPropagation()}>
+                          {startIndex + index + 1}
+                        </td>
+                        <td className="p-4 text-sm">
+                          {request.userId?.fullName || request.requester?.fullName || 'N/A'}
+                        </td>
+                        <td className="p-4 text-sm">
+                          {request.userId?.fullName || request.requester?.fullName || 'N/A'}
+                        </td>
+                        <td className="p-4 text-sm">{request.position}</td>
+                        <td className="p-4 text-sm">{request.quantity}</td>
+                        <td className="p-4 text-sm">{request.department}</td>
+                        <td className="p-4 text-sm">
+                          {request.createdAt ? formatDate(request.createdAt) : 'N/A'}
+                        </td>
+                        <td className="p-4">
+                          <span className={getStatusColor(request.status)}>{request.status}</span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

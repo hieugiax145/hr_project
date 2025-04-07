@@ -48,6 +48,7 @@ const authorize = (...roles) => {
       return res.status(401).json({ message: 'Vui lòng đăng nhập để thực hiện chức năng này' });
     }
 
+    // Kiểm tra role
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({ 
         message: 'Bạn không có quyền thực hiện chức năng này',
@@ -55,6 +56,13 @@ const authorize = (...roles) => {
         requiredRoles: roles
       });
     }
+
+    // Thêm logic kiểm tra phòng ban cho trưởng phòng ban
+    if (req.user.role === 'department_head' && req.user.department !== 'hr') {
+      // Lưu thông tin phòng ban vào request để các controller có thể sử dụng
+      req.userDepartment = req.user.department;
+    }
+
     next();
   };
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Form, Input, Button, message, Select, Upload, Layout } from 'antd';
+import { Form, Input, Button, message, Select, Upload, Layout, Table, Modal } from 'antd';
 import { SendOutlined, InboxOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -22,6 +22,9 @@ const SendEmail = () => {
   const [emailContent, setEmailContent] = useState('');
   const [upcomingInterview, setUpcomingInterview] = useState(null);
   const [candidate, setCandidate] = useState(null);
+  const [sendCount, setSendCount] = useState(0);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingSubmit, setPendingSubmit] = useState(null);
 
   // Quill modules configuration
   const modules = {
@@ -31,7 +34,7 @@ const SendEmail = () => {
       [{ 'color': [] }, { 'background': [] }],
       [{ 'list': 'ordered'}, { 'list': 'bullet' }],
       [{ 'align': [] }],
-      ['link'],
+      ['link', 'table'],
       ['clean']
     ],
   };
@@ -42,7 +45,8 @@ const SendEmail = () => {
     'color', 'background',
     'list', 'bullet',
     'align',
-    'link'
+    'link',
+    'table', 'td', 'tr', 'th'
   ];
 
   // Hàm chuyển đổi trạng thái ứng viên
@@ -96,46 +100,51 @@ const SendEmail = () => {
           
           // Tạo nội dung email mẫu
           const emailContent = candidate.stage === 'rejected' 
-            ? `<div style="font-family: Arial, sans-serif;">
-<h3 style="text-align: center; margin-bottom: 20px;">THƯ CẢM ƠN ${candidate.name || '[HỌ TÊN ỨNG VIÊN]'} ỨNG TUYỂN ${candidate.position || '[VỊ TRÍ TUYỂN DỤNG]'}</h3>
+            ? `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+<h3 style="text-align: center; margin-bottom: 30px; color: #000066; font-size: 18px;">THƯ CẢM ƠN ${candidate.name.toUpperCase() || '[HỌ TÊN ỨNG VIÊN]'} ỨNG TUYỂN ${candidate.position.toUpperCase() || '[VỊ TRÍ TUYỂN DỤNG]'}</h3>
 
-<p>Kính gửi: ${candidate.name || '[anh/chị] [họ tên ứng viên]'},</p>
+<p>Kính gửi: <strong>${candidate.name || '[anh/chị] [họ tên ứng viên]'}</strong>,</p>
 
-<p>Hội đồng Tuyển dụng và Ban lãnh đạo Rikkei Academy gửi lời cảm ơn đến ${candidate.name || '[Anh/Chị]'} vì đã quan tâm và dành thời gian ứng tuyển vị trí ${candidate.position || '[Tên vị trí ứng tuyển]'}.</p>
+<p>Hội đồng Tuyển dụng và Ban lãnh đạo <strong>Rikkei Academy</strong> gửi lời cảm ơn đến <strong>${candidate.name || '[Anh/Chị]'}</strong> vì đã quan tâm và dành thời gian ứng tuyển vị trí <strong>${candidate.position || '[Tên vị trí ứng tuyển]'}</strong>.</p>
 
-<p>Sau khi xem xét, Rikkei Academy đã đối tượng với hồ sơ ứng tuyển của ${candidate.name || '[Anh/Chị]'}, tuy nhiên do một số điểm chưa phù hợp, chúng tôi rất tiếc vì chưa thể hợp tác với ${candidate.name || '[Anh/Chị]'} trong thời gian này.</p>
+<p>Sau khi xem xét, <strong>Rikkei Academy</strong> đã đối tượng với hồ sơ ứng tuyển của <strong>${candidate.name || '[Anh/Chị]'}</strong>, tuy nhiên do một số điểm chưa phù hợp, chúng tôi rất tiếc vì chưa thể hợp tác với <strong>${candidate.name || '[Anh/Chị]'}</strong> trong thời gian này.</p>
 
-<p>DTS xin phép lưu hồ sơ của ${candidate.name || '[Anh/Chị]'} cho những cơ hội khác trong tương lai. ${candidate.name || '[Anh/Chị]'} có thể giữ liên lạc với chúng tôi và cập nhật những thông tin nghề nghiệp mới nhất tại Tuyển dụng DTS.</p>
+<p><strong>Rikkei Academy</strong> xin phép lưu hồ sơ của <strong>${candidate.name || '[Anh/Chị]'}</strong> cho những cơ hội khác trong tương lai. <strong>${candidate.name || '[Anh/Chị]'}</strong> có thể giữ liên lạc với chúng tôi và cập nhật những thông tin nghề nghiệp mới nhất tại <strong>Tuyển dụng Rikkei Academy</strong>.</p>
 
-<p>Một lần nữa rất cám ơn sự quan tâm, thời gian và nỗ lực của ${candidate.name || '[Anh/Chị]'}. Chúc ${candidate.name || '[Anh/Chị]'} gặt hái nhiều thành công trong sự nghiệp tương lai.</p>
+<p>Một lần nữa rất cám ơn sự quan tâm, thời gian và nỗ lực của <strong>${candidate.name || '[Anh/Chị]'}</strong>. Chúc <strong>${candidate.name || '[Anh/Chị]'}</strong> gặt hái nhiều thành công trong sự nghiệp tương lai.</p>
 
-<p>Trân trọng cảm ơn,</p>
-<p>TM. HỘI ĐỒNG TUYỂN DỤNG</p>
+<p style="margin-top: 30px;">Trân trọng cảm ơn,</p>
+<p style="margin-top: 10px;"><strong>TM. HỘI ĐỒNG TUYỂN DỤNG</strong></p>
 </div>`
-            : `Thân gửi ${candidate.name || '[họ tên ứng viên]'},
+            : `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+<h3 style="text-align: center; margin-bottom: 30px; color: #000066; font-size: 18px;">THƯ MỜI PHỎNG VẤN ${candidate.name.toUpperCase() || '[HỌ TÊN ỨNG VIÊN]'} ỨNG TUYỂN ${candidate.position.toUpperCase() || '[VỊ TRÍ TUYỂN DỤNG]'}</h3>
 
-Công ty TNHH Rikkei Education (Rikkei) rất cảm ơn Bạn đã quan tâm ứng tuyển vào vị trí: ${candidate.position || '[tên vị trí tuyển dụng]'}
+<p>Kính gửi: <strong>${candidate.name || '[anh/chị] [họ tên ứng viên]'}</strong>,</p>
 
-Trân trọng mời Bạn tham dự buổi phỏng vấn tại Rikkei theo thông tin chi tiết như sau:
+<p>Công ty TNHH <strong>Rikkei Education (Rikkei)</strong> rất cảm ơn <strong>${candidate.name || '[Anh/Chị]'}</strong> đã quan tâm ứng tuyển vào vị trí <strong>${candidate.position || '[tên vị trí tuyển dụng]'}</strong>.</p>
 
-✔ Thời gian: ${upcomingInterview ? moment(upcomingInterview.startTime).format('HH:mm, DD/MM/YYYY') : '[thời gian phỏng vấn]'}
-✔ Địa điểm: Tầng 7 tháp A tòa Sông Đà, đường Phạm Hùng, quận Nam Từ Liêm, Hà Nội
-✔ Hình thức phỏng vấn: Trực tiếp
-✔ Thời lượng: 30 - 45 phút
-✔ Người liên hệ: ${hrName} – ${hrPhone}
+<p>Trân trọng mời <strong>${candidate.name || '[Anh/Chị]'}</strong> tham dự buổi phỏng vấn tại Rikkei theo thông tin chi tiết như sau:</p>
 
-🔹 Bạn vui lòng phản hồi lại email để xác nhận tham gia phỏng vấn.
-🔹 Cám ơn Bạn đã sắp xếp để có buổi trao đổi này. Chúc Bạn có một buổi phỏng vấn thành công!
+<div style="margin: 30px 0; background-color: #f9f9f9; padding: 20px; border-radius: 5px;">
+<p style="margin: 10px 0;">✔ <strong>Thời gian:</strong> ${upcomingInterview ? moment(upcomingInterview.startTime).format('HH:mm, DD/MM/YYYY') : '[thời gian phỏng vấn]'}</p>
+<p style="margin: 10px 0;">✔ <strong>Địa điểm:</strong> Tầng 7 tháp A tòa Sông Đà, đường Phạm Hùng, quận Nam Từ Liêm, Hà Nội</p>
+<p style="margin: 10px 0;">✔ <strong>Hình thức phỏng vấn:</strong> Trực tiếp</p>
+<p style="margin: 10px 0;">✔ <strong>Thời lượng:</strong> 30 - 45 phút</p>
+<p style="margin: 10px 0;">✔ <strong>Người liên hệ:</strong> ${hrName} – ${hrPhone}</p>
+</div>
 
-Trân trọng,
+<p style="margin-top: 20px;">🔹 <strong>${candidate.name || '[Anh/Chị]'}</strong> vui lòng phản hồi lại email để xác nhận tham gia phỏng vấn.</p>
+<p>🔹 Cám ơn <strong>${candidate.name || '[Anh/Chị]'}</strong> đã sắp xếp để có buổi trao đổi này. Chúc <strong>${candidate.name || '[Anh/Chị]'}</strong> có một buổi phỏng vấn thành công!</p>
 
-TM. HỘI ĐỒNG TUYỂN DỤNG`;
+<p style="margin-top: 30px;">Trân trọng,</p>
+<p style="margin-top: 10px;"><strong>TM. HỘI ĐỒNG TUYỂN DỤNG</strong></p>
+</div>`;
 
           form.setFieldsValue({
             to: candidate.email,
             subject: candidate.stage === 'rejected'
-              ? `[RIKKEI ACADEMY] THƯ TỪ CHỐI _ ${candidate.name} _ ${candidate.position}`
-              : `[RIKKEI ACADEMY] THƯ MỜI ${candidate.name} CHỨC VỤ ỨNG TUYỂN ${candidate.position} GIAI ĐOẠN ${getStatusText(candidate.stage)}`,
+              ? `[RIKKEI ACADEMY] THƯ TỪ CHỐI _ ${candidate.name.toUpperCase()} _ ${candidate.position.toUpperCase()}`
+              : `[RIKKEI ACADEMY] THƯ MỜI ${candidate.name.toUpperCase()} CHỨC VỤ ỨNG TUYỂN ${candidate.position.toUpperCase()} GIAI ĐOẠN ${getStatusText(candidate.stage).toUpperCase()}`,
             content: emailContent
           });
 
@@ -152,85 +161,74 @@ TM. HỘI ĐỒNG TUYỂN DỤNG`;
 
   useEffect(() => {
     if (candidate?.stage === 'hired') {
+      // Tạo mật khẩu random 8 ký tự
+      const generatePassword = () => {
+        const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+        let password = "";
+        for (let i = 0; i < 8; i++) {
+          const randomIndex = Math.floor(Math.random() * charset.length);
+          password += charset[randomIndex];
+        }
+        return password;
+      };
+
+      const randomPassword = generatePassword();
+
       const hiredTemplate = `
-THƯ MỜI NHẬN VIỆC
+<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+<h3 style="text-align: center; margin-bottom: 30px; color: #000066; font-size: 18px;">THƯ MỜI NHẬN VIỆC</h3>
 
-Kính gửi: ${candidate?.name},
+<p>Kính gửi: <strong>${candidate.gender === 'female' ? 'Chị' : 'Anh'} ${candidate.name}</strong>,</p>
 
-Hội đồng Tuyển dụng và Ban lãnh đạo Rikkei Academy chân thành cảm ơn ${candidate?.gender === 'Nam' ? 'anh' : 'chị'} đã dành thời gian quý báu đến trao đổi công việc tại công ty chúng tôi. Hội đồng tuyển dụng và Ban lãnh đạo công ty ghi nhận năng lực và lòng nhiệt thành của ${candidate?.gender === 'Nam' ? 'anh' : 'chị'}.
+<p>Hội đồng Tuyển dụng và Ban lãnh đạo <strong>Rikkei Academy</strong> chân thành cảm ơn ${candidate.gender === 'female' ? 'chị' : 'anh'} đã dành thời gian quý báu đến trao đổi công việc tại công ty chúng tôi. Hội đồng tuyển dụng và Ban lãnh đạo công ty ghi nhận năng lực và lòng nhiệt thành của ${candidate.gender === 'female' ? 'chị' : 'anh'}.</p>
 
-Ban lãnh đạo Công ty trân trọng mời ${candidate?.gender === 'Nam' ? 'anh' : 'chị'} cộng tác cùng chúng tôi:
+<p>Ban lãnh đạo Công ty trân trọng mời ${candidate.gender === 'female' ? 'chị' : 'anh'} cộng tác cùng chúng tôi với các thông tin chi tiết như sau:</p>
 
-<div style="border: 1px solid #000; margin: 20px 0;">
-  <div style="border-bottom: 1px solid #000;">
-    <table style="width: 100%; border-collapse: collapse;">
-      <tr>
-        <td style="border-right: 1px solid #000; padding: 8px; width: 30%; vertical-align: top;">Chức danh:</td>
-        <td style="padding: 8px;">${candidate?.position || ''}</td>
-      </tr>
-    </table>
-  </div>
-  <div style="border-bottom: 1px solid #000;">
-    <table style="width: 100%; border-collapse: collapse;">
-      <tr>
-        <td style="border-right: 1px solid #000; padding: 8px; width: 30%; vertical-align: top;">Bộ phận - Phòng ban:</td>
-        <td style="padding: 8px;">${candidate?.department || ''}</td>
-      </tr>
-    </table>
-  </div>
-  <div style="border-bottom: 1px solid #000;">
-    <table style="width: 100%; border-collapse: collapse;">
-      <tr>
-        <td style="border-right: 1px solid #000; padding: 8px; width: 30%; vertical-align: top;">Thời gian làm việc:</td>
-        <td style="padding: 8px;">8h00 - 17h30 từ thứ 2 - thứ 6</td>
-      </tr>
-    </table>
-  </div>
-  <div style="border-bottom: 1px solid #000;">
-    <table style="width: 100%; border-collapse: collapse;">
-      <tr>
-        <td style="border-right: 1px solid #000; padding: 8px; width: 30%; vertical-align: top;">Địa điểm làm việc:</td>
-        <td style="padding: 8px;">Tầng 7, Tòa nhà Sông Đà, Phạm Hùng, Nam Từ Liêm, Hà Nội</td>
-      </tr>
-    </table>
-  </div>
-  <div style="border-bottom: 1px solid #000;">
-    <table style="width: 100%; border-collapse: collapse;">
-      <tr>
-        <td style="border-right: 1px solid #000; padding: 8px; width: 30%; vertical-align: top;">Mức lương chính thức:</td>
-        <td style="padding: 8px;">2.000.000 VNĐ/tháng lương</td>
-      </tr>
-    </table>
-  </div>
-  <div style="border-bottom: 1px solid #000;">
-    <table style="width: 100%; border-collapse: collapse;">
-      <tr>
-        <td style="border-right: 1px solid #000; padding: 8px; width: 30%; vertical-align: top;">Phụ cấp:</td>
-        <td style="padding: 8px;">Vé xe tháng tại công ty</td>
-      </tr>
-    </table>
-  </div>
-  <div>
-    <table style="width: 100%; border-collapse: collapse;">
-      <tr>
-        <td style="border-right: 1px solid #000; padding: 8px; width: 30%; vertical-align: top;">Ngày nhận việc:</td>
-        <td style="padding: 8px;">05-08-24</td>
-      </tr>
-    </table>
-  </div>
+<div style="margin: 30px 0; display: grid; grid-template-columns: 200px 1fr; gap: 10px; background-color: #ffffff; border: 1px solid #e0e0e0;">
+  <div style="padding: 8px 12px; background-color: #f5f5f5; border-bottom: 1px solid #e0e0e0;"><strong>Chức danh:</strong></div>
+  <div style="padding: 8px 12px; border-bottom: 1px solid #e0e0e0;">${candidate.position}</div>
+  
+  <div style="padding: 8px 12px; background-color: #f5f5f5; border-bottom: 1px solid #e0e0e0;"><strong>Bộ phận - Phòng ban:</strong></div>
+  <div style="padding: 8px 12px; border-bottom: 1px solid #e0e0e0;">${candidate.department || 'Công ứng nguồn nhân lực'}</div>
+  
+  <div style="padding: 8px 12px; background-color: #f5f5f5; border-bottom: 1px solid #e0e0e0;"><strong>Thời gian làm việc:</strong></div>
+  <div style="padding: 8px 12px; border-bottom: 1px solid #e0e0e0;">8h00 - 17h30 từ thứ 2 - thứ 6</div>
+  
+  <div style="padding: 8px 12px; background-color: #f5f5f5; border-bottom: 1px solid #e0e0e0;"><strong>Địa điểm làm việc:</strong></div>
+  <div style="padding: 8px 12px; border-bottom: 1px solid #e0e0e0;">Tầng 7, Tòa nhà Sông Đà, Phạm Hùng, Nam Từ Liêm, Hà Nội</div>
+  
+  <div style="padding: 8px 12px; background-color: #f5f5f5; border-bottom: 1px solid #e0e0e0;"><strong>Mức lương chính thức:</strong></div>
+  <div style="padding: 8px 12px; border-bottom: 1px solid #e0e0e0;">${candidate.salary || '2.000.000'} VNĐ/tháng lương</div>
+  
+  <div style="padding: 8px 12px; background-color: #f5f5f5; border-bottom: 1px solid #e0e0e0;"><strong>Phụ cấp:</strong></div>
+  <div style="padding: 8px 12px; border-bottom: 1px solid #e0e0e0;">Vé xe tháng tại công ty</div>
+  
+  <div style="padding: 8px 12px; background-color: #f5f5f5;"><strong>Ngày nhận việc:</strong></div>
+  <div style="padding: 8px 12px;">${moment(candidate.startDate).format('DD-MM-YY') || '05-08-24'}</div>
 </div>
 
-<div style="color: red; font-style: italic; margin: 20px 0;">
-${candidate?.gender === 'Nam' ? 'Anh' : 'Chị'} vui lòng trả lời xác nhận & hoàn thành form thông tin nhân sự sau trước 23h ngày 02/08/2024 (THÔNG TIN NHÂN VIÊN MỚI - RIKKEI ACADEMY).
+<br/>
+
+<div style="background-color: #fff9e6; padding: 15px; margin: 20px 0;">
+<p><span style="background-color: rgb(255, 255, 0); color: rgb(230, 0, 0);">${candidate.gender === 'female' ? 'Chị' : 'Anh'} vui lòng trả lời xác nhận & đăng nhập vào hệ thống, hoàn thành form thông tin nhân sự theo tài khoản được cấp dưới đây trước 23h ngày ${moment(candidate.startDate).subtract(2, 'days').format('DD/MM/YYYY')}.</span></p>
+
+<p><span style="background-color: rgb(255, 255, 0); color: rgb(230, 0, 0);"><strong>Tên đăng nhập:</strong> ${candidate.email}</span></p>
+<p><span style="background-color: rgb(255, 255, 0); color: rgb(230, 0, 0);"><strong>Mật khẩu:</strong> ${randomPassword}</span></p>
 </div>
 
-Chúng tôi hoan nghênh những đóng góp của ${candidate?.gender === 'Nam' ? 'anh' : 'chị'} vào sự nghiệp phát triển của Công ty. Khi tới nhận việc, đề nghị ${candidate?.gender === 'Nam' ? 'anh' : 'chị'} dành thời gian tìm hiểu thêm các thông tin về Tổ chức, mô tả công việc của mình, mặc trang phục lịch sự, phù hợp với môi trường công sở, mang laptop cá nhân để phục vụ công việc.
+<br/>
 
-Mọi thắc mắc vui lòng liên hệ Ms.Duyên(HR): 0385324236`;
+<p>Chúng tôi hoan nghênh những đóng góp của ${candidate.gender === 'female' ? 'chị' : 'anh'} vào sự nghiệp phát triển của Công ty. Khi tới nhận việc, đề nghị ${candidate.gender === 'female' ? 'chị' : 'anh'} dành thời gian tìm hiểu thêm các thông tin về Tổ chức, mô tả công việc của mình, mặc trang phục lịch sự, phù hợp với môi trường công sở, mang laptop cá nhân để phục vụ công việc.</p>
+
+<p style="margin-top: 20px;">Mọi thắc mắc vui lòng liên hệ <strong>Ms.Duyên(HR): 0385324236</strong></p>
+
+<p style="margin-top: 30px;">Trân trọng,</p>
+<p style="margin-top: 10px;"><strong>TM. HỘI ĐỒNG TUYỂN DỤNG</strong></p>
+</div>`;
 
       form.setFieldsValue({
         content: hiredTemplate,
-        subject: 'THƯ MỜI NHẬN VIỆC - RIKKEI ACADEMY'
+        subject: `[RIKKEI ACADEMY] XÁC NHẬN THƯ MỜI NHẬN VIỆC - ${candidate.name.toUpperCase()} - ${candidate.position.toUpperCase()}`
       });
     }
   }, [candidate, form]);
@@ -260,9 +258,21 @@ Mọi thắc mắc vui lòng liên hệ Ms.Duyên(HR): 0385324236`;
   };
 
   const handleSubmit = async (values) => {
+    if (sendCount > 0) {
+      setPendingSubmit(values);
+      setShowConfirmModal(true);
+      return;
+    }
+
+    await submitEmail(values);
+  };
+
+  const submitEmail = async (values) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
+      
+      console.log('Starting email submission with values:', values);
       
       // Create FormData for file upload
       const formData = new FormData();
@@ -288,6 +298,7 @@ Mọi thắc mắc vui lòng liên hệ Ms.Duyên(HR): 0385324236`;
         });
       }
 
+      console.log('Sending email request...');
       const response = await axios.post('http://localhost:8000/api/emails/send', formData, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -295,21 +306,69 @@ Mọi thắc mắc vui lòng liên hệ Ms.Duyên(HR): 0385324236`;
         }
       });
 
+      console.log('Email send response:', response);
+
       if (response.status === 200) {
-        message.success('Email đã được gửi thành công!');
-        if (location.pathname.includes('/candidates/')) {
-          navigate(`/candidates/${id}`);
+        // Cập nhật trạng thái email của ứng viên
+        if (id) {
+          try {
+            console.log('Updating email status for candidate:', id);
+            const updateResponse = await axios.patch(
+              `http://localhost:8000/api/candidates/${id}/email-status`,
+              { emailStatus: 'Đã gửi' },
+              {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+
+            console.log('Email status update response:', updateResponse);
+
+            if (updateResponse.status === 200) {
+              message.success('Email đã được gửi thành công!');
+              setSendCount(prev => prev + 1);
+              
+              // Chuyển hướng sau khi cập nhật trạng thái thành công
+              if (location.pathname.includes('/candidates/')) {
+                navigate(`/candidates/${id}`);
+              } else {
+                navigate('/emails');
+              }
+            }
+          } catch (error) {
+            console.error('Error updating email status:', error);
+            console.error('Error response:', error.response);
+            message.error('Email đã được gửi nhưng không thể cập nhật trạng thái');
+          }
         } else {
+          message.success('Email đã được gửi thành công!');
           navigate('/emails');
         }
       }
     } catch (error) {
       console.error('Error sending email:', error);
+      console.error('Error response:', error.response);
       const errorMessage = error.response?.data?.message || 'Có lỗi xảy ra khi gửi email';
       message.error(errorMessage);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleConfirmSend = () => {
+    setShowConfirmModal(false);
+    if (pendingSubmit) {
+      submitEmail(pendingSubmit);
+      setPendingSubmit(null);
+    }
+  };
+
+  const handleCancelSend = () => {
+    setShowConfirmModal(false);
+    setPendingSubmit(null);
+    navigate(-1);
   };
 
   return (
@@ -453,6 +512,18 @@ Mọi thắc mắc vui lòng liên hệ Ms.Duyên(HR): 0385324236`;
           </div>
         </Form>
       </div>
+
+      {/* Confirmation Modal */}
+      <Modal
+        title="Xác nhận gửi email"
+        open={showConfirmModal}
+        onOk={handleConfirmSend}
+        onCancel={handleCancelSend}
+        okText="Tiếp tục gửi"
+        cancelText="Hủy bỏ"
+      >
+        <p>Bạn đã gửi email cho ứng viên này trước đó. Bạn có chắc chắn muốn gửi lại?</p>
+      </Modal>
     </div>
   );
 };

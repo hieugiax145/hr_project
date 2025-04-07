@@ -303,147 +303,155 @@ const Positions = () => {
                     ? 'space-y-4' 
                     : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
                 }`}>
-                  {positions.map((position) => (
-                    <div
-                      key={position._id}
-                      className={`bg-white rounded-[10px] p-4 border transition-colors cursor-pointer relative ${
-                        selectedPosition ? 'border-[#7B61FF]' : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      onClick={(e) => handleCardClick(e, position)}
-                    >
-                      {/* Status Badge */}
-                      <div className="absolute top-2 right-2">
-                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusStyle(position.status)}`}>
-                          {position.status}
-                        </span>
-                      </div>
+                  {positions.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" className="p-4 text-center text-gray-500">
+                        Không có vị trí tuyển dụng nào
+                      </td>
+                    </tr>
+                  ) : (
+                    positions.map((position) => (
+                      <div
+                        key={position._id}
+                        className={`bg-white rounded-[10px] p-4 border transition-colors cursor-pointer relative ${
+                          selectedPosition ? 'border-[#7B61FF]' : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                        onClick={(e) => handleCardClick(e, position)}
+                      >
+                        {/* Status Badge */}
+                        <div className="absolute top-2 right-2">
+                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusStyle(position.status)}`}>
+                            {position.status}
+                          </span>
+                        </div>
 
-                      {selectedPosition ? (
-                        // Layout khi có position được chọn - áp dụng cho tất cả card
-                        <>
-                          {/* Avatar and Info */}
-                          <div className="flex items-start gap-3 mb-4">
-                            <div className="w-10 h-10 bg-[#F4F1FE] rounded-lg flex items-center justify-center">
-                              <span className="text-[#7B61FF] text-lg font-medium">
-                                {position.title.charAt(0)}
+                        {selectedPosition ? (
+                          // Layout khi có position được chọn - áp dụng cho tất cả card
+                          <>
+                            {/* Avatar and Info */}
+                            <div className="flex items-start gap-3 mb-4">
+                              <div className="w-10 h-10 bg-[#F4F1FE] rounded-lg flex items-center justify-center">
+                                <span className="text-[#7B61FF] text-lg font-medium">
+                                  {position.title.charAt(0)}
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <div className="text-xs text-gray-500 mb-1">
+                                  ID YCTD: {shortenId(position._id)}
+                                </div>
+                                <h3 className="text-base font-medium text-gray-900 mb-1">
+                                  {position.title}
+                                </h3>
+                                <p className="text-sm text-gray-500">
+                                  {position.department}
+                                </p>
+                              </div>
+                              <Dropdown
+                                menu={getDropdownItems(position)}
+                                trigger={['click']}
+                                placement="bottomRight"
+                              >
+                                <button 
+                                  className="text-gray-400 hover:text-gray-600 p-1 bg-white"
+                                  onClick={(e) => e.stopPropagation()} 
+                                >
+                                  <MoreOutlined />
+                                </button>
+                              </Dropdown>
+                            </div>
+
+                            {/* Tags Row */}
+                            <div className="flex flex-wrap gap-2 mb-4">
+                              <div className="flex items-center gap-2 px-2 py-1 bg-gray-50 rounded-full">
+                                <BarChartOutlined className="text-gray-400" />
+                                <span className="text-xs text-gray-600">{position.level}</span>
+                              </div>
+                              <div className="flex items-center gap-2 px-2 py-1 bg-gray-50 rounded-full">
+                                <RiseOutlined className="text-gray-400" />
+                                <span className="text-xs text-gray-600">{position.experience}</span>
+                              </div>
+                              <span className="px-2 py-1 bg-gray-50 rounded-full text-xs text-gray-600">
+                                {position.type}
+                              </span>
+                              <span className="px-2 py-1 bg-gray-50 rounded-full text-xs text-gray-600">
+                                {position.mode}
                               </span>
                             </div>
-                            <div className="flex-1">
-                              <div className="text-xs text-gray-500 mb-1">
-                                ID YCTD: {shortenId(position._id)}
+                          </>
+                        ) : (
+                          // Layout mặc định khi không có position nào được chọn
+                          <>
+                            {/* ID */}
+                            <div className="text-xs text-gray-500 mb-2">
+                              ID YCTD: {shortenId(position._id)}
+                            </div>
+
+                            {/* Title and Department */}
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex-1">
+                                <h3 className="text-base font-medium text-gray-900 mb-1">
+                                  {position.title}
+                                </h3>
+                                <p className="text-sm text-gray-500">
+                                  {position.department}
+                                </p>
                               </div>
-                              <h3 className="text-base font-medium text-gray-900 mb-1">
-                                {position.title}
-                              </h3>
-                              <p className="text-sm text-gray-500">
-                                {position.department}
-                              </p>
-                            </div>
-                            <Dropdown
-                              menu={getDropdownItems(position)}
-                              trigger={['click']}
-                              placement="bottomRight"
-                            >
-                              <button 
-                                className="text-gray-400 hover:text-gray-600 p-1 bg-white"
-                                onClick={(e) => e.stopPropagation()} 
+                              <Dropdown
+                                menu={getDropdownItems(position)}
+                                trigger={['click']}
+                                placement="bottomRight"
                               >
-                                <MoreOutlined />
-                              </button>
-                            </Dropdown>
-                          </div>
-
-                          {/* Tags Row */}
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            <div className="flex items-center gap-2 px-2 py-1 bg-gray-50 rounded-full">
-                              <BarChartOutlined className="text-gray-400" />
-                              <span className="text-xs text-gray-600">{position.level}</span>
+                                <button 
+                                  className="text-gray-400 hover:text-gray-600 p-1 bg-white"
+                                  onClick={(e) => e.stopPropagation()} 
+                                >
+                                  <MoreOutlined />
+                                </button>
+                              </Dropdown>
                             </div>
-                            <div className="flex items-center gap-2 px-2 py-1 bg-gray-50 rounded-full">
-                              <RiseOutlined className="text-gray-400" />
-                              <span className="text-xs text-gray-600">{position.experience}</span>
-                            </div>
-                            <span className="px-2 py-1 bg-gray-50 rounded-full text-xs text-gray-600">
-                              {position.type}
-                            </span>
-                            <span className="px-2 py-1 bg-gray-50 rounded-full text-xs text-gray-600">
-                              {position.mode}
-                            </span>
-                          </div>
-                        </>
-                      ) : (
-                        // Layout mặc định khi không có position nào được chọn
-                        <>
-                          {/* ID */}
-                          <div className="text-xs text-gray-500 mb-2">
-                            ID YCTD: {shortenId(position._id)}
-                          </div>
 
-                          {/* Title and Department */}
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex-1">
-                              <h3 className="text-base font-medium text-gray-900 mb-1">
-                                {position.title}
-                              </h3>
-                              <p className="text-sm text-gray-500">
-                                {position.department}
-                              </p>
+                            {/* Level and Experience */}
+                            <div className="flex flex-col gap-2 mb-4">
+                              <div className="flex items-center gap-2">
+                                <BarChartOutlined className="text-gray-400" />
+                                <span className="text-sm text-gray-600">{position.level}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <RiseOutlined className="text-gray-400" />
+                                <span className="text-sm text-gray-600">{position.experience}</span>
+                              </div>
                             </div>
-                            <Dropdown
-                              menu={getDropdownItems(position)}
-                              trigger={['click']}
-                              placement="bottomRight"
-                            >
-                              <button 
-                                className="text-gray-400 hover:text-gray-600 p-1 bg-white"
-                                onClick={(e) => e.stopPropagation()} 
-                              >
-                                <MoreOutlined />
-                              </button>
-                            </Dropdown>
+                          </>
+                        )}
+
+                        {/* Type and Mode */}
+                        <div className="flex gap-2 mb-4">
+                          <span className="px-2 py-1 bg-gray-50 rounded-full text-xs text-gray-600">
+                            {position.type}
+                          </span>
+                          <span className="px-2 py-1 bg-gray-50 rounded-full text-xs text-gray-600">
+                            {position.mode}
+                          </span>
+                        </div>
+
+                        {/* Salary and Applicants */}
+                        <div className="flex flex-col gap-2">
+                          <div className="text-[#7B61FF] font-medium">đ {position.salary}</div>
+                          <div 
+                            className="text-sm text-gray-500 cursor-pointer hover:text-[#7B61FF] applicants-count flex items-center gap-1"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              navigate(`/positions/${position._id}/candidates`);
+                            }}
+                          >
+                            <UserOutlined className="text-gray-400" />
+                            {position.applicants} ứng viên
                           </div>
-
-                          {/* Level and Experience */}
-                          <div className="flex flex-col gap-2 mb-4">
-                            <div className="flex items-center gap-2">
-                              <BarChartOutlined className="text-gray-400" />
-                              <span className="text-sm text-gray-600">{position.level}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <RiseOutlined className="text-gray-400" />
-                              <span className="text-sm text-gray-600">{position.experience}</span>
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      {/* Type and Mode */}
-                      <div className="flex gap-2 mb-4">
-                        <span className="px-2 py-1 bg-gray-50 rounded-full text-xs text-gray-600">
-                          {position.type}
-                        </span>
-                        <span className="px-2 py-1 bg-gray-50 rounded-full text-xs text-gray-600">
-                          {position.mode}
-                        </span>
-                      </div>
-
-                      {/* Salary and Applicants */}
-                      <div className="flex flex-col gap-2">
-                        <div className="text-[#7B61FF] font-medium">đ {position.salary}</div>
-                        <div 
-                          className="text-sm text-gray-500 cursor-pointer hover:text-[#7B61FF] applicants-count flex items-center gap-1"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            navigate(`/positions/${position._id}/candidates`);
-                          }}
-                        >
-                          <UserOutlined className="text-gray-400" />
-                          {position.applicants} ứng viên
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             )}

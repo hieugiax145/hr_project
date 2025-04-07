@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middlewares/authMiddleware');
+const { protect, authorize } = require('../middlewares/authMiddleware');
 const {
   getPositions,
   getPositionById,
@@ -18,7 +18,7 @@ router.get('/:id', protect, getPositionById);
 router.get('/:id/download-jd', protect, downloadJD);
 
 // Protected routes
-router.post('/', protect, createPosition);
+router.post('/', protect, authorize('admin', 'recruitment', 'hr'), createPosition);
 router.put('/:id', protect, updatePosition);
 router.delete('/:id', protect, deletePosition);
 

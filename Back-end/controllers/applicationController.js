@@ -33,8 +33,15 @@ const createApplication = async (req, res) => {
 // ✅ Lấy danh sách đơn tuyển dụng của người dùng hiện tại
 const getApplications = async (req, res) => {
   try {
-    const applications = await Application.find()
-      .populate('userId', 'username fullName')  // Populate thông tin người tạo từ userId
+    let query = {};
+    
+    // Nếu là trưởng phòng ban (không phải HR), chỉ lấy yêu cầu của phòng mình
+    if (req.user.role === 'department_head' && req.user.department !== 'hr') {
+      query.department = req.user.department;
+    }
+
+    const applications = await Application.find(query)
+      .populate('userId', 'username fullName')
       .sort({ createdAt: -1 });
 
     const formattedApplications = applications.map(app => {

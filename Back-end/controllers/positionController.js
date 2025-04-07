@@ -37,6 +37,11 @@ exports.getPositions = async (req, res) => {
     // Xây dựng query
     let query = {};
 
+    // Nếu là trưởng phòng ban (không phải HR), chỉ lấy vị trí của phòng mình
+    if (req.user.role === 'department_head' && req.user.department !== 'hr') {
+      query.department = req.user.department;
+    }
+
     // Thêm điều kiện tìm kiếm
     if (search) {
       query.$or = [

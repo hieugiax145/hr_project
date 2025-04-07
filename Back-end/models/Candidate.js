@@ -34,6 +34,11 @@ const candidateSchema = new mongoose.Schema({
       return this.source === 'Khác';
     }
   },
+  emailStatus: {
+    type: String,
+    enum: ['', 'Đã gửi'],
+    default: ''
+  },
   cv: [{
     url: {
       type: String,

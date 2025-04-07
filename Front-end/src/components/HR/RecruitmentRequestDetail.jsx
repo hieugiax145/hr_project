@@ -89,18 +89,8 @@ const RecruitmentRequestDetail = () => {
           <h1 className="text-[20px] font-medium text-[#1A1A1A] mb-4">Chi tiết phiếu tuyển dụng</h1>
           
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex gap-2 w-full md:w-auto">
-              <button 
-                className="h-[36px] px-4 bg-[#7B61FF] text-white rounded-[6px] text-sm font-medium hover:bg-[#6B4EFF] flex items-center gap-2"
-                onClick={() => navigate('/hr/recruitment-requests')}
-              >
-                <IoCloseCircleOutline />
-                Quay lại
-              </button>
-            </div>
-
             {/* Progress Steps */}
-            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <div className="flex flex-wrap items-center gap-2 w-full">
               <div className="flex items-center">
                 <span className={`text-sm border-b-2 pb-1 ${formData.status === 'Chờ nộp' ? 'text-[#7B61FF] border-[#7B61FF]' : 'text-[#A3A3A3] border-[#A3A3A3]'}`}>Chờ nộp</span>
               </div>

@@ -28,4 +28,7 @@ router.get('/:candidateId', protect, candidateController.getCandidateById);
 // Lấy danh sách ứng viên cho calendar
 router.get('/calendar/candidates', protect, candidateController.getCandidatesForCalendar);
 
+// Cập nhật trạng thái email của ứng viên
+router.patch('/:candidateId/email-status', protect, candidateController.updateCandidateEmailStatus);
+
 module.exports = router; 
