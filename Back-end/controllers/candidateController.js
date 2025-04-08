@@ -328,9 +328,37 @@ exports.updateCandidate = async (req, res) => {
 // Lấy tất cả ứng viên
 exports.getAllCandidates = async (req, res) => {
   try {
-    const candidates = await Candidate.find()
-      .populate('positionId', 'title department')
-      .sort({ createdAt: -1 });
+    let pipeline = [
+      {
+        $lookup: {
+          from: 'positions',
+          localField: 'positionId',
+          foreignField: '_id',
+          as: 'position'
+        }
+      },
+      {
+        $unwind: {
+          path: '$position',
+          preserveNullAndEmptyArrays: true
+        }
+      }
+    ];
+
+    // Nếu là trưởng phòng ban, chỉ lấy ứng viên của phòng mình
+    if (req.user.role === 'department_head') {
+      pipeline.push({
+        $match: {
+          'position.department': req.userDepartment
+        }
+      });
+    }
+
+    pipeline.push({
+      $sort: { createdAt: -1 }
+    });
+
+    const candidates = await Candidate.aggregate(pipeline);
 
     res.json({
       candidates: candidates.map(candidate => ({
@@ -338,7 +366,11 @@ exports.getAllCandidates = async (req, res) => {
         name: candidate.name,
         email: candidate.email,
         phone: candidate.phone,
-        positionId: candidate.positionId,
+        positionId: candidate.position ? {
+          _id: candidate.position._id,
+          title: candidate.position.title,
+          department: candidate.position.department
+        } : null,
         stage: candidate.stage,
         source: candidate.source,
         customSource: candidate.customSource,

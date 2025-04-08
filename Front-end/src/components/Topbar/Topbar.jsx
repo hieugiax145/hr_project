@@ -63,7 +63,8 @@ const Topbar = () => {
       '/hr/recruitment-requests/:id': 'Chi tiết yêu cầu tuyển dụng',
       '/notifications/edit/:id': 'Chỉnh sửa thông báo',
       '/notifications/:id': 'Thông báo ứng viên mới',
-      '/notifications/:id/evaluate': 'Đánh giá ứng viên'
+      '/notifications/:id/evaluate': 'Đánh giá ứng viên',
+      '/account-management': 'Quản lý tài khoản'
     };
 
     // Xử lý các route có tham số động

@@ -1,14 +1,16 @@
 const RecruitmentNotification = require('../models/RecruitmentNotification');
+const Application = require('../models/Application');
 
 // Tạo thông báo mới
 exports.createNotification = async (req, res) => {
   try {
-    const { recruitmentId, position, department } = req.body;
+    const { recruitmentId, position, department, requester } = req.body;
     
     const notification = new RecruitmentNotification({
       recruitmentId,
       position,
-      department
+      department,
+      requester
     });
 
     await notification.save();
@@ -23,6 +25,8 @@ exports.createNotification = async (req, res) => {
 exports.getNotifications = async (req, res) => {
   try {
     const notifications = await RecruitmentNotification.find()
+      .populate('recruitmentId')
+      .populate('requester', 'fullName username')
       .sort({ createdAt: -1 });
     
     res.json({ message: 'Lấy danh sách thông báo thành công', data: notifications });
@@ -68,6 +72,38 @@ exports.deleteNotificationByRecruitmentId = async (req, res) => {
     res.json({ message: 'Xóa thông báo thành công' });
   } catch (error) {
     console.error('Error in deleteNotificationByRecruitmentId:', error);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+};
+
+// Tạo thông báo khi CEO phê duyệt
+exports.createApprovalNotification = async (req, res) => {
+  try {
+    const { recruitmentId } = req.params;
+    
+    // Tìm application
+    const application = await Application.findById(recruitmentId);
+    if (!application) {
+      return res.status(404).json({ message: 'Không tìm thấy phiếu YCTD' });
+    }
+
+    // Tạo thông báo mới
+    const notification = new RecruitmentNotification({
+      recruitmentId: application._id,
+      position: application.position,
+      department: application.department,
+      requester: application.requester,
+      message: 'Phiếu YCTD của bạn đã được CEO phê duyệt'
+    });
+
+    await notification.save();
+
+    res.status(201).json({ 
+      message: 'Tạo thông báo phê duyệt thành công', 
+      data: notification 
+    });
+  } catch (error) {
+    console.error('Error creating approval notification:', error);
     res.status(500).json({ message: 'Lỗi server' });
   }
 }; 

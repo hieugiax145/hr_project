@@ -1,27 +1,27 @@
 const express = require('express');
 const { createApplication, getApplications, updateApplication, deleteApplication, getApplicationById } = require('../controllers/applicationController');
-const { protect, authorize } = require('../middlewares/authMiddleware');
+const { protect, authorizeAdminHR } = require('../middlewares/authMiddleware');
 const Application = require('../models/Application');
 
 const router = express.Router();
 
 // Lấy danh sách yêu cầu tuyển dụng
-router.get('/', protect, getApplications);
+router.get('/', protect, authorizeAdminHR('view'), getApplications);
 
 // Lấy chi tiết một yêu cầu tuyển dụng
-router.get('/:id', protect, getApplicationById);
+router.get('/:id', protect, authorizeAdminHR('view'), getApplicationById);
 
 // Tạo yêu cầu tuyển dụng mới
-router.post('/', protect, authorize('department_head', 'business_director', 'ceo', 'recruitment', 'director'), createApplication);
+router.post('/', protect, authorizeAdminHR('create'), createApplication);
 
 // Cập nhật yêu cầu tuyển dụng
-router.put('/:id', protect, updateApplication);
+router.put('/:id', protect, authorizeAdminHR('update'), updateApplication);
 
 // Xóa yêu cầu tuyển dụng
-router.delete('/:id', protect, deleteApplication);
+router.delete('/:id', protect, authorizeAdminHR('delete'), deleteApplication);
 
 // Cập nhật trạng thái yêu cầu
-router.patch('/:id/status', protect, async (req, res) => {
+router.patch('/:id/status', protect, authorizeAdminHR('update'), async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -44,7 +44,7 @@ router.patch('/:id/status', protect, async (req, res) => {
 });
 
 // Route cập nhật trạng thái và người phụ trách
-router.patch('/:id/review', protect, async (req, res) => {
+router.patch('/:id/review', protect, authorizeAdminHR('update'), async (req, res) => {
   try {
     const { id } = req.params;
     const { status, responsible } = req.body;

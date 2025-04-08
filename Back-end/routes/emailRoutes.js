@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const emailController = require('../controllers/emailController');
-const { protect } = require('../middlewares/authMiddleware');
+const { protect, authorizeAdminHR } = require('../middlewares/authMiddleware');
 
 // Cấu hình multer để xử lý file upload
 const upload = multer({
@@ -13,15 +13,15 @@ const upload = multer({
 });
 
 // Lấy danh sách email
-router.get('/', protect, emailController.getEmails);
+router.get('/', protect, authorizeAdminHR('view'), emailController.getEmails);
 
 // Lấy danh sách email đã gửi
-router.get('/sent', protect, emailController.getSentEmails);
+router.get('/sent', protect, authorizeAdminHR('view'), emailController.getSentEmails);
 
 // Gửi email với file đính kèm
-router.post('/send', protect, upload.array('attachments'), emailController.sendEmail);
+router.post('/send', protect, authorizeAdminHR('create'), upload.array('attachments'), emailController.sendEmail);
 
 // Xóa email
-router.delete('/:id', protect, emailController.deleteEmail);
+router.delete('/:id', protect, authorizeAdminHR('delete'), emailController.deleteEmail);
 
 module.exports = router; 

@@ -1,31 +1,62 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Table, Tag, Spin, Alert, Typography, Card } from 'antd';
-import { getAllUsers } from '../../services/userService';
+import { Layout, Table, Tag, Spin, Alert, Typography, Card, Button, Modal, message } from 'antd';
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { getAllUsers, deleteUser } from '../../services/userService';
+import { useNavigate } from 'react-router-dom';
 
 const { Content } = Layout;
 const { Title } = Typography;
 
 const AccountManagement = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const data = await getAllUsers();
-        console.log('Fetched users:', data); // Debug log
-        setUsers(data);
-        setLoading(false);
-      } catch (error) {
-        console.error('Lỗi khi lấy danh sách người dùng:', error);
-        setError('Không thể tải danh sách người dùng. Vui lòng thử lại sau.');
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const data = await getAllUsers();
+      console.log('Fetched users:', data);
+      setUsers(data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách người dùng:', error);
+      setError('Không thể tải danh sách người dùng. Vui lòng thử lại sau.');
+      setLoading(false);
+    }
+  };
+
+  const handleAddUser = () => {
+    navigate('/register');
+  };
+
+  const showDeleteConfirm = (user) => {
+    setSelectedUser(user);
+    setIsDeleteModalVisible(true);
+  };
+
+  const handleDeleteCancel = () => {
+    setSelectedUser(null);
+    setIsDeleteModalVisible(false);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteUser(selectedUser._id);
+      message.success('Xóa tài khoản thành công');
+      fetchUsers(); // Refresh danh sách
+      setIsDeleteModalVisible(false);
+      setSelectedUser(null);
+    } catch (error) {
+      message.error('Không thể xóa tài khoản. Vui lòng thử lại sau.');
+    }
+  };
 
   // Hàm để lấy màu cho role
   const getRoleColor = (role) => {
@@ -166,13 +197,39 @@ const AccountManagement = () => {
       ],
       onFilter: (value, record) => record.department === value,
     },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      render: (_, record) => (
+        <Button
+          type="text"
+          danger
+          icon={<DeleteOutlined />}
+          onClick={() => showDeleteConfirm(record)}
+        >
+          Xóa
+        </Button>
+      ),
+    },
   ];
 
   return (
     <Content className="p-6 ml-[282px] mt-[80px]">
       <Card className="mb-6">
-        <Title level={2}>Quản lý Tài khoản</Title>
-        <p className="text-gray-500">Quản lý và xem thông tin tất cả tài khoản trong hệ thống</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <Title level={2}>Quản lý Tài khoản</Title>
+            <p className="text-gray-500">Quản lý và xem thông tin tất cả tài khoản trong hệ thống</p>
+          </div>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAddUser}
+            className="bg-[#1890ff]"
+          >
+            Thêm tài khoản
+          </Button>
+        </div>
       </Card>
 
       {loading ? (
@@ -201,6 +258,19 @@ const AccountManagement = () => {
           />
         </Card>
       )}
+
+      <Modal
+        title="Xác nhận xóa tài khoản"
+        open={isDeleteModalVisible}
+        onOk={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        okText="Xóa"
+        cancelText="Hủy"
+        okButtonProps={{ danger: true }}
+      >
+        <p>Bạn có chắc chắn muốn xóa tài khoản của {selectedUser?.fullName}?</p>
+        <p>Hành động này không thể hoàn tác.</p>
+      </Modal>
     </Content>
   );
 };

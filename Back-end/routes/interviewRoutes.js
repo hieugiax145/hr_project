@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middlewares/authMiddleware');
+const { protect, authorizeAdminHR } = require('../middlewares/authMiddleware');
 const {
   getInterviews,
   getInterviewById,
@@ -11,15 +11,15 @@ const {
 } = require('../controllers/interviewController');
 
 router.route('/')
-  .get(protect, getInterviews)
-  .post(protect, createInterview);
+  .get(protect, authorizeAdminHR('view'), getInterviews)
+  .post(protect, authorizeAdminHR('create'), createInterview);
 
 router.route('/:id')
-  .get(protect, getInterviewById)
-  .put(protect, updateInterview)
-  .delete(protect, deleteInterview);
+  .get(protect, authorizeAdminHR('view'), getInterviewById)
+  .put(protect, authorizeAdminHR('update'), updateInterview)
+  .delete(protect, authorizeAdminHR('delete'), deleteInterview);
 
 // Get upcoming interviews by candidate ID
-router.get('/candidate/:candidateId', protect, getUpcomingInterviewsByCandidate);
+router.get('/candidate/:candidateId', protect, authorizeAdminHR('view'), getUpcomingInterviewsByCandidate);
 
 module.exports = router;

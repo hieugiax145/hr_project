@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middlewares/authMiddleware');
+const { protect, authorizeAdminHR } = require('../middlewares/authMiddleware');
 const { upload } = require('../middlewares/uploadMiddleware');
 const {
   registerUser,
@@ -10,7 +10,8 @@ const {
   uploadAvatar,
   getAllUsers,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  deleteUser
 } = require('../controllers/userController');
 
 // Public routes
@@ -23,6 +24,9 @@ router.post('/reset-password', resetPassword);
 router.get('/profile', protect, getUserProfile);
 router.put('/profile', protect, updateUserProfile);
 router.put('/avatar', protect, upload.single('avatar'), uploadAvatar);
-router.get('/all', protect, getAllUsers);
+
+// Admin và HR routes
+router.get('/all', protect, authorizeAdminHR('view'), getAllUsers);
+router.delete('/:id', protect, authorizeAdminHR('manage_accounts'), deleteUser);
 
 module.exports = router;

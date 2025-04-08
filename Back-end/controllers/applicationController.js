@@ -1,6 +1,7 @@
 const Application = require('../models/Application');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const RecruitmentNotification = require('../models/RecruitmentNotification');
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
@@ -150,6 +151,19 @@ const updateApplicationStatus = async (req, res) => {
     
     if (!application) {
       return res.status(404).json({ message: 'Không tìm thấy yêu cầu tuyển dụng' });
+    }
+
+    // Nếu CEO phê duyệt, tạo thông báo cho người lập phiếu
+    if (req.user.role === 'ceo' && status === 'Đã duyệt') {
+      const notification = new RecruitmentNotification({
+        recruitmentId: application._id,
+        position: application.position,
+        department: application.department,
+        requester: application.requester,
+        message: 'Phiếu YCTD của bạn đã được CEO phê duyệt'
+      });
+
+      await notification.save();
     }
     
     res.json(application);

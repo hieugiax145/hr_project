@@ -67,7 +67,7 @@ const App = () => {
         {/* Account Management route - only for CEO */}
         <Route path="/account-management" element={
           <DashboardLayout>
-            <ProtectedRoute allowedRoles={['admin']}>
+            <ProtectedRoute allowedRoles={['admin', 'ceo']}>
               <AccountManagement />
             </ProtectedRoute>
           </DashboardLayout>

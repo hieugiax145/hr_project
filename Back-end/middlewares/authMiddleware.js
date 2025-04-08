@@ -67,4 +67,59 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, authorize };
+// Middleware phân quyền chi tiết cho Admin và HR
+const authorizeAdminHR = (action) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Vui lòng đăng nhập để thực hiện chức năng này' });
+    }
+
+    // Admin và CEO chỉ có quyền xem
+    if (req.user.role === 'admin' || req.user.role === 'ceo') {
+      if (action !== 'view') {
+        return res.status(403).json({ 
+          message: 'Bạn chỉ có quyền xem thông tin',
+          currentRole: req.user.role,
+          requiredAction: action
+        });
+      }
+    }
+
+    // HR có đầy đủ quyền trừ quản lý tài khoản
+    if (req.user.role === 'hr') {
+      if (action === 'manage_accounts') {
+        return res.status(403).json({ 
+          message: 'HR không có quyền quản lý tài khoản',
+          currentRole: req.user.role,
+          requiredAction: action
+        });
+      }
+    }
+
+    // Trưởng phòng ban chỉ có quyền xem
+    if (req.user.role === 'department_head') {
+      if (action !== 'view') {
+        return res.status(403).json({
+          message: 'Trưởng phòng ban chỉ có quyền xem thông tin',
+          currentRole: req.user.role,
+          requiredAction: action
+        });
+      }
+      // Lưu department vào request để controller có thể sử dụng
+      req.userDepartment = req.user.department;
+    }
+
+    // Kiểm tra role
+    if (!['admin', 'hr', 'department_head', 'ceo'].includes(req.user.role)) {
+      return res.status(403).json({ 
+        message: 'Bạn không có quyền thực hiện chức năng này',
+        currentRole: req.user.role,
+        requiredRoles: ['admin', 'hr', 'department_head', 'ceo']
+      });
+    }
+
+    next();
+  };
+};
+
+module.exports = { protect, authorize, authorizeAdminHR };

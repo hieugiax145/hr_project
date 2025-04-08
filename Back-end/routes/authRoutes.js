@@ -3,9 +3,10 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { protect, authorizeAdminHR } = require('../middlewares/authMiddleware');
 
-// Đăng ký
-router.post('/register', async (req, res) => {
+// Đăng ký - Chỉ HR mới có quyền tạo tài khoản mới
+router.post('/register', protect, authorizeAdminHR('create'), async (req, res) => {
   try {
     const { email, password, name, role } = req.body;
 
@@ -52,7 +53,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Đăng nhập
+// Đăng nhập - Public route
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -92,21 +93,13 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Lấy thông tin user hiện tại
-router.get('/me', async (req, res) => {
+// Lấy thông tin user hiện tại - Protected route
+router.get('/me', protect, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ message: 'Không tìm thấy token xác thực' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId).select('-password');
-    
+    const user = await User.findById(req.user._id).select('-password');
     if (!user) {
       return res.status(404).json({ message: 'Không tìm thấy người dùng' });
     }
-
     res.json(user);
   } catch (error) {
     console.error('Lỗi xác thực:', error);

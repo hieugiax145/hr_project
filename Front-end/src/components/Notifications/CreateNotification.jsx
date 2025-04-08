@@ -226,10 +226,7 @@ const CreateNotification = () => {
         'idCard.issueDate',
         'idCard.issuePlace',
         'startDate',
-        'insuranceNumber',
-        'taxCode',
-        'bankAccount.number',
-        'bankAccount.bank'
+        'insuranceNumber'
       ];
       
       const missingFields = requiredFields.filter(field => {
@@ -585,25 +582,22 @@ const CreateNotification = () => {
                 </Form.Item>
 
                 <Form.Item
-                  label={<span>Mã số thuế cá nhân <span className="text-red-500">*</span></span>}
+                  label="Mã số thuế cá nhân"
                   name="taxCode"
-                  rules={[{ required: true, message: 'Vui lòng nhập mã số thuế' }]}
                 >
                   <Input />
                 </Form.Item>
 
                 <Form.Item
-                  label={<span>Số tài khoản <span className="text-red-500">*</span></span>}
+                  label="Số tài khoản"
                   name={['bankAccount', 'number']}
-                  rules={[{ required: true, message: 'Vui lòng nhập số tài khoản' }]}
                 >
                   <Input />
                 </Form.Item>
 
                 <Form.Item
-                  label={<span>Tại ngân hàng <span className="text-red-500">*</span></span>}
+                  label="Tại ngân hàng"
                   name={['bankAccount', 'bank']}
-                  rules={[{ required: true, message: 'Vui lòng nhập tên ngân hàng' }]}
                 >
                   <Input />
                 </Form.Item>

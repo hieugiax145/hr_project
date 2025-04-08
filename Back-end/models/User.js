@@ -14,7 +14,8 @@ const UserSchema = new mongoose.Schema({
       'recruitment',
       'applicant',
       'director',
-      'admin'
+      'admin',
+      'hr'
     ], 
     required: true 
   },

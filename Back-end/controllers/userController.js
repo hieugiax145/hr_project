@@ -284,13 +284,46 @@ const getAllUsers = asyncHandler(async (req, res) => {
   res.json(users);
 });
 
+// Xóa người dùng
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Kiểm tra xem người dùng có tồn tại không
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+    }
+
+    // Kiểm tra xem người dùng hiện tại có quyền xóa không
+    const currentUser = await User.findById(req.user.id);
+    if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'ceo')) {
+      return res.status(403).json({ message: 'Không có quyền thực hiện thao tác này' });
+    }
+
+    // Không cho phép xóa tài khoản admin
+    if (user.role === 'admin') {
+      return res.status(403).json({ message: 'Không thể xóa tài khoản admin' });
+    }
+
+    // Thực hiện xóa người dùng
+    await User.findByIdAndDelete(id);
+
+    res.status(200).json({ message: 'Xóa người dùng thành công' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ message: 'Lỗi server, vui lòng thử lại sau' });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
-  forgotPassword,
-  resetPassword,
   getUserProfile,
   updateUserProfile,
   uploadAvatar,
-  getAllUsers
+  getAllUsers,
+  forgotPassword,
+  resetPassword,
+  deleteUser
 };

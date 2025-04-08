@@ -14,10 +14,20 @@ const recruitmentNotificationSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  requester: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   status: {
     type: String,
     enum: ['pending', 'read'],
     default: 'pending'
+  },
+  message: {
+    type: String,
+    required: true,
+    default: 'Phiếu YCTD của bạn đã được CEO phê duyệt'
   },
   createdAt: {
     type: Date,

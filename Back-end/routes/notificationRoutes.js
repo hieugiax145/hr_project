@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middlewares/authMiddleware');
+const { protect, authorizeAdminHR } = require('../middlewares/authMiddleware');
 const { handleUpload } = require('../middlewares/uploadMiddleware');
 const {
   createNotification,
@@ -13,14 +13,14 @@ const {
 } = require('../controllers/notificationController');
 
 // Public routes
-router.get('/eligible-candidates', protect, getEligibleCandidates);
-router.get('/hr-list', protect, getHRList);
+router.get('/eligible-candidates', protect, authorizeAdminHR('view'), getEligibleCandidates);
+router.get('/hr-list', protect, authorizeAdminHR('view'), getHRList);
 
 // Protected routes
-router.post('/', protect, handleUpload, createNotification);
-router.get('/', protect, getNotifications);
-router.get('/:id', protect, getNotificationById);
-router.put('/:id', protect, handleUpload, updateNotification);
-router.delete('/:id', protect, deleteNotification);
+router.post('/', protect, authorizeAdminHR('create'), handleUpload, createNotification);
+router.get('/', protect, authorizeAdminHR('view'), getNotifications);
+router.get('/:id', protect, authorizeAdminHR('view'), getNotificationById);
+router.put('/:id', protect, authorizeAdminHR('update'), handleUpload, updateNotification);
+router.delete('/:id', protect, authorizeAdminHR('delete'), deleteNotification);
 
 module.exports = router;

@@ -220,27 +220,37 @@ const JobsCandidates = () => {
         return;
       }
 
-      const response = await axios.delete(`${API_BASE_URL}/candidates/${candidateId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      // Hiển thị hộp thoại xác nhận
+      Modal.confirm({
+        title: 'Xác nhận xóa',
+        content: 'Bạn có chắc chắn muốn xóa ứng viên này không?',
+        okText: 'Xóa',
+        okType: 'danger',
+        cancelText: 'Hủy',
+        onOk: async () => {
+          const response = await axios.delete(`${API_BASE_URL}/candidates/${candidateId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.status === 200) {
+            message.success('Xóa ứng viên thành công');
+            // Refresh candidates list
+            const candidatesResponse = await axios.get(`${API_BASE_URL}/positions/${id}/candidates`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (candidatesResponse.status === 200) {
+              setCandidates(candidatesResponse.data.candidates || []);
+            }
+          }
         }
       });
-
-      if (response.status === 200) {
-        message.success('Xóa ứng viên thành công');
-        // Refresh candidates list
-        const candidatesResponse = await axios.get(`${API_BASE_URL}/positions/${id}/candidates`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (candidatesResponse.status === 200) {
-          setCandidates(candidatesResponse.data.candidates || []);
-        }
-      }
     } catch (error) {
       console.error('Error deleting candidate:', error);
       message.error('Có lỗi xảy ra khi xóa ứng viên');
@@ -447,7 +457,10 @@ const JobsCandidates = () => {
                       <div
                         key={candidate._id}
                         className="bg-[#F4F2FF] rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => navigate(`/candidates/${candidate._id}`, { state: { from: 'jobs-candidates', positionId: id } })}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditCandidate(candidate);
+                        }}
                       >
                         <div className="flex justify-between items-start mb-2">
                           <div>

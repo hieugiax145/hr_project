@@ -45,6 +45,11 @@ const Candidates = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user'));
+      
+      console.log('Token:', token);
+      console.log('User:', user);
+      
       if (!token) {
         message.error('Vui lòng đăng nhập lại');
         navigate('/login');
@@ -57,6 +62,8 @@ const Candidates = () => {
         }
       });
 
+      console.log('API Response:', response);
+
       if (response.status === 200) {
         const candidatesWithPosition = response.data.candidates.map(candidate => ({
           ...candidate,
@@ -66,9 +73,15 @@ const Candidates = () => {
       }
     } catch (error) {
       console.error('Error fetching candidates:', error);
+      console.error('Error response:', error.response);
+      
       if (error.response?.status === 401) {
         message.error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
         navigate('/login');
+      } else if (error.response?.status === 403) {
+        message.error('Bạn không có quyền truy cập chức năng này');
       } else {
         message.error('Có lỗi xảy ra khi tải danh sách ứng viên');
       }
