@@ -136,15 +136,20 @@ const CreateRecruitmentRequest = () => {
       if (response.data) {
         // Nếu là trạng thái "Đã nộp" (vượt quỹ), tạo thông báo cho CEO
         if (status === 'Đã nộp') {
-          await api.post('/api/recruitment-notifications', {
-            recruitmentId: response.data._id,
-            position: formData.position,
-            department: formData.department
-          }, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
+          try {
+            await api.post('/api/recruitment-notifications', {
+              recruitmentId: response.data._id,
+              position: formData.position,
+              department: formData.department
+            }, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+          } catch (notificationError) {
+            console.warn('Không thể gửi thông báo, nhưng yêu cầu tuyển dụng đã được tạo:', notificationError);
+            // Không hiển thị lỗi cho người dùng vì yêu cầu tuyển dụng vẫn đã được tạo thành công
+          }
         }
 
         message.success('Yêu cầu tuyển dụng đã được gửi thành công!');
