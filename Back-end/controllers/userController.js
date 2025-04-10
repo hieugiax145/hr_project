@@ -295,15 +295,9 @@ const deleteUser = async (req, res) => {
       return res.status(404).json({ message: 'Không tìm thấy người dùng' });
     }
 
-    // Kiểm tra xem người dùng hiện tại có quyền xóa không
-    const currentUser = await User.findById(req.user.id);
-    if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'ceo')) {
-      return res.status(403).json({ message: 'Không có quyền thực hiện thao tác này' });
-    }
-
     // Không cho phép xóa tài khoản admin
-    if (user.role === 'admin') {
-      return res.status(403).json({ message: 'Không thể xóa tài khoản admin' });
+    if (user.role === 'admin' || user.role === 'ceo') {
+      return res.status(403).json({ message: 'Không thể xóa tài khoản admin hoặc CEO' });
     }
 
     // Thực hiện xóa người dùng

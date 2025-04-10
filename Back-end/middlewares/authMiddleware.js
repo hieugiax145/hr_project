@@ -79,11 +79,13 @@ const authorizeAdminHR = (action) => {
       return next();
     }
 
-    // Admin chỉ có quyền xem
+    // Admin có quyền xem và quản lý tài khoản
     if (req.user.role === 'admin') {
-      if (action !== 'view') {
+      if (action === 'view' || action === 'manage_accounts') {
+        return next();
+      } else {
         return res.status(403).json({ 
-          message: 'Bạn chỉ có quyền xem thông tin',
+          message: 'Bạn không có quyền thực hiện chức năng này',
           currentRole: req.user.role,
           requiredAction: action
         });
