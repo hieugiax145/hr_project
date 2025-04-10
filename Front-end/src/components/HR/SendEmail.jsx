@@ -25,6 +25,7 @@ const SendEmail = () => {
   const [sendCount, setSendCount] = useState(0);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingSubmit, setPendingSubmit] = useState(null);
+  const [hrInfo, setHrInfo] = useState({ name: '[tên HR]', phone: '[SDT]' });
 
   // Quill modules configuration
   const modules = {
@@ -65,7 +66,7 @@ const SendEmail = () => {
 
   useEffect(() => {
     const fetchCandidateData = async () => {
-      if (!id) return; // Nếu không có id, không fetch data
+      if (!id) return;
 
       try {
         const token = localStorage.getItem('token');
@@ -84,20 +85,27 @@ const SendEmail = () => {
           }
         });
         
+        console.log('Interview response:', interviewResponse.data);
+
         if (candidateResponse.data && candidateResponse.data.candidate) {
           const candidate = candidateResponse.data.candidate;
-          
-          // Lưu thông tin phỏng vấn nếu có
-          if (interviewResponse.status === 200 && interviewResponse.data.length > 0) {
-            setUpcomingInterview(interviewResponse.data[0]);
-          }
           
           // Lấy thông tin HR từ localStorage
           const userString = localStorage.getItem('user');
           const user = userString ? JSON.parse(userString) : null;
-          const hrName = user?.fullName || '[tên HR]';
-          const hrPhone = user?.phone || '[SDT]';
+          setHrInfo({
+            name: user?.fullName || '[tên HR]'
+          });
           
+          // Lưu thông tin phỏng vấn nếu có
+          if (interviewResponse.status === 200 && interviewResponse.data.length > 0) {
+            const interview = interviewResponse.data[0];
+            console.log('Upcoming interview:', interview);
+            setUpcomingInterview(interview);
+          } else {
+            console.log('No upcoming interviews found');
+          }
+
           // Tạo nội dung email mẫu
           const emailContent = candidate.stage === 'rejected' 
             ? `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -126,11 +134,11 @@ const SendEmail = () => {
 <p>Trân trọng mời <strong>${candidate.name || '[Anh/Chị]'}</strong> tham dự buổi phỏng vấn tại Rikkei theo thông tin chi tiết như sau:</p>
 
 <div style="margin: 30px 0; background-color: #f9f9f9; padding: 20px; border-radius: 5px;">
-<p style="margin: 10px 0;">✔ <strong>Thời gian:</strong> ${upcomingInterview ? moment(upcomingInterview.startTime).format('HH:mm, DD/MM/YYYY') : '[thời gian phỏng vấn]'}</p>
-<p style="margin: 10px 0;">✔ <strong>Địa điểm:</strong> Tầng 7 tháp A tòa Sông Đà, đường Phạm Hùng, quận Nam Từ Liêm, Hà Nội</p>
-<p style="margin: 10px 0;">✔ <strong>Hình thức phỏng vấn:</strong> Trực tiếp</p>
-<p style="margin: 10px 0;">✔ <strong>Thời lượng:</strong> 30 - 45 phút</p>
-<p style="margin: 10px 0;">✔ <strong>Người liên hệ:</strong> ${hrName} – ${hrPhone}</p>
+<p style="margin: 10px 0;">✔ <strong>Thời gian:</strong> ${upcomingInterview ? `${moment(upcomingInterview.startTime).format('HH:mm')} - ${moment(upcomingInterview.endTime).format('HH:mm')}, ${moment(upcomingInterview.date).format('DD/MM/YYYY')}` : '[thời gian phỏng vấn]'}</p>
+<p style="margin: 10px 0;">✔ <strong>Địa điểm:</strong> ${upcomingInterview?.location || 'Tầng 7 tháp A tòa Sông Đà, đường Phạm Hùng, quận Nam Từ Liêm, Hà Nội'}</p>
+<p style="margin: 10px 0;">✔ <strong>Hình thức phỏng vấn:</strong> ${upcomingInterview?.eventType === 'offline' ? 'Trực tiếp' : 'Online'}</p>
+<p style="margin: 10px 0;">✔ <strong>Thời lượng:</strong> ${upcomingInterview ? `${Math.abs(moment(upcomingInterview.endTime).diff(moment(upcomingInterview.startTime), 'minutes'))} phút` : '30 - 45 phút'}</p>
+<p style="margin: 10px 0;">✔ <strong>Người liên hệ:</strong> ${hrInfo.name}</p>
 </div>
 
 <p style="margin-top: 20px;">🔹 <strong>${candidate.name || '[Anh/Chị]'}</strong> vui lòng phản hồi lại email để xác nhận tham gia phỏng vấn.</p>
@@ -158,6 +166,50 @@ const SendEmail = () => {
 
     fetchCandidateData();
   }, [id, form]);
+
+  // Thêm useEffect để cập nhật nội dung email khi upcomingInterview thay đổi
+  useEffect(() => {
+    if (candidate && upcomingInterview) {
+      // Tính thời lượng phỏng vấn
+      const startTime = moment(upcomingInterview.startTime);
+      const endTime = moment(upcomingInterview.endTime);
+      
+      // Kiểm tra và sửa lại thời gian nếu cần
+      if (endTime.isBefore(startTime)) {
+        endTime.add(1, 'day');
+      }
+      
+      const duration = endTime.diff(startTime, 'minutes');
+      
+      const emailContent = `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+<h3 style="text-align: center; margin-bottom: 30px; color: #000066; font-size: 18px;">THƯ MỜI PHỎNG VẤN ${candidate.name.toUpperCase()} ỨNG TUYỂN ${candidate.position.toUpperCase()}</h3>
+
+<p>Kính gửi: <strong>${candidate.name}</strong>,</p>
+
+<p>Công ty TNHH <strong>Rikkei Education (Rikkei)</strong> rất cảm ơn <strong>${candidate.name}</strong> đã quan tâm ứng tuyển vào vị trí <strong>${candidate.position}</strong>.</p>
+
+<p>Trân trọng mời <strong>${candidate.name}</strong> tham dự buổi phỏng vấn tại Rikkei theo thông tin chi tiết như sau:</p>
+
+<div style="margin: 30px 0; background-color: #f9f9f9; padding: 20px; border-radius: 5px;">
+<p style="margin: 10px 0;">✔ <strong>Thời gian:</strong> ${moment(upcomingInterview.startTime).format('HH:mm')} - ${moment(upcomingInterview.endTime).format('HH:mm')}, ${moment(upcomingInterview.date).format('DD/MM/YYYY')}</p>
+<p style="margin: 10px 0;">✔ <strong>Địa điểm:</strong> ${upcomingInterview.location || 'Tầng 7 tháp A tòa Sông Đà, đường Phạm Hùng, quận Nam Từ Liêm, Hà Nội'}</p>
+<p style="margin: 10px 0;">✔ <strong>Hình thức phỏng vấn:</strong> ${upcomingInterview.eventType === 'offline' ? 'Trực tiếp' : 'Online'}</p>
+<p style="margin: 10px 0;">✔ <strong>Thời lượng:</strong> ${duration} phút</p>
+<p style="margin: 10px 0;">✔ <strong>Người liên hệ:</strong> ${hrInfo.name}</p>
+</div>
+
+<p style="margin-top: 20px;">🔹 <strong>${candidate.name}</strong> vui lòng phản hồi lại email để xác nhận tham gia phỏng vấn.</p>
+<p>🔹 Cám ơn <strong>${candidate.name}</strong> đã sắp xếp để có buổi trao đổi này. Chúc <strong>${candidate.name}</strong> có một buổi phỏng vấn thành công!</p>
+
+<p style="margin-top: 30px;">Trân trọng,</p>
+<p style="margin-top: 10px;"><strong>TM. HỘI ĐỒNG TUYỂN DỤNG</strong></p>
+</div>`;
+
+      form.setFieldsValue({
+        content: emailContent
+      });
+    }
+  }, [candidate, upcomingInterview, hrInfo, form]);
 
   useEffect(() => {
     if (candidate?.stage === 'hired') {

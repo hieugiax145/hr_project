@@ -32,15 +32,16 @@ const OtherRecruitmentRequests = () => {
           }
         });
 
-        setRequests(response.data);
+        // Lấy danh sách yêu cầu từ response.data.applications
+        setRequests(response.data.applications);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching requests:', error);
+        const errorMessage = error.response?.data?.message || 'Có lỗi xảy ra khi tải dữ liệu';
+        setError(errorMessage);
         if (error.response?.status === 401) {
           localStorage.removeItem('token');
           navigate('/login');
-        } else {
-          setError('Có lỗi xảy ra khi tải dữ liệu');
         }
         setLoading(false);
       }

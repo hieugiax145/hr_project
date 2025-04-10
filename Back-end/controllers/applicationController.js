@@ -45,6 +45,10 @@ const getApplications = async (req, res) => {
       .populate('userId', 'username fullName')
       .sort({ createdAt: -1 });
 
+    // Kiểm tra quyền thêm mới
+    const canCreate = req.user.role === 'ceo' || req.user.role === 'hr' || 
+      (req.user.role === 'department_head' && req.user.department === 'hr');
+
     const formattedApplications = applications.map(app => {
       const createdDate = new Date(app.createdAt);
       return {
@@ -63,7 +67,7 @@ const getApplications = async (req, res) => {
         position: app.position,
         quantity: app.quantity,
         department: app.department,
-        date: createdDate,  // Gửi nguyên date object về frontend
+        date: createdDate,
         createdAt: app.createdAt,
         status: app.status || 'Chờ nộp',
         mainLocation: app.mainLocation,
@@ -76,7 +80,12 @@ const getApplications = async (req, res) => {
       };
     });
 
-    res.status(200).json(formattedApplications);
+    res.status(200).json({
+      applications: formattedApplications,
+      permissions: {
+        canCreate
+      }
+    });
   } catch (error) {
     console.error('Get applications error:', error);
     res.status(500).json({ 

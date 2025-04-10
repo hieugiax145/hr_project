@@ -8,7 +8,7 @@ import axios from 'axios';
 const { TextArea } = Input;
 const { Option } = Select;
 
-const AddEventModal = ({ visible, onClose, onSave, selectedDate }) => {
+const AddEventModal = ({ visible, onClose, onSave, selectedDate, candidateId }) => {
   const [form] = Form.useForm();
   const [candidates, setCandidates] = useState([]);
   const [users, setUsers] = useState([]);
@@ -23,11 +23,12 @@ const AddEventModal = ({ visible, onClose, onSave, selectedDate }) => {
         endTime: dayjs('14:30', 'HH:mm'),
         eventType: 'offline',
         beforeEvent: 5,
-        type: 'interview'
+        type: 'interview',
+        assignTo: candidateId
       });
       fetchData();
     }
-  }, [visible, selectedDate, form]);
+  }, [visible, selectedDate, form, candidateId]);
 
   const fetchData = async () => {
     try {

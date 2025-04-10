@@ -61,13 +61,13 @@ const Positions = () => {
 
       if (positionsResponse.status === 200) {
         const positions = positionsResponse.data.data || [];
-        const applications = applicationsResponse.data || [];
+        const applications = applicationsResponse.data.applications || [];
 
         // Map thông tin địa điểm từ applications vào positions
         const positionsWithLocations = positions.map(position => {
-          const matchingApplication = applications.find(app => 
+          const matchingApplication = Array.isArray(applications) ? applications.find(app => 
             app.position === position.title && app.department === position.department
-          );
+          ) : null;
 
           return {
             ...position,

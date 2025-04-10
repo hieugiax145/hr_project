@@ -433,6 +433,17 @@ const CandidateDetail = () => {
         message.success('Thêm lịch phỏng vấn thành công');
         setIsAddEventModalVisible(false);
         fetchCandidateDetail();
+
+        // Hiển thị modal xác nhận gửi email
+        Modal.confirm({
+          title: 'Gửi email mời phỏng vấn',
+          content: 'Bạn có muốn gửi email mời phỏng vấn cho ứng viên ngay bây giờ?',
+          okText: 'Gửi email',
+          cancelText: 'Để sau',
+          onOk: () => {
+            navigate(`/candidates/${id}/send-email`);
+          }
+        });
       }
     } catch (error) {
       console.error('Error adding event:', error);
@@ -912,6 +923,7 @@ const CandidateDetail = () => {
         onClose={() => setIsAddEventModalVisible(false)}
         onSave={handleAddEvent}
         selectedDate={dayjs()}
+        candidateId={id}
       />
     </Layout>
   );

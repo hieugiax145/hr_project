@@ -53,17 +53,17 @@ const CreatePosition = () => {
         });
 
         if (applicationsResponse.status === 200 && positionsResponse.status === 200) {
-          const applications = applicationsResponse.data || [];
+          const applications = applicationsResponse.data.applications || [];
           const positions = positionsResponse.data.data || [];
 
           // Lọc ra các application đã duyệt và chưa được tạo thành position
-          const approvedApplications = applications.filter(app => 
+          const approvedApplications = Array.isArray(applications) ? applications.filter(app => 
             app.status === 'Đã duyệt' && 
             !positions.some(pos => 
               pos.title === app.position && 
               pos.department === app.department
             )
-          );
+          ) : [];
 
           setApprovedPositions(approvedApplications);
         }

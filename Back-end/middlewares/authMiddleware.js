@@ -74,8 +74,13 @@ const authorizeAdminHR = (action) => {
       return res.status(401).json({ message: 'Vui lòng đăng nhập để thực hiện chức năng này' });
     }
 
-    // Admin và CEO chỉ có quyền xem
-    if (req.user.role === 'admin' || req.user.role === 'ceo') {
+    // CEO có đầy đủ quyền
+    if (req.user.role === 'ceo') {
+      return next();
+    }
+
+    // Admin chỉ có quyền xem
+    if (req.user.role === 'admin') {
       if (action !== 'view') {
         return res.status(403).json({ 
           message: 'Bạn chỉ có quyền xem thông tin',
@@ -94,10 +99,17 @@ const authorizeAdminHR = (action) => {
           requiredAction: action
         });
       }
+      return next();
     }
 
-    // Trưởng phòng ban chỉ có quyền xem
+    // Trưởng phòng ban (không phải HR) chỉ có quyền xem và chỉ xem được dữ liệu của phòng mình
     if (req.user.role === 'department_head') {
+      // Nếu là trưởng phòng HR thì có đầy đủ quyền
+      if (req.user.department === 'hr') {
+        return next();
+      }
+
+      // Các trưởng phòng khác chỉ có quyền xem
       if (action !== 'view') {
         return res.status(403).json({
           message: 'Trưởng phòng ban chỉ có quyền xem thông tin',
@@ -105,8 +117,10 @@ const authorizeAdminHR = (action) => {
           requiredAction: action
         });
       }
+
       // Lưu department vào request để controller có thể sử dụng
       req.userDepartment = req.user.department;
+      return next();
     }
 
     // Kiểm tra role

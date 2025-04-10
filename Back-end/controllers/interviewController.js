@@ -91,15 +91,15 @@ const getUpcomingInterviewsByCandidate = async (req, res) => {
   try {
     const { candidateId } = req.params;
     
-    // Tìm interview sắp tới của ứng viên
+    // Tìm tất cả interview sắp tới của ứng viên
     const interviews = await Interview.find({
       candidate: candidateId,
       date: { $gt: new Date() }
     })
-    .populate('attendees', 'fullName role')
-    .populate('createdBy', 'fullName role')
-    .sort({ date: 1 })
-    .limit(1);  // Chỉ lấy 1 interview gần nhất
+    .populate('attendees', 'fullName role email department')
+    .populate('createdBy', 'fullName role email department')
+    .populate('candidate', 'name email phone positionId')
+    .sort({ date: 1 });
 
     res.json(interviews);
   } catch (error) {

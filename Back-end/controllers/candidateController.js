@@ -345,11 +345,11 @@ exports.getAllCandidates = async (req, res) => {
       }
     ];
 
-    // Nếu là trưởng phòng ban, chỉ lấy ứng viên của phòng mình
-    if (req.user.role === 'department_head') {
+    // Nếu là trưởng phòng ban (không phải HR), chỉ lấy ứng viên của phòng mình
+    if (req.user.role === 'department_head' && req.user.department !== 'hr') {
       pipeline.push({
         $match: {
-          'position.department': req.userDepartment
+          'position.department': req.user.department
         }
       });
     }
@@ -359,6 +359,10 @@ exports.getAllCandidates = async (req, res) => {
     });
 
     const candidates = await Candidate.aggregate(pipeline);
+
+    // Kiểm tra quyền gửi email
+    const canSendEmail = req.user.role === 'ceo' || req.user.role === 'hr' || 
+      (req.user.role === 'department_head' && req.user.department === 'hr');
 
     res.json({
       candidates: candidates.map(candidate => ({
@@ -378,7 +382,10 @@ exports.getAllCandidates = async (req, res) => {
         notes: candidate.notes,
         emailStatus: candidate.emailStatus,
         createdAt: candidate.createdAt
-      }))
+      })),
+      permissions: {
+        canSendEmail
+      }
     });
   } catch (error) {
     console.error('Error in getAllCandidates:', error);

@@ -70,6 +70,9 @@ exports.getPositions = async (req, res) => {
       Position.countDocuments(query)
     ]);
 
+    // Kiểm tra quyền thêm mới
+    const canCreate = req.user.role === 'ceo' || (req.user.role === 'department_head' && req.user.department === 'hr');
+
     res.json({
       message: 'Lấy danh sách vị trí thành công',
       data: positions,
@@ -78,6 +81,9 @@ exports.getPositions = async (req, res) => {
         totalPages: Math.ceil(total / limit),
         totalItems: total,
         itemsPerPage: limit
+      },
+      permissions: {
+        canCreate
       }
     });
   } catch (error) {

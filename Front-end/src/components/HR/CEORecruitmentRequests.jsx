@@ -33,7 +33,8 @@ const CEORecruitmentRequests = () => {
 
         console.log('Raw API Response:', response.data);
 
-        const filteredData = response.data.filter(item => 
+        // Lọc các yêu cầu có trạng thái "Đã nộp" hoặc "Đang duyệt"
+        const filteredData = response.data.applications.filter(item => 
           item.status === 'Đã nộp' || item.status === 'Đang duyệt'
         );
 
