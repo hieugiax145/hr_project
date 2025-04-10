@@ -457,10 +457,6 @@ const JobsCandidates = () => {
                       <div
                         key={candidate._id}
                         className="bg-[#F4F2FF] rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditCandidate(candidate);
-                        }}
                       >
                         <div className="flex justify-between items-start mb-2">
                           <div>

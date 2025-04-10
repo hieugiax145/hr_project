@@ -384,17 +384,9 @@ const CandidateDetail = () => {
       const startTime = dayjs(values.startTime);
       const endTime = dayjs(values.endTime);
 
-      const startDateTime = eventDate
-        .hour(startTime.hour())
-        .minute(startTime.minute())
-        .second(0)
-        .millisecond(0);
-
-      const endDateTime = eventDate
-        .hour(endTime.hour())
-        .minute(endTime.minute())
-        .second(0)
-        .millisecond(0);
+      // Tạo ngày giờ đầy đủ từ ngày và giờ đã chọn
+      const startDateTime = dayjs(eventDate.format('YYYY-MM-DD') + ' ' + startTime.format('HH:mm:ss'));
+      const endDateTime = dayjs(eventDate.format('YYYY-MM-DD') + ' ' + endTime.format('HH:mm:ss'));
 
       if (endDateTime.isBefore(startDateTime)) {
         message.error('Thời gian kết thúc phải sau thời gian bắt đầu');
@@ -403,7 +395,7 @@ const CandidateDetail = () => {
 
       const formattedData = {
         title: values.title?.trim(),
-        date: eventDate.toISOString(),
+        date: startDateTime.toISOString(), // Sử dụng startDateTime làm date
         startTime: startDateTime.toISOString(),
         endTime: endDateTime.toISOString(),
         eventType: values.eventType,
@@ -422,35 +414,59 @@ const CandidateDetail = () => {
         return;
       }
 
-      const response = await axios.post('http://localhost:8000/api/interviews', formattedData, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      let response;
+      
+      // Kiểm tra xem đang chỉnh sửa hay tạo mới
+      if (upcomingInterview && upcomingInterview._id) {
+        // Cập nhật sự kiện hiện có
+        response = await axios.put(
+          `http://localhost:8000/api/interviews/${upcomingInterview._id}`,
+          formattedData,
+          {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+      } else {
+        // Tạo sự kiện mới
+        response = await axios.post(
+          'http://localhost:8000/api/interviews',
+          formattedData,
+          {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+      }
 
       if (response.status === 201 || response.status === 200) {
-        message.success('Thêm lịch phỏng vấn thành công');
+        message.success(upcomingInterview ? 'Cập nhật lịch phỏng vấn thành công' : 'Thêm lịch phỏng vấn thành công');
         setIsAddEventModalVisible(false);
         fetchCandidateDetail();
 
-        // Hiển thị modal xác nhận gửi email
-        Modal.confirm({
-          title: 'Gửi email mời phỏng vấn',
-          content: 'Bạn có muốn gửi email mời phỏng vấn cho ứng viên ngay bây giờ?',
-          okText: 'Gửi email',
-          cancelText: 'Để sau',
-          onOk: () => {
-            navigate(`/candidates/${id}/send-email`);
-          }
-        });
+        // Hiển thị modal xác nhận gửi email chỉ khi tạo mới
+        if (!upcomingInterview) {
+          Modal.confirm({
+            title: 'Gửi email mời phỏng vấn',
+            content: 'Bạn có muốn gửi email mời phỏng vấn cho ứng viên ngay bây giờ?',
+            okText: 'Gửi email',
+            cancelText: 'Để sau',
+            onOk: () => {
+              navigate(`/candidates/${id}/send-email`);
+            }
+          });
+        }
       }
     } catch (error) {
-      console.error('Error adding event:', error);
+      console.error('Error handling event:', error);
       if (error.response?.status === 401) {
         message.error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại');
       } else {
-        const errorMessage = error.response?.data?.message || 'Không thể thêm lịch phỏng vấn';
+        const errorMessage = error.response?.data?.message || 'Không thể xử lý lịch phỏng vấn';
         message.error(errorMessage);
       }
     }
@@ -525,11 +541,11 @@ const CandidateDetail = () => {
                     
                     {/* Thời gian */}
                     <div className="text-lg mb-2">
-                      {moment(upcomingInterview.date).format('D MMMM, YYYY')}
+                      {moment.utc(upcomingInterview.startTime).local().format('D MMMM, YYYY')}
                     </div>
                     <div className="text-gray-600 mb-2">
-                      {moment(upcomingInterview.startTime).format('HH:mm')} - 
-                      {moment(upcomingInterview.endTime).format('HH:mm')}
+                      {moment.utc(upcomingInterview.startTime).local().format('HH:mm')} - 
+                      {moment.utc(upcomingInterview.endTime).local().format('HH:mm')}
                     </div>
 
                     {/* Loại và địa điểm */}
@@ -780,7 +796,7 @@ const CandidateDetail = () => {
                         icon={<CalendarOutlined />}
                         onClick={() => setIsAddEventModalVisible(true)}
                       >
-                        Tạo lịch phỏng vấn
+                        {upcomingInterview ? 'Chỉnh sửa lịch phỏng vấn' : 'Tạo lịch phỏng vấn'}
                       </Button>
                     )}
                   </div>
@@ -924,6 +940,7 @@ const CandidateDetail = () => {
         onSave={handleAddEvent}
         selectedDate={dayjs()}
         candidateId={id}
+        existingEvent={upcomingInterview}
       />
     </Layout>
   );

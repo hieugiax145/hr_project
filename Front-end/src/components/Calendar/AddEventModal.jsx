@@ -8,7 +8,7 @@ import axios from 'axios';
 const { TextArea } = Input;
 const { Option } = Select;
 
-const AddEventModal = ({ visible, onClose, onSave, selectedDate, candidateId }) => {
+const AddEventModal = ({ visible, onClose, onSave, selectedDate, candidateId, existingEvent }) => {
   const [form] = Form.useForm();
   const [candidates, setCandidates] = useState([]);
   const [users, setUsers] = useState([]);
@@ -17,18 +17,38 @@ const AddEventModal = ({ visible, onClose, onSave, selectedDate, candidateId }) 
   useEffect(() => {
     if (visible) {
       form.resetFields();
-      form.setFieldsValue({
-        date: selectedDate ? dayjs(selectedDate) : dayjs(),
-        startTime: dayjs('14:00', 'HH:mm'),
-        endTime: dayjs('14:30', 'HH:mm'),
-        eventType: 'offline',
-        beforeEvent: 5,
-        type: 'interview',
-        assignTo: candidateId
-      });
+      if (existingEvent) {
+        // Nếu là chỉnh sửa, set các giá trị từ existingEvent
+        const localStartTime = dayjs(existingEvent.startTime);
+        form.setFieldsValue({
+          title: existingEvent.title,
+          date: localStartTime,
+          startTime: localStartTime,
+          endTime: dayjs(existingEvent.endTime),
+          eventType: existingEvent.eventType,
+          room: existingEvent.room,
+          location: existingEvent.location,
+          type: existingEvent.type,
+          beforeEvent: existingEvent.beforeEvent || 5,
+          assignTo: candidateId,
+          attendees: existingEvent.attendees.map(attendee => attendee._id),
+          description: existingEvent.description
+        });
+      } else {
+        // Nếu là tạo mới, set các giá trị mặc định
+        form.setFieldsValue({
+          date: selectedDate ? dayjs(selectedDate) : dayjs(),
+          startTime: dayjs('14:00', 'HH:mm'),
+          endTime: dayjs('14:30', 'HH:mm'),
+          eventType: 'offline',
+          beforeEvent: 5,
+          type: 'interview',
+          assignTo: candidateId
+        });
+      }
       fetchData();
     }
-  }, [visible, selectedDate, form, candidateId]);
+  }, [visible, selectedDate, form, candidateId, existingEvent]);
 
   const fetchData = async () => {
     try {
@@ -105,7 +125,7 @@ const AddEventModal = ({ visible, onClose, onSave, selectedDate, candidateId }) 
 
   return (
     <Modal
-      title="Thêm sự kiện"
+      title={existingEvent ? "Chỉnh sửa lịch phỏng vấn" : "Thêm lịch phỏng vấn"}
       open={visible}
       onCancel={() => {
         form.resetFields();
@@ -119,7 +139,7 @@ const AddEventModal = ({ visible, onClose, onSave, selectedDate, candidateId }) 
           Hủy
         </Button>,
         <Button key="save" type="primary" onClick={handleSave} className="bg-[#656ED3]" loading={loading}>
-          Lưu
+          {existingEvent ? 'Cập nhật' : 'Lưu'}
         </Button>
       ]}
       width={800}
@@ -229,6 +249,7 @@ const AddEventModal = ({ visible, onClose, onSave, selectedDate, candidateId }) 
                   option?.children?.toLowerCase().indexOf(input.toLowerCase()) >= 0
                 }
                 loading={loading}
+                disabled={!!candidateId}
               >
                 {candidates && candidates.length > 0 ? (
                   candidates.map(candidate => (
