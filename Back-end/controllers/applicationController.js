@@ -15,12 +15,21 @@ const transporter = nodemailer.createTransport({
 // ✅ Tạo đơn tuyển dụng mới
 const createApplication = async (req, res) => {
   try {
+    // Chuẩn hóa dữ liệu đầu vào
+    const applicationData = { ...req.body };
+    
+    // Chuẩn hóa department thành chữ thường để đồng nhất
+    if (applicationData.department) {
+      applicationData.department = applicationData.department.toLowerCase();
+    }
+    
     const application = new Application({
-      ...req.body,
+      ...applicationData,
       userId: req.user._id,
       requester: req.user._id,  // Người tạo đơn chính là requester
-      status: req.body.status
+      status: applicationData.status
     });
+    
     const savedApplication = await application.save();
     res.status(201).json(savedApplication);
   } catch (error) {
@@ -38,7 +47,8 @@ const getApplications = async (req, res) => {
     
     // Nếu là trưởng phòng ban (không phải HR), chỉ lấy yêu cầu của phòng mình
     if (req.user.role === 'department_head' && req.user.department !== 'hr') {
-      query.department = req.user.department;
+      // Sử dụng RegExp để tìm kiếm không phân biệt chữ hoa/thường
+      query.department = new RegExp(`^${req.user.department}$`, 'i');
     }
 
     const applications = await Application.find(query)
