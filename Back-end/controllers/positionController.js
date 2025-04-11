@@ -3,6 +3,7 @@ const Application = require('../models/Application');
 const { generateDocx, generatePdf } = require('../utils/jdGenerator');
 const fs = require('fs');
 const path = require('path');
+const Candidate = require('../models/Candidate');
 
 // Tạo vị trí mới
 exports.createPosition = async (req, res) => {
@@ -61,21 +62,29 @@ exports.getPositions = async (req, res) => {
     }
 
     // Thực hiện query với các điều kiện
-    const [positions, total] = await Promise.all([
-      Position.find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .populate('creator', 'name'),
-      Position.countDocuments(query)
-    ]);
+    const positions = await Position.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('creator', 'name');
+    
+    const total = await Position.countDocuments(query);
+
+    // Đếm tổng số ứng viên cho mỗi vị trí (không phân biệt trạng thái)
+    const positionsWithCandidateCount = await Promise.all(positions.map(async (position) => {
+      const candidateCount = await Candidate.countDocuments({ positionId: position._id });
+      return {
+        ...position.toObject(),
+        applicants: candidateCount
+      };
+    }));
 
     // Kiểm tra quyền thêm mới
     const canCreate = req.user.role === 'ceo' || (req.user.role === 'department_head' && req.user.department === 'hr');
 
     res.json({
       message: 'Lấy danh sách vị trí thành công',
-      data: positions,
+      data: positionsWithCandidateCount,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),
@@ -169,10 +178,19 @@ exports.updatePositionStatus = async (positionId) => {
     });
 
     if (application) {
-      // Cập nhật trạng thái dựa trên số lượng ứng viên
-      if (position.applicants >= application.quantity) {
+      // Đếm số lượng ứng viên ở trạng thái 'hired'
+      const hiredCandidates = await Candidate.countDocuments({
+        positionId: positionId,
+        stage: 'hired'
+      });
+
+      // Cập nhật số lượng ứng viên đã tuyển
+      position.applicants = hiredCandidates;
+      
+      // Cập nhật trạng thái dựa trên số lượng ứng viên đã tuyển
+      if (hiredCandidates >= application.quantity) {
         position.status = 'Đã đủ';
-      } else if (position.status === 'Đã đủ' && position.applicants < application.quantity) {
+      } else if (position.status === 'Đã đủ' && hiredCandidates < application.quantity) {
         position.status = 'Còn tuyển';
       }
       

@@ -14,7 +14,7 @@ router.post('/positions/:positionId/candidates', protect, authorizeAdminHR('crea
 router.patch('/:candidateId/status', protect, authorizeAdminHR('update'), candidateController.updateCandidateStatus);
 
 // Cập nhật thông tin ứng viên
-router.patch('/:id', protect, authorizeAdminHR('update'), handleCVUpload, candidateController.updateCandidate);
+router.patch('/:candidateId', protect, authorizeAdminHR('update'), handleCVUpload, candidateController.updateCandidate);
 
 // Xóa ứng viên
 router.delete('/:candidateId', protect, authorizeAdminHR('delete'), candidateController.deleteCandidate);

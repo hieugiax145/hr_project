@@ -18,9 +18,24 @@ const createApplication = async (req, res) => {
     // Chuẩn hóa dữ liệu đầu vào
     const applicationData = { ...req.body };
     
-    // Chuẩn hóa department thành chữ thường để đồng nhất
+    // Chuẩn hóa department thành tên phòng ban tiếng Việt
     if (applicationData.department) {
-      applicationData.department = applicationData.department.toLowerCase();
+      // Map mã phòng ban sang tên phòng ban tiếng Việt
+      const departmentMapping = {
+        'accounting': 'kế toán',
+        'marketing': 'marketing',
+        'it': 'it',
+        'hr': 'nhân sự',
+        'sales': 'kinh doanh'
+      };
+      
+      // Nếu department là mã tiếng Anh, chuyển sang tên tiếng Việt
+      if (departmentMapping[applicationData.department.toLowerCase()]) {
+        applicationData.department = departmentMapping[applicationData.department.toLowerCase()];
+      } else {
+        // Nếu không tìm thấy trong mapping, giữ nguyên giá trị
+        applicationData.department = applicationData.department;
+      }
     }
     
     const application = new Application({
@@ -47,8 +62,25 @@ const getApplications = async (req, res) => {
     
     // Nếu là trưởng phòng ban (không phải HR), chỉ lấy yêu cầu của phòng mình
     if (req.user.role === 'department_head' && req.user.department !== 'hr') {
-      // Sử dụng RegExp để tìm kiếm không phân biệt chữ hoa/thường
-      query.department = new RegExp(`^${req.user.department}$`, 'i');
+      // Map mã phòng ban sang tên phòng ban tiếng Việt
+      const departmentMapping = {
+        'accounting': 'kế toán',
+        'marketing': 'marketing',
+        'it': 'it',
+        'hr': 'nhân sự',
+        'sales': 'kinh doanh'
+      };
+      
+      const departmentName = departmentMapping[req.user.department] || req.user.department;
+      
+      // Sử dụng RegExp để tìm kiếm không phân biệt chữ hoa/thường và dấu
+      query.department = new RegExp(`^${departmentName}$`, 'i');
+      
+      console.log('Department filter:', {
+        userDepartment: req.user.department,
+        mappedDepartment: departmentName,
+        query: query.department
+      });
     }
 
     const applications = await Application.find(query)

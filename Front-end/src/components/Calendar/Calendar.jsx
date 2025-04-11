@@ -176,14 +176,6 @@ const Calendar = () => {
           >
             Tạo lịch
           </Button>
-          <div className="flex items-center gap-2">
-            <Input 
-              placeholder="Lịch chi tiết"
-              suffix={<CloseOutlined className="text-gray-400" />}
-              className="w-[200px]"
-            />
-            <Button type="text" icon={<CloseOutlined />} />
-          </div>
         </div>
       </div>
     );

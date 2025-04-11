@@ -316,24 +316,35 @@ const JobsCandidates = () => {
 
       // Xử lý file CV
       if (values.cv?.fileList) {
-        // Kiểm tra xem có file nào bị xóa không
-        const hasDeletedFiles = editingCandidate.cv?.some(oldFile => 
-          !values.cv.fileList.some(newFile => 
-            newFile.uid === oldFile._id || newFile.uid === oldFile.public_id
+        // Kiểm tra xem có file nào bị xóa không bằng cách so sánh với CV hiện tại
+        const currentCVs = editingCandidate.cv || [];
+        const newFileList = values.cv.fileList;
+        
+        const hasDeletedFiles = currentCVs.some(oldFile => 
+          !newFileList.some(newFile => 
+            (newFile.uid === oldFile._id || newFile.uid === oldFile.public_id)
           )
         );
 
+        // Nếu có file bị xóa, gửi flag để xóa tất cả CV cũ
         if (hasDeletedFiles) {
           formData.append('deleteExistingCV', 'true');
+          console.log('Detected deleted files, will delete existing CVs');
         }
 
         // Thêm các file mới
-        values.cv.fileList.forEach((file) => {
+        newFileList.forEach((file) => {
           if (file.originFileObj) {
             formData.append('cv', file.originFileObj);
+            console.log('Adding new file:', file.name);
           }
         });
       }
+
+      console.log('Updating candidate with data:', {
+        candidateId: editingCandidate._id,
+        formData: Object.fromEntries(formData.entries())
+      });
 
       const response = await axios.patch(
         `${API_BASE_URL}/candidates/${editingCandidate._id}`,

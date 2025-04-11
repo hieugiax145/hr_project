@@ -92,16 +92,8 @@ exports.createCandidate = async (req, res) => {
 
     await candidate.save();
 
-    // Cập nhật số lượng ứng viên của vị trí
-    position.applicants = (position.applicants || 0) + 1;
-    await position.save();
-
-    // Kiểm tra và cập nhật trạng thái vị trí nếu đã đủ số lượng
-    const application = await Application.findOne({ position: position.title, department: position.department });
-    if (application && position.applicants >= application.quantity) {
-      position.status = 'Đã đủ';
-      await position.save();
-    }
+    // Không cập nhật số lượng ứng viên khi tạo mới vì ứng viên mới luôn ở trạng thái 'new'
+    // Chỉ cập nhật khi ứng viên được chuyển sang trạng thái 'hired'
 
     res.status(201).json({
       message: 'Thêm ứng viên thành công',
@@ -176,11 +168,14 @@ exports.updateCandidateStatus = async (req, res) => {
 
     console.log('Current candidate:', candidate);
 
-    // Chỉ cập nhật trường stage
+    // Lưu trạng thái cũ để kiểm tra
+    const oldStage = candidate.stage;
+    
+    // Cập nhật trạng thái mới
     candidate.stage = stage;
     
     try {
-      // Sử dụng findOneAndUpdate để chỉ cập nhật trường stage
+      // Sử dụng findOneAndUpdate để cập nhật trường stage
       const updatedCandidate = await Candidate.findOneAndUpdate(
         { _id: candidateId },
         { $set: { stage: stage } },
@@ -188,6 +183,32 @@ exports.updateCandidateStatus = async (req, res) => {
       );
 
       console.log('Updated candidate:', updatedCandidate);
+
+      // Cập nhật số lượng ứng viên của vị trí dựa trên trạng thái
+      const position = await Position.findById(candidate.positionId);
+      if (position) {
+        // Nếu chuyển từ trạng thái khác sang 'hired', tăng số lượng
+        if (oldStage !== 'hired' && stage === 'hired') {
+          position.applicants = (position.applicants || 0) + 1;
+        } 
+        // Nếu chuyển từ 'hired' sang trạng thái khác, giảm số lượng
+        else if (oldStage === 'hired' && stage !== 'hired') {
+          position.applicants = Math.max(0, (position.applicants || 0) - 1);
+        }
+        
+        await position.save();
+
+        // Kiểm tra và cập nhật trạng thái vị trí nếu đã đủ số lượng
+        const application = await Application.findOne({ position: position.title, department: position.department });
+        if (application) {
+          if (position.applicants >= application.quantity) {
+            position.status = 'Đã đủ';
+          } else if (position.status === 'Đã đủ' && position.applicants < application.quantity) {
+            position.status = 'Còn tuyển';
+          }
+          await position.save();
+        }
+      }
 
       res.json({
         message: 'Cập nhật trạng thái ứng viên thành công',
@@ -224,11 +245,18 @@ exports.deleteCandidate = async (req, res) => {
       await cloudinary.uploader.destroy(candidate.cv.public_id);
     }
 
-    // Cập nhật số lượng ứng viên của vị trí
+    // Cập nhật số lượng ứng viên của vị trí nếu ứng viên đang ở trạng thái 'hired'
     const position = await Position.findById(candidate.positionId);
-    if (position) {
+    if (position && candidate.stage === 'hired') {
       position.applicants = Math.max(0, (position.applicants || 0) - 1);
       await position.save();
+      
+      // Kiểm tra và cập nhật trạng thái vị trí
+      const application = await Application.findOne({ position: position.title, department: position.department });
+      if (application && position.applicants < application.quantity) {
+        position.status = 'Còn tuyển';
+        await position.save();
+      }
     }
 
     await candidate.deleteOne();
@@ -245,82 +273,93 @@ exports.deleteCandidate = async (req, res) => {
 // Cập nhật thông tin ứng viên
 exports.updateCandidate = async (req, res) => {
   try {
-    const { id } = req.params;
-    const updateData = { ...req.body };
+    const { candidateId } = req.params;
+    const candidateData = req.body;
 
-    // Xử lý upload CV nếu có
-    if (req.files && req.files.cv) {
-      const cvFile = req.files.cv;
-      const cvFileName = `${Date.now()}-${cvFile.name}`;
-      const cvPath = path.join(__dirname, '../uploads/cv', cvFileName);
+    // Log để debug
+    console.log('Update candidate request:', {
+      candidateId,
+      body: req.body,
+      files: req.files,
+      uploadedFiles: req.uploadedFiles
+    });
 
-      // Di chuyển file vào thư mục uploads
-      await cvFile.mv(cvPath);
-
-      // Cập nhật đường dẫn CV mới
-      updateData.cvPath = `/uploads/cv/${cvFileName}`;
+    // Tìm ứng viên
+    const candidate = await Candidate.findById(candidateId);
+    if (!candidate) {
+      return res.status(404).json({ message: 'Không tìm thấy ứng viên' });
     }
 
     // Xử lý xóa CV cũ nếu có yêu cầu
-    if (req.body.deleteExistingCV === 'true') {
-      const candidate = await Candidate.findById(id);
-      if (candidate && candidate.cvPath) {
-        const oldCvPath = path.join(__dirname, '..', candidate.cvPath);
-        try {
-          await fs.promises.unlink(oldCvPath);
-        } catch (error) {
-          console.error('Error deleting old CV:', error);
+    if (candidateData.deleteExistingCV === 'true' && candidate.cv && candidate.cv.length > 0) {
+      console.log('Deleting existing CVs:', candidate.cv);
+      
+      // Xóa các file cũ trên Cloudinary
+      for (const file of candidate.cv) {
+        if (file.public_id) {
+          try {
+            await cloudinary.uploader.destroy(file.public_id);
+            console.log('Deleted file from Cloudinary:', file.public_id);
+          } catch (error) {
+            console.error('Error deleting file from Cloudinary:', error);
+          }
         }
       }
-      updateData.cvPath = null;
+      
+      // Xóa mảng CV cũ
+      candidate.cv = [];
     }
 
-    // Kiểm tra email trùng lặp nếu có thay đổi email
-    if (updateData.email) {
-      const existingCandidate = await Candidate.findOne({
-        email: updateData.email,
-        _id: { $ne: id }
-      });
+    // Thêm CV mới nếu có
+    if (req.uploadedFiles && req.uploadedFiles.length > 0) {
+      console.log('Adding new CVs:', req.uploadedFiles);
+      
+      const newCVs = req.uploadedFiles.map(file => ({
+        url: file.url,
+        public_id: file.public_id,
+        fileName: file.fileName,
+        uploadDate: new Date()
+      }));
 
-      if (existingCandidate) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email đã tồn tại trong hệ thống'
-        });
+      // Nếu đã xóa CV cũ, thêm mới hoàn toàn
+      if (candidateData.deleteExistingCV === 'true') {
+        candidate.cv = newCVs;
+      } else {
+        // Nếu không, thêm vào mảng CV hiện tại
+        candidate.cv = [...candidate.cv, ...newCVs];
       }
     }
 
-    const candidate = await Candidate.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    );
+    // Cập nhật các thông tin khác
+    candidate.name = candidateData.name || candidate.name;
+    candidate.email = candidateData.email || candidate.email;
+    candidate.phone = candidateData.phone || candidate.phone;
+    candidate.source = candidateData.source || candidate.source;
+    candidate.customSource = candidateData.customSource;
+    candidate.notes = candidateData.notes;
+    candidate.cvLink = candidateData.cvLink || candidate.cvLink;
 
-    if (!candidate) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy ứng viên'
-      });
-    }
+    // Lưu thay đổi
+    const updatedCandidate = await candidate.save();
+    console.log('Updated candidate:', updatedCandidate);
 
-    res.status(200).json({
-      success: true,
+    res.json({
       message: 'Cập nhật thông tin ứng viên thành công',
-      data: candidate
+      candidate: updatedCandidate
     });
   } catch (error) {
     console.error('Error updating candidate:', error);
+    
     if (error.name === 'ValidationError') {
-      return res.status(400).json({
-        success: false,
+      return res.status(400).json({ 
         message: 'Dữ liệu không hợp lệ',
         errors: Object.values(error.errors).map(err => err.message)
       });
     }
-    res.status(500).json({
-      success: false,
-      message: 'Lỗi server',
-      error: error.message
+
+    res.status(500).json({ 
+      message: 'Có lỗi xảy ra khi cập nhật thông tin ứng viên',
+      error: error.message 
     });
   }
 };

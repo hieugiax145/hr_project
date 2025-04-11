@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout, Button, Tag, message, Modal, Form, Input, Select, Avatar, Card } from 'antd';
-import { ArrowLeftOutlined, EditOutlined, UserOutlined, MessageOutlined, DownloadOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, BarChartOutlined, RiseOutlined, CommentOutlined, CalendarOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, EditOutlined, UserOutlined, MessageOutlined, DownloadOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, BarChartOutlined, RiseOutlined, CommentOutlined, CalendarOutlined, LinkOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
 import 'moment/locale/vi';
@@ -184,6 +184,7 @@ const CandidateDetail = () => {
   const [form] = Form.useForm();
   const [commentForm] = Form.useForm();
   const [isAddEventModalVisible, setIsAddEventModalVisible] = useState(false);
+  const [currentCvUrl, setCurrentCvUrl] = useState('');
 
   const fetchCandidateDetail = useCallback(async () => {
     try {
@@ -210,6 +211,11 @@ const CandidateDetail = () => {
       if (candidateResponse.status === 200) {
         console.log('Candidate data:', candidateResponse.data.candidate);
         setCandidate(candidateResponse.data.candidate);
+        
+        // Thiết lập URL CV đầu tiên để hiển thị
+        if (candidateResponse.data.candidate.cv && candidateResponse.data.candidate.cv.length > 0) {
+          setCurrentCvUrl(candidateResponse.data.candidate.cv[0].url);
+        }
       }
 
       if (interviewResponse.status === 200 && interviewResponse.data.length > 0) {
@@ -311,7 +317,7 @@ const CandidateDetail = () => {
       
       // Tạo link tải trực tiếp từ Cloudinary
       const link = document.createElement('a');
-      link.href = candidate.cv[0].url; // Lấy URL của CV đầu tiên
+      link.href = currentCvUrl || candidate.cv[0].url; // Sử dụng CV đang xem hoặc CV đầu tiên
       link.setAttribute('download', `CV-${candidate.name}.pdf`);
       document.body.appendChild(link);
       link.click();
@@ -320,18 +326,6 @@ const CandidateDetail = () => {
       console.error('Error downloading CV:', error);
       message.error('Có lỗi xảy ra khi tải CV');
     }
-  };
-
-  const handleViewCV = () => {
-    // Kiểm tra xem có CV nào không
-    if (!candidate.cv || candidate.cv.length === 0) {
-      message.error('Không có CV để xem');
-      return;
-    }
-    
-    // Sử dụng Google Docs Viewer để xem PDF
-    const googleDocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(candidate.cv[0].url)}&embedded=true`;
-    window.open(googleDocsUrl, '_blank');
   };
 
   // Hàm chuyển đổi role sang tiếng Việt
@@ -661,24 +655,52 @@ const CandidateDetail = () => {
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
               }}>
                 <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: 500 }}>Tệp đính kèm</h3>
-                {candidate.cv && (
-                  <Button 
-                    type="text" 
-                    icon={<FileTextOutlined />}
-                    onClick={handleViewCV}
-                    style={{ width: '100%', textAlign: 'left', marginBottom: '8px' }}
-                  >
-                    Xem CV
-                  </Button>
+                {candidate.cv && candidate.cv.length > 0 ? (
+                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    {candidate.cv.map((file, index) => (
+                      <Button 
+                        key={file.public_id || index}
+                        type={currentCvUrl === file.url ? "primary" : "text"}
+                        icon={<FileTextOutlined />}
+                        onClick={() => {
+                          setCurrentCvUrl(file.url);
+                        }}
+                        style={{ 
+                          width: '100%', 
+                          textAlign: 'left', 
+                          marginBottom: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'flex-start',
+                          background: currentCvUrl === file.url ? '#F4F1FE' : 'transparent',
+                          color: currentCvUrl === file.url ? '#7B61FF' : 'inherit',
+                          borderColor: currentCvUrl === file.url ? '#7B61FF' : 'transparent'
+                        }}
+                      >
+                        <div style={{ 
+                          whiteSpace: 'nowrap', 
+                          overflow: 'hidden', 
+                          textOverflow: 'ellipsis',
+                          marginLeft: '8px'
+                        }}>
+                          {file.fileName || `CV_${index + 1}`}
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ color: '#8c8c8c', textAlign: 'center', padding: '16px' }}>
+                    Không có tệp đính kèm
+                  </div>
                 )}
-                {candidate.video && (
+                {candidate.cvLink && (
                   <Button 
                     type="text" 
-                    icon={<VideoCameraOutlined />}
-                    onClick={() => window.open(candidate.video, '_blank')}
-                    style={{ width: '100%', textAlign: 'left' }}
+                    icon={<LinkOutlined />}
+                    onClick={() => window.open(candidate.cvLink, '_blank')}
+                    style={{ width: '100%', textAlign: 'left', marginTop: '8px' }}
                   >
-                    Xem video
+                    Link CV
                   </Button>
                 )}
               </div>
@@ -803,11 +825,17 @@ const CandidateDetail = () => {
                 </div>
                 <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
                   {candidate.cv && candidate.cv.length > 0 ? (
-                    <iframe
-                      style={{ width: '100%', height: '500px', border: 'none' }}
-                      src={`https://docs.google.com/viewer?url=${encodeURIComponent(candidate.cv[0].url)}&embedded=true`}
-                      title="CV Preview"
-                    />
+                    currentCvUrl ? (
+                      <iframe
+                        style={{ width: '100%', height: '500px', border: 'none' }}
+                        src={`https://docs.google.com/viewer?url=${encodeURIComponent(currentCvUrl)}&embedded=true`}
+                        title="CV Preview"
+                      />
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        Vui lòng chọn một tệp CV từ danh sách bên trái để xem
+                      </div>
+                    )
                   ) : (
                     <div style={{ textAlign: 'center', padding: '20px' }}>
                       Không có CV để xem
