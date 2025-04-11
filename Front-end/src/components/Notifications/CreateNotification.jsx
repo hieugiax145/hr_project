@@ -583,9 +583,8 @@ const CreateNotification = () => {
                 </Form.Item>
 
                 <Form.Item
-                  label={<span>Số sổ BHXH <span className="text-red-500">*</span></span>}
+                  label={<span>Số sổ BHXH</span>}
                   name="insuranceNumber"
-                  rules={[{ required: true, message: 'Vui lòng nhập số sổ BHXH' }]}
                 >
                   <Input />
                 </Form.Item>
