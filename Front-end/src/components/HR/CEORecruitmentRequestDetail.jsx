@@ -97,16 +97,23 @@ const CEORecruitmentRequestDetail = () => {
       );
       
       // Xóa thông báo khi phê duyệt
-      await axios.delete(
-        `http://localhost:8000/api/recruitment-notifications/by-recruitment/${id}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
+      try {
+        await axios.delete(
+          `http://localhost:8000/api/recruitment-notifications/by-recruitment/${id}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
           }
-        }
-      );
+        );
+      } catch (notificationError) {
+        // Bỏ qua lỗi không tìm thấy thông báo (404) hoặc lỗi quyền truy cập (403)
+        console.log('Notification might not exist or access denied:', notificationError.response?.status);
+        // Không ảnh hưởng đến luồng xử lý chính
+      }
       
       if (response.status === 200) {
+        message.success('Đã phê duyệt yêu cầu tuyển dụng');
         navigate('/hr/ceo-recruitment-requests');
       }
     } catch (error) {
@@ -142,8 +149,9 @@ const CEORecruitmentRequestDetail = () => {
           }
         );
       } catch (notificationError) {
-        console.log('Notification might have been deleted already:', notificationError);
-        // Continue with the rejection process even if notification deletion fails
+        // Bỏ qua lỗi không tìm thấy thông báo (404) hoặc lỗi quyền truy cập (403)
+        console.log('Notification might not exist or access denied:', notificationError.response?.status);
+        // Không ảnh hưởng đến luồng xử lý chính
       }
       
       if (response.status === 200) {

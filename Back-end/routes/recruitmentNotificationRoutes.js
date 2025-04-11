@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const recruitmentNotificationController = require('../controllers/recruitmentNotificationController');
-const { protect, authorize } = require('../middlewares/authMiddleware');
+const { protect, authorize, authorizeAdminHR } = require('../middlewares/authMiddleware');
 
 // Tạo thông báo mới
-router.post('/', protect, authorize('ceo'), recruitmentNotificationController.createNotification);
+router.post('/', protect, authorizeAdminHR('create'), recruitmentNotificationController.createNotification);
 
 // Lấy danh sách thông báo
 router.get('/', protect, recruitmentNotificationController.getNotifications);
@@ -12,8 +12,8 @@ router.get('/', protect, recruitmentNotificationController.getNotifications);
 // Đánh dấu thông báo đã đọc
 router.put('/:recruitmentId/read', protect, recruitmentNotificationController.markAsRead);
 
-// Xóa thông báo theo recruitmentId
-router.delete('/by-recruitment/:recruitmentId', protect, authorize('ceo'), recruitmentNotificationController.deleteNotificationByRecruitmentId);
+// Xóa thông báo theo recruitmentId - cho phép cả CEO và các vai trò khác
+router.delete('/by-recruitment/:recruitmentId', protect, recruitmentNotificationController.deleteNotificationByRecruitmentId);
 
 // Tạo thông báo khi CEO phê duyệt
 router.post('/approval/:recruitmentId', protect, authorize('ceo'), recruitmentNotificationController.createApprovalNotification);

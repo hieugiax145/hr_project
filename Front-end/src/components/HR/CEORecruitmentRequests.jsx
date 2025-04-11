@@ -134,14 +134,20 @@ const CEORecruitmentRequests = () => {
         );
 
         // Xóa thông báo khi chuyển sang trạng thái Đang duyệt
-        await axios.delete(
-          `http://localhost:8000/api/recruitment-notifications/by-recruitment/${request._id}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`
+        try {
+          await axios.delete(
+            `http://localhost:8000/api/recruitment-notifications/by-recruitment/${request._id}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
             }
-          }
-        );
+          );
+        } catch (notificationError) {
+          // Bỏ qua lỗi không tìm thấy thông báo (404) hoặc lỗi quyền truy cập (403)
+          console.log('Notification might not exist or access denied:', notificationError.response?.status);
+          // Không ảnh hưởng đến luồng xử lý chính
+        }
 
         if (response.status === 200) {
           // Cập nhật state với dữ liệu mới từ response

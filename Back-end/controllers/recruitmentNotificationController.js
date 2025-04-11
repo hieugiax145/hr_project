@@ -10,7 +10,8 @@ exports.createNotification = async (req, res) => {
       recruitmentId,
       position,
       department,
-      requester
+      // Sử dụng requester từ body nếu có, nếu không sẽ lấy từ thông tin người dùng đã xác thực
+      requester: requester || req.user._id
     });
 
     await notification.save();
