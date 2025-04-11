@@ -640,6 +640,7 @@ const JobsCandidates = () => {
                   multiple={true}
                   maxCount={5}
                   fileList={fileList}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                   beforeUpload={(file) => {
                     const isLt5M = file.size / 1024 / 1024 < 5;
                     if (!isLt5M) {
@@ -656,7 +657,7 @@ const JobsCandidates = () => {
                     <InboxOutlined />
                   </p>
                   <p className="ant-upload-text">Click hoặc kéo thả file vào đây</p>
-                  <p className="ant-upload-hint">Tối đa 5 file, mỗi file không quá 5MB</p>
+                  <p className="ant-upload-hint">Tối đa 5 file, mỗi file không quá 5MB. Chấp nhận: PDF, DOC, DOCX, JPG, JPEG, PNG</p>
                 </Upload.Dragger>
               </Form.Item>
 
@@ -778,6 +779,7 @@ const JobsCandidates = () => {
                   multiple={true}
                   maxCount={5}
                   fileList={fileList}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                   beforeUpload={(file) => {
                     const isLt5M = file.size / 1024 / 1024 < 5;
                     if (!isLt5M) {
@@ -794,7 +796,7 @@ const JobsCandidates = () => {
                     <InboxOutlined />
                   </p>
                   <p className="ant-upload-text">Click hoặc kéo thả file vào đây</p>
-                  <p className="ant-upload-hint">Tối đa 5 file, mỗi file không quá 5MB</p>
+                  <p className="ant-upload-hint">Tối đa 5 file, mỗi file không quá 5MB. Chấp nhận: PDF, DOC, DOCX, JPG, JPEG, PNG</p>
                 </Upload.Dragger>
               </Form.Item>
 

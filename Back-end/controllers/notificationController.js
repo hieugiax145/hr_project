@@ -215,8 +215,14 @@ exports.deleteNotification = async (req, res) => {
 // API để lấy danh sách ứng viên có trạng thái Tuyển hoặc Offer
 exports.getEligibleCandidates = async (req, res) => {
   try {
+    // Lấy danh sách ID của các ứng viên đã có thông báo
+    const existingNotifications = await Notification.find().select('candidateId');
+    const existingCandidateIds = existingNotifications.map(notification => notification.candidateId.toString());
+    
+    // Lấy danh sách ứng viên có trạng thái Tuyển hoặc Offer và chưa có thông báo
     const candidates = await Candidate.find({
-      stage: { $in: ['offer', 'hired'] }
+      stage: { $in: ['offer', 'hired'] },
+      _id: { $nin: existingCandidateIds } // Loại trừ các ứng viên đã có thông báo
     })
     .populate('positionId', 'title department branch level')
     .select('name positionId email phone address education experience skills hrInCharge');

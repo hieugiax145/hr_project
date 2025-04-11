@@ -35,6 +35,11 @@ const CreateNotification = () => {
       console.log('HR response:', hrRes);
       setCandidates(Array.isArray(candidatesRes?.data) ? candidatesRes.data : []);
       setHrList(Array.isArray(hrRes) ? hrRes : []);
+      
+      // Hiển thị thông báo nếu không có ứng viên nào khả dụng
+      if (!Array.isArray(candidatesRes?.data) || candidatesRes.data.length === 0) {
+        message.info('Không có ứng viên nào khả dụng. Tất cả ứng viên đã được tạo thông báo.');
+      }
     } catch (error) {
       message.error('Lỗi khi tải dữ liệu');
       console.error('Error loading data:', error);
@@ -434,7 +439,11 @@ const CreateNotification = () => {
                   name="candidateId"
                   rules={[{ required: true, message: 'Vui lòng chọn ứng viên' }]}
                 >
-                  <Select onChange={onCandidateChange}>
+                  <Select 
+                    onChange={onCandidateChange}
+                    placeholder="Chọn ứng viên"
+                    notFoundContent={candidates.length === 0 ? "Không có ứng viên nào khả dụng. Tất cả ứng viên đã được tạo thông báo." : null}
+                  >
                     {candidates.map(candidate => (
                       <Option key={candidate._id} value={candidate._id}>{candidate.name}</Option>
                     ))}

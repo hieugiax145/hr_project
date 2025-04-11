@@ -139,7 +139,7 @@ const Calendar = () => {
     return (
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-4">
-          <div className="text-base">
+          <div className="text-base font-bold">
             {currentDate.format('MMMM')} {currentDate.format('YYYY')}
           </div>
           <div className="flex gap-1">
