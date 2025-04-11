@@ -38,9 +38,25 @@ exports.getPositions = async (req, res) => {
     // Xây dựng query
     let query = {};
 
+    // Mapping phòng ban từ tiếng Anh sang tiếng Việt
+    const departmentMapping = {
+      'accounting': 'kế toán',
+      'marketing': 'marketing',
+      'it': 'it',
+      'hr': 'nhân sự',
+      'sales': 'kinh doanh'
+    };
+
     // Nếu là trưởng phòng ban (không phải HR), chỉ lấy vị trí của phòng mình
     if (req.user.role === 'department_head' && req.user.department !== 'hr') {
-      query.department = req.user.department;
+      // Lấy tên phòng ban tiếng Việt tương ứng
+      const departmentVi = departmentMapping[req.user.department.toLowerCase()] || req.user.department;
+      
+      // Tìm kiếm không phân biệt chữ hoa/thường và chấp nhận cả tên tiếng Anh và tiếng Việt
+      query.department = {
+        $regex: `^(${req.user.department}|${departmentVi})$`,
+        $options: 'i'
+      };
     }
 
     // Thêm điều kiện tìm kiếm
