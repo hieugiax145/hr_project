@@ -73,7 +73,6 @@ const Sidebar = () => {
       // Xử lý chuyển hướng dựa trên role
       switch (userRole) {
         case 'department_head':
-        case 'recruitment':
           navigate('/hr/recruitment-requests');
           break;
         case 'ceo':

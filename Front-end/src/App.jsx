@@ -76,7 +76,7 @@ const App = () => {
         {/* Recruitment Requests routes with role-based access */}
         <Route path="/hr/recruitment-requests" element={
           <DashboardLayout>
-            <ProtectedRoute allowedRoles={['department_head', 'recruitment']}>
+            <ProtectedRoute allowedRoles={['department_head']}>
               <RecruitmentRequests />
             </ProtectedRoute>
           </DashboardLayout>
@@ -130,21 +130,17 @@ const App = () => {
         {/* HR Routes */}
         <Route path="/hr/recruitment-requests/create" element={
           <DashboardLayout>
-            <ProtectedRoute allowedRoles={['department_head', 'recruitment']}>
-              <CreateRecruitmentRequest />
-            </ProtectedRoute>
+            <CreateRecruitmentRequest />
           </DashboardLayout>
         } />
         <Route path="/hr/recruitment-requests/:id" element={
           <DashboardLayout>
-            <ProtectedRoute allowedRoles={['department_head', 'recruitment', 'admin']}>
-              <RecruitmentRequestDetail />
-            </ProtectedRoute>
+            <RecruitmentRequestDetail />
           </DashboardLayout>
         } />
         <Route path="/hr/recruitment-requests/:id/edit" element={
           <DashboardLayout>
-            <ProtectedRoute allowedRoles={['department_head', 'recruitment']}>
+            <ProtectedRoute allowedRoles={['department_head']}>
               <EditRecruitmentRequestDetail />
             </ProtectedRoute>
           </DashboardLayout>

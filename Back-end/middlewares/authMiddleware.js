@@ -74,24 +74,14 @@ const authorizeAdminHR = (action) => {
       return res.status(401).json({ message: 'Vui lòng đăng nhập để thực hiện chức năng này' });
     }
 
-    // Kiểm tra role
-    const allowedRoles = ['admin', 'hr', 'department_head', 'ceo', 'recruitment'];
-    if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ 
-        message: 'Bạn không có quyền thực hiện chức năng này',
-        currentRole: req.user.role,
-        requiredRoles: allowedRoles
-      });
-    }
-
     // CEO có đầy đủ quyền
     if (req.user.role === 'ceo') {
       return next();
     }
 
-    // Admin có quyền xem, tạo, quản lý tài khoản
+    // Admin có quyền xem và quản lý tài khoản
     if (req.user.role === 'admin') {
-      if (action === 'view' || action === 'manage_accounts' || action === 'create') {
+      if (action === 'view' || action === 'manage_accounts') {
         return next();
       } else {
         return res.status(403).json({ 
@@ -100,18 +90,6 @@ const authorizeAdminHR = (action) => {
           requiredAction: action
         });
       }
-    }
-    
-    // Recruitment có quyền tương tự admin trừ quản lý tài khoản
-    if (req.user.role === 'recruitment') {
-      if (action === 'manage_accounts') {
-        return res.status(403).json({ 
-          message: 'Nhân viên tuyển dụng không có quyền quản lý tài khoản',
-          currentRole: req.user.role,
-          requiredAction: action
-        });
-      }
-      return next();
     }
 
     // HR có đầy đủ quyền trừ quản lý tài khoản
@@ -126,28 +104,36 @@ const authorizeAdminHR = (action) => {
       return next();
     }
 
-    // Trưởng phòng ban (không phải HR) chỉ có quyền xem và tạo cho phòng ban của mình
+    // Trưởng phòng ban (không phải HR) chỉ có quyền xem và chỉ xem được dữ liệu của phòng mình
     if (req.user.role === 'department_head') {
       // Nếu là trưởng phòng HR thì có đầy đủ quyền
       if (req.user.department === 'hr') {
         return next();
       }
 
-      // Các trưởng phòng khác có quyền xem và tạo
-      if (action === 'view' || action === 'create') {
-        // Lưu department vào request để controller có thể sử dụng
-        req.userDepartment = req.user.department;
-        return next();
-      } else {
+      // Các trưởng phòng khác chỉ có quyền xem
+      if (action !== 'view') {
         return res.status(403).json({
-          message: 'Trưởng phòng ban chỉ có quyền xem và tạo thông tin',
+          message: 'Trưởng phòng ban chỉ có quyền xem thông tin',
           currentRole: req.user.role,
           requiredAction: action
         });
       }
+
+      // Lưu department vào request để controller có thể sử dụng
+      req.userDepartment = req.user.department;
+      return next();
     }
 
-    // Nếu đến đây vẫn chưa return, cho phép request thực hiện
+    // Kiểm tra role
+    if (!['admin', 'hr', 'department_head', 'ceo'].includes(req.user.role)) {
+      return res.status(403).json({ 
+        message: 'Bạn không có quyền thực hiện chức năng này',
+        currentRole: req.user.role,
+        requiredRoles: ['admin', 'hr', 'department_head', 'ceo']
+      });
+    }
+
     next();
   };
 };
