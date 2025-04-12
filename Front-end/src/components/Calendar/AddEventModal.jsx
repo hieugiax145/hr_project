@@ -47,7 +47,7 @@ const AddEventModal = ({
           startTime: localStartTime,
           endTime: dayjs(existingEvent.endTime),
           eventType: existingEvent.eventType,
-          room: existingEvent.room,
+          room: existingEvent.room??"room1",
           location: existingEvent.location,
           type: existingEvent.type,
           beforeEvent: existingEvent.beforeEvent || 5,
@@ -62,6 +62,7 @@ const AddEventModal = ({
           startTime: dayjs("14:00", "HH:mm"),
           endTime: dayjs("14:30", "HH:mm"),
           eventType: "offline",
+          room: "room1",
           beforeEvent: 5,
           type: "interview",
           assignTo: candidateId,
@@ -226,12 +227,10 @@ const AddEventModal = ({
             <Form.Item
               label="Phòng họp"
               name="room"
-              rules={[{ required: true, message: "Vui lòng chọn phòng họp" }]}
+              rules={[{ required: true, message: "Vui lòng chọn phòng họp" ,}]}
             >
               <Select placeholder="Chọn phòng họp">
                 <Option value="room1">Phòng họp 1</Option>
-                <Option value="room2">Phòng họp 2</Option>
-                <Option value="room3">Phòng họp 3</Option>
               </Select>
             </Form.Item>
 
@@ -248,8 +247,8 @@ const AddEventModal = ({
             >
               <Select placeholder="Chọn loại cuộc họp">
                 <Option value="interview">Phỏng vấn</Option>
-                <Option value="meeting">Họp nội bộ</Option>
-                <Option value="presentation">Thuyết trình</Option>
+                {/* <Option value="meeting">Họp nội bộ</Option>
+                <Option value="presentation">Thuyết trình</Option> */}
               </Select>
             </Form.Item>
 

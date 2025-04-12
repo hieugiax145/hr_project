@@ -140,7 +140,7 @@ const Calendar = () => {
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-4">
           <div className="text-base font-bold">
-            {currentDate.format('MMMM')} {currentDate.format('YYYY')}
+            {currentDate.format('MMMM').charAt(0).toUpperCase() + currentDate.format('MMMM').slice(1)} {currentDate.format('YYYY')}
           </div>
           <div className="flex gap-1">
             <Button type="text" size="small" onClick={handlePrevMonth}>&lt;</Button>
