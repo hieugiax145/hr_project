@@ -176,10 +176,10 @@ const EventDetail = () => {
         return;
       }
 
-      if (!formattedData.candidate) {
-        message.error("Vui lòng chọn ứng viên");
-        return;
-      }
+      // if (!formattedData.candidate) {
+      //   message.error("Vui lòng chọn ứng viên");
+      //   return;
+      // }
 
       const response = await axios.post(
         "http://localhost:8000/api/interviews",
@@ -259,10 +259,10 @@ const EventDetail = () => {
         return;
       }
 
-      if (!formattedData.candidate) {
-        message.error("Vui lòng chọn ứng viên");
-        return;
-      }
+      // if (!formattedData.candidate) {
+      //   message.error("Vui lòng chọn ứng viên");
+      //   return;
+      // }
 
       const response = await axios.put(
         "http://localhost:8000/api/interviews/" + eventId,

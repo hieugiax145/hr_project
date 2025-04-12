@@ -65,7 +65,6 @@ const AddEventModal = ({
           room: "room1",
           beforeEvent: 5,
           type: "interview",
-          assignTo: candidateId,
         });
       }
       fetchData();
@@ -207,15 +206,20 @@ const AddEventModal = ({
         >
           {existingEvent && isEventUpdate ? "Cập nhật" : "Lưu"}
         </Button>,
-        <Button
-          key="delete"
-          type="primary"
-          danger
-          onClick={handleDelete}
-          className="bg-red-500"
-        >
-          Xóa
-        </Button>,
+      
+      ...(isEventUpdate
+        ? [
+            <Button
+              key="delete"
+              type="primary"
+              danger
+              onClick={handleDelete}
+              className="bg-red-500"
+            >
+              Xóa
+            </Button>,
+          ]
+        : []),
       ]}
       width={800}
       className="add-event-modal"
@@ -322,7 +326,9 @@ const AddEventModal = ({
               </Form.Item>
             </div>
 
-            <Form.Item name="assignTo" label="Chọn ứng viên">
+            <Form.Item name="assignTo" label="Chọn ứng viên" rules={[
+                  { required: true, message: "Vui lòng chọn ứng viên" },
+                ]}>
               <Select
                 showSearch
                 placeholder="Chọn ứng viên"
@@ -333,7 +339,8 @@ const AddEventModal = ({
                     .indexOf(input.toLowerCase()) >= 0
                 }
                 loading={loading}
-                disabled={!!candidateId}
+                disabled={!!candidateId&&isEventUpdate}
+                
               >
                 {candidates && candidates.length > 0 ? (
                   candidates.map(
